@@ -1,0 +1,59 @@
+Farm9 Public License (FPL)
+Version 1.0, April 4, 2000
+
+The master copy of this license is available on the 
+farm9.com, Inc. website at http://www.farm9.com/fpl.
+
+Copyright (c) 2000 farm9.com, Inc. 
+All rights reserved.  
+
+farm9.com, Inc. 
+1624 Todd Road, 
+Santa Rosa, CA 95407 US
+
+Everyone is permitted to copy and distribute verbatim 
+copies of this license document, but changing it is 
+not allowed.
+
+The approval of this license as a certified Open Source 
+license is pending.
+
+Permission is granted to distribute, run, modify, compile,
+translate, port, sell, rent, lease or otherwise use this 
+software in any manner so long as the following conditions 
+are met (subject to the rights of prior contributors):
+
+·	The farm9 Public License and associated statements of 
+        copyright must be included verbatim with any 
+        distribution of this work or any derivative works.
+
+·	This software is provided by the copyright holders and 
+        contributors ``as is'' and any express or implied 
+        warranties, including, but not limited to, the implied 
+        warranties of merchantability and fitness for a 
+        particular purpose are disclaimed. In no event shall 
+        farm9.com, Inc. or contributors be liable for any 
+        direct, indirect, incidental, special, exemplary, 
+        or consequential damages (including, but not limited 
+        to, procurement of substitute goods or services; loss
+        of use, data, or profits; or business interruption) 
+        however caused and on any theory of liability, whether 
+        in contract, strict liability, or tort (including 
+        negligence or otherwise) arising in any way out of 
+        the use of this software, even if advised of the 
+        possibility of such damage. You hereby indemnify 
+        farm9.com and any other subsequent contributors 
+        to this or derivative works for any liability incurred 
+        as a result of your use or distribution of this software.
+
+·	The origin of this software must not be misrepresented; 
+        you must not claim that you wrote the original software. 
+        If you use this software in a product, an acknowledgment 
+        in the product documentation would be appreciated but is 
+        not required.  The use of "Powered by farm9" or 
+        "Secured by farm9" is encouraged.
+
+·	Altered source versions must be plainly marked as such, 
+        and must not be misrepresented as being the original software.
+
+End of farm9 Public License Agreement

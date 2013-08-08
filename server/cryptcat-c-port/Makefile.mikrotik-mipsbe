@@ -1,0 +1,42 @@
+
+BASE=/opt/buildroot/buildroot-2010.11-mipsbe/output/staging/usr
+ARCH=mips
+BUILDTOOLS=$(BASE)/bin
+UCLIBC_HEADERS=$(BASE)/include
+UCLIBC_LIBS=$(BASE)/lib
+CC=${BUILDTOOLS}/${ARCH}-linux-gcc
+STRIP=${BUILDTOOLS}/${ARCH}-linux-sstrip
+
+POLARSSL = ../../libs/polarssl-0.14.0
+INCLUDES = -I.. -I$(POLARSSL)/include
+LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
+
+CFLAGS += -W -Wall -lpthread -lutil
+CFLAGS += $(INCLUDES)
+CFLAGS += -DLINUX -D_USE_ASH
+DFLAGS += -DDEBUG -D_DEBUG -g
+
+OUTFILE = jshell
+SRC = shuffle.c twofish.c farm9crypt.c jshell.c $(LIBPOLARSSL)
+
+.PHONY: all
+all: debug release
+
+.PHONY: polarssl
+polarssl: $(LIBPOLARSSL)
+
+$(LIBPOLARSSL):
+	cd $(POLARSSL)/library && $(MAKE) -f Makefile.mikrotik-mipsbe
+
+.PHONY: debug
+debug: $(OUTFILE)-dbg
+
+.PHONY: release
+release: $(OUTFILE)
+
+$(OUTFILE): $(LIBPOLARSSL) 
+	$(CC) $(CFLAGS) -I$(UCLIBC_HEADERS) -L$(UCLIBC_LIBS) $(SRC) -o $(OUTFILE) -DLINUX
+	$(STRIP) $(OUTFILE)
+
+$(OUTFILE)-dbg: $(LIBPOLARSSL)
+	$(CC) $(CFLAGS) $(DFLAGS) -I$(UCLIBC_HEADERS) -L$(UCLIBC_LIBS) $(SRC) -o $(OUTFILE)-dbg -DLINUX

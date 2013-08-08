@@ -1,0 +1,70 @@
+#------------------------------------------------
+#Makefile for compiling on solaris-sparc 
+# Makefile.solaris-sparc
+#
+# For other possible targets, please enter:
+#	
+#		make all
+#
+#------------------------------------------------
+
+OFLAGS	= -Os
+
+CFLAGS := -I../include -D_FILE_OFFSET_BITS=64 -DSOLARIS -D_BIG_ENDIAN -Wall -W -m32
+
+# To compile as a shared library:
+# CFLAGS += -fPIC
+
+# Accommodate debugging. Use "make ... DEBUG=1"
+ifdef DEBUG
+CFLAGS += -DDEBUG -g
+endif
+
+DLEXT=so
+# OSX shared library extension:
+# DLEXT=dylib
+
+OBJS=	aes.o		arc4.o		base64.o	\
+	bignum.o	certs.o		debug.o		\
+	des.o		dhm.o		havege.o	\
+	md2.o		md4.o		md5.o		\
+	net.o		padlock.o	rsa.o		\
+	sha1.o		sha2.o		sha4.o		\
+	ssl_cli.o	ssl_srv.o	ssl_tls.o	\
+	timing.o	x509parse.o	xtea.o		\
+	camellia.o  version.o	loki_utils.o
+
+CC = gcc
+
+#.SILENT:
+
+.PHONY : all
+all: clean static
+	
+static: libpolarssl.a 
+
+shared: libpolarssl.$(DLEXT)
+
+libpolarssl.a: $(OBJS) 
+#	echo "  AR    $@"
+	ar r $@ $(OBJS)
+#	echo "  RL    $@"
+	ranlib $@
+
+libpolarssl.so: libpolarssl.a
+#	echo "  LD    $@"
+	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJS)
+
+libpolarssl.dylib: libpolarssl.a
+#	echo "  LD    $@"
+	$(CC) -dynamiclib -o $@ $(OBJS)
+
+.c.o: 
+#	echo "  CC    $<"
+	$(CC) $(CFLAGS) $(OFLAGS) -c $<
+	
+.PHONY: clean
+clean:
+	make -f ./Makefile clean
+#	rm -f *.o libpolarssl.*
+

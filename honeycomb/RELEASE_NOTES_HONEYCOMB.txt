@@ -1,0 +1,33 @@
+###########################################################################
+		 			---	SECRET//NOFORN   ---
+###########################################################################
+
+					*****RELEASE NOTES*****
+
+Version 1.2
+*New Features
+	- Added support for beacon decompression
+	- Added additional extra data fields to the beacon rsi files
+		- Next Beacon Time (only availible with Hive 2.3 and later)
+		- Implant Version Number
+		- Implant Host Operating System
+	- Improved the beacon log file with additional data
+	- Improved error handling in order to prevent tool handler crashes
+*Bug Fixes
+	- Fixed issues around some Unix systems returning a unicode backspace
+		character with some of the netstat -an results. Honeycomb now
+		strips these out when they are present.
+
+Version 1.1
+*New Features
+	- Added support for handling beacon survey fields
+		- netstat -an
+		- netstat -rn
+		- ipconfig/ifconfig
+		- process list
+	- Added survey data to the beacon rsi files
+	- Added basic logging of the beacons coming back
+
+###########################################################################
+		 			---	SECRET//NOFORN   ---
+###########################################################################

@@ -1,0 +1,40 @@
+#include "compression.h"
+
+#ifndef WIN32
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#endif
+
+void bz_internal_error(int errcode)
+{
+	(void)errcode;
+	return;
+}
+
+unsigned char* compress_packet(unsigned char* packet, unsigned int packetSize, unsigned int* compressedSize)
+{
+	unsigned char* temp = NULL;
+	int ret = 0;
+
+	*compressedSize = packetSize;
+
+	temp = (unsigned char*) malloc(*compressedSize);
+	memset(temp,0,*compressedSize);
+
+	ret = BZ2_bzBuffToBuffCompress((char*)temp,compressedSize,(char*)packet,packetSize,9,0,30);
+	if(ret != BZ_OK)
+	{
+		return NULL;
+	}
+
+	return temp;
+}
+
+void release_compressed_packet(unsigned char* compressedPacket)
+{
+	if(compressedPacket != NULL)
+	{
+		free(compressedPacket);
+	}
+}

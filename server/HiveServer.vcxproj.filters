@@ -1,0 +1,216 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="getopt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="persistence.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="init_strings.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigger_b64.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigger_payload.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigger_sniff.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="string_utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tiny_crc16.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="threads.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="daemonize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="run_command.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="self_delete.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigger_callback_session.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="trigger_listen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="survey_mac.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="survey_uptime.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="client_session.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="timeout.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="beacon.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="compression.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="get_data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ifconfig.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netstat_an.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="netstat_rn.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="process_list.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\crypto.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="init_crypto_strings.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="launchshell.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="compat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="getopt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="persistence.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="proj_strings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="proj_strings_main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trigger_b64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trigger_debug.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trigger_payload.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trigger_sniff.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unpifi.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="string_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tiny_crc16.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="threads.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="daemonize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="run_command.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="self_delete.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trigger_listen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="trigger_callback_session.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="survey_mac.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="survey_uptime.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="client_session.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="timeout.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="beacon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="compression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="get_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ifconfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netstat_an.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="netstat_rn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="process_list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\crypto.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="crypto_proj_strings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="crypto_strings_main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="launchshell.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
