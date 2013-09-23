@@ -89,6 +89,11 @@ unsigned long long my_time64()
 }
 #endif
 
+unsigned int irand()
+{
+	return ((unsigned int) rand());
+}
+#if 0
 // Implementing Complementary Multiply With Carry
 // b = 2^32, a = 3636507990
 unsigned int irand()
@@ -138,6 +143,7 @@ unsigned int irand()
 	// Replace the value seen HISTORY times ago
 	return (Q[Index]=(0xFFFFFFFE)-X);
 }
+#endif
 
 /*---------  UtilRand - DECLARATIONS --------------*/
 
