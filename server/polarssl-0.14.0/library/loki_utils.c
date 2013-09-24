@@ -1,11 +1,13 @@
 #include "polarssl/loki_utils.h"
 #include "polarssl/config.h"
+#include "polarssl/havege.h"
 #include <string.h>
 
 unsigned int Q[HISTORY];
 unsigned int C;
 int Index = 1023;
 int Initialized = 0;
+havege_state rng_state;
 
 static unsigned int GenerateRandIntBetween( unsigned int lower, unsigned int upper );
 static unsigned long long my_time64();
@@ -91,6 +93,14 @@ unsigned long long my_time64()
 
 unsigned int irand()
 {
+	unsigned int seed;
+
+	if(!Initialized)
+	{
+		havege_init(&rng_state);
+		seed = (unsigned int) havege_rand(&rng_state);
+		srand(seed);
+	}
 	return ((unsigned int) rand());
 }
 #if 0
