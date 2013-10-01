@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import socket
 import struct
 import os
@@ -105,7 +106,15 @@ def decrypt_data(key,data):
 def send_ack(conn, received):
 	rand_bytes = str(received)
 	packet = create_return_packet(rand_bytes)
-	conn.send(packet)
+	try:
+		conn.send(packet)
+		return True
+
+	except socket.error:
+		message = "Socket error, failed to send ACK"
+		log.write(message, logging.ERROR)
+		conn.close()
+		return False
 
 #create  the headers and add them to the message in order to seen the data back out of the proxy	
 def create_return_packet(msg):
@@ -133,9 +142,11 @@ def parse_bthp_packet(data):
 	offset = 0
 	bthp_hdr = BTHP_HDR()
 	try:
-		bthp_hdr.ver,bthp_hdr.type,bthp_hdr.hdrlen,bthp_hdr.datalen,rsi_data.proxyId= struct.unpack_from(BTHP_HDR_FMT, data, offset)
+		bthp_hdr.ver,bthp_hdr.type,bthp_hdr.hdrlen,bthp_hdr.datalen,rsi_data.proxyId = struct.unpack_from(BTHP_HDR_FMT, data, offset)
 		rsi_data.bytecount = bthp_hdr.datalen
 		offset += struct.calcsize(BTHP_HDR_FMT)
+		#Verify that we have all of the bytes
+
 		while(remove_bthp_addl_hdr(data) == True):
 			pass
 	except struct.error:
@@ -173,6 +184,12 @@ def remove_bthp_addl_hdr(data):
 
 
 def get_packet_size(data):
+	print "Packet size: ", len(data)
+	if len(data) == 0:
+		message = "Received zero-length packet"
+		log.write(message, logging.INFO)
+		return 0
+
 	size = int(ord(data[0:1]) ^ XOR_KEY)
 	return int(''.join(chr(ord(a) ^ XOR_KEY) for a in data[1:size+1]))
 
@@ -366,7 +383,14 @@ def write_rsi_file(beacon_data):
 
 def process_ver1_beacon(conn,key):
 	global log
-	data = conn.recv(4096)
+
+	try:
+		data = conn.recv(4096)
+	
+	except socket.error:
+		log.write("Read failure on socket", logging.ERROR);
+		return
+
 	parse_bthp_packet(data)
 	ptext = decrypt_data(key,data[offset:])
 	beacon_data = {}
@@ -374,8 +398,9 @@ def process_ver1_beacon(conn,key):
 		beacon_data['mac']  = (struct.unpack_from('17s',ptext,0))[0]
 		beacon_data['uptime'] = str( socket.ntohl( (struct.unpack_from('L', ptext,20)) [0]) )
 		message = "Received Version: 1 Beacon from ip: " + rsi_data.beacon_ip + " MAC: " + beacon_data['mac']
-		log.write(message,logging.INFO)
+		log.write(message, logging.INFO)
 		write_rsi_file(beacon_data)
+
 	except struct.error:
 		message = "Parser Error: Unable to parse version 1 beacon"
 		log.write(message, logging.ERROR)
@@ -387,17 +412,31 @@ def process_ver2_beacon(conn,key,packet_size):
 	data = ''
 	inputs = [conn]
 	while received < packet_size:
-		readable,writable,execptional = select.select(inputs,[],[])
+		try:
+			readable,writable,execptional = select.select(inputs,[],[])
+
+		except socket.error:
+			log.write("Socket failure", logging.ERROR)
+			return
+
 		for s in readable:
-			if packet_size - received >= MAX_CHUNK_SIZE:
-				chunk = s.recv(MAX_CHUNK_SIZE + 44,socket.MSG_WAITALL)
-			else:
-				chunk = s.recv((packet_size - received) + 44,socket.MSG_WAITALL)
+			try:
+				if packet_size - received >= MAX_CHUNK_SIZE:
+					chunk = s.recv(MAX_CHUNK_SIZE + 44, socket.MSG_WAITALL)
+				else:
+					chunk = s.recv((packet_size - received) + 44, socket.MSG_WAITALL)
+
+			except socket.error:
+				log.write("Read failure on socket", logging.ERROR);
+				return
+
 			parse_bthp_packet(chunk)
 			data = data + chunk[offset:]
 			received += len(chunk[offset:])
-			send_ack(conn, len(chunk[offset:]))
+			if send_ack(conn, len(chunk[offset:])) is False:
+				break;
 			chunk = ''
+
 	decrypted_data = decrypt_data(key,data)
 	parse_beacon_data(decrypted_data)
 
@@ -420,6 +459,12 @@ def listen_for_beacons(port):
 			conn, addr = s.accept()
 			#read in the first random 32 byte message
 			data = conn.recv(4096)
+			# Verify that at least the header was received
+			if data.__len__ < struct.calcsize(BTHP_HDR_FMT):
+				message = "Short packet received"
+				log.write(message, logging.ERROR)
+				conn.close()
+				break
 			#parse the headers
 			parse_bthp_packet(data)
 			#check the size of the first packet to see if it is a v1 or v2 packet
@@ -433,12 +478,12 @@ def listen_for_beacons(port):
 			key = create_key(rand_bytes)
 			#send the rand bytes packet to the implant
 			packet = create_return_packet(rand_bytes)
-			conn.send(packet);
+			conn.send(packet)
 			if isVer1 == True:
 				process_ver1_beacon(conn, key)
 			else:
-				process_ver2_beacon(conn,key,packet_size)
-			conn.close();
+				process_ver2_beacon(conn, key, packet_size)
+			conn.close()
 
 
 def main(argv):
