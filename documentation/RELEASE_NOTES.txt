@@ -20,15 +20,22 @@
 	Solaris x86 10		v2.6		------
 	Solaris x86 9		v2.6		------
 	Solaris x86 8		------		------
-	MikroTik x86 4.x	v2.6.1		------
-	MikroTik x86 3.x	------		v2.6.1
-	MikroTik MIPS-BE 4.x	v2.6.1		------
-	MikroTik MIPS-BE 3.x	------		v2.6.1
-	MikroTik MIPS-LE 4.x	------		v2.6.1
-	MikroTik MIPS-LE 3.x	------		v2.6.1
-	MikroTik PowerPC 4.x	v2.6.1		------
-	MikroTik PowerPC 3.x	------		v2.6.1
-	Linux x86		v2.6.1		------
+	MikroTik x86 4.x	v2.6.2		------
+	MikroTik x86 3.x	------		v2.6.2
+	MikroTik MIPS-BE 4.x	v2.6.2		------
+	MikroTik MIPS-BE 3.x	------		v2.6.2
+	MikroTik MIPS-LE 4.x	------		v2.6.2
+	MikroTik MIPS-LE 3.x	------		v2.6.2
+	MikroTik PowerPC 4.x	v2.6.2		------
+	MikroTik PowerPC 3.x	------		v2.6.2
+	Linux x86		v2.6.2		------
+	
+###########################################################################
+v2.6.2 -- 10/30/2013
+* Uses polarssl havege code to produce random numbers versus /dev/random
+* or /dev/urandom because at reboot, mikrotik's exhibited similar random 
+* number sequences.  Because similar random numbers were being generated,
+* backend processing rejected some packets thinking it was a playback attack.  
 	
 ###########################################################################
 v2.6.1 -- 03/15/2013
