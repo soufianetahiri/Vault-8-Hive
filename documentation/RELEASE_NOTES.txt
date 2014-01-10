@@ -31,11 +31,12 @@
 	Linux x86		v2.6.2		------
 	
 ###########################################################################
-v2.6.2 -- 10/30/2013
-* Uses polarssl havege code to produce random numbers versus /dev/random
-* or /dev/urandom because at reboot, mikrotik's exhibited similar random 
-* number sequences.  Because similar random numbers were being generated,
-* backend processing rejected some packets thinking it was a playback attack.  
+v2.6.2 -- 01/13/2014
+Uses polarssl havege code to produce random numbers versus /dev/random or
+/dev/urandom because at reboot, MikroTik devices exhibited similar random
+number sequences. This resolves the issue of the LP seeing what it believes
+to be a TCP replay attack for MikroTik devices by properly seeding the
+random number generator in the implant for all architectures.
 	
 ###########################################################################
 v2.6.1 -- 03/15/2013
