@@ -96,7 +96,7 @@ string_utils.o: string_utils.c string_utils.h
 	${CC} -c string_utils.c string_utils.h
 
 .PHONY: patcher
-patcher: $(UNPATCHED_BINS)
+patcher: $(UNPATCHED_BINS) $(LIBPOLARSSL) 
 	@echo
 	@echo "  Latest, unpatched builds of binaries must be"
 	@echo "  present with the following naming conventions:"
@@ -117,7 +117,8 @@ patcher: $(UNPATCHED_BINS)
 	xxd -i $(UNPATCHED_MIKROTIK_MIPSBE) _unpatched_mikrotik_mipsbe.h
 	xxd -i $(UNPATCHED_MIKROTIK_MIPSLE) _unpatched_mikrotik_mipsle.h
 	xxd -i $(UNPATCHED_MIKROTIK_PPC) _unpatched_mikrotik_ppc.h
-	gcc -m32 -Os -W -Wall -I. string_utils.c patcher.c -o hive-patcher
+	#gcc -m32 -Os -W -Wall -I. -I./ssl/polarssl/include/polarssl string_utils.c patcher.c -o hive-patcher 
+	gcc -m32 -Os -W -Wall -I. -I./ssl/polarssl/include/polarssl string_utils.c patcher.c -o hive-patcher $(LIBPOLARSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5
 
