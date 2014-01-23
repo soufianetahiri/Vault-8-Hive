@@ -153,6 +153,7 @@
 #define n triggerStart1String "Sending trigger ..."
 #define n triggerStart2String "failed."
 #define n triggerStart3String "Could not create TCP socket connection with remote host."
+#define n triggerStart4String "Could not create UDP socket connection with remote host."
 #define n root_or_fail1String "Must be root to send"
 #define n root_or_fail2String "ping-reply, ping-response, or icmp-error"
 #define n root_or_failFinalString "triggers.\n\n"

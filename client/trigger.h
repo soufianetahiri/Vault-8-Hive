@@ -3,12 +3,13 @@
 
 struct trigger_params 
 {
-	int	padding;
-	char	*callback_ip;
-	char	*callback_port;	
-	char	*target_ip;
-	char	*raw_port;
-	char	*type;
+	int		padding;
+	char		*callback_ip;
+	char		*callback_port;
+	char		*target_ip;
+	char		*raw_port;
+	char		*type;
+	unsigned char	*idKey_hash;
 };
 
 void * trigger_start( void * );

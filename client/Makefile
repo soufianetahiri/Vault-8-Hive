@@ -81,19 +81,18 @@ cryptcat/twofish2.o: cryptcat/twofish2.cc cryptcat/twofish2.h
 strings: init_strings.o string_utils.o init_crypto_strings.o
 
 init_crypto_strings.o: init_crypto_strings.c string_utils.o 
-	gcc -c init_crypto_strings.c 
 
 init_crypto_strings.c: crypto_strings.txt string_utils.o
 	python mod_gen_cryptostring_header.py crypto_strings.txt CRYPTO_STRINGS
 
 init_strings.o: init_strings.c string_utils.o
-	${CC} -c init_strings.c
+	${CC} ${CFLAGS} -c init_strings.c
 
 init_strings.c: client_strings.txt string_utils.h
 	python mod_gen_string_header.py client_strings.txt CLIENT_STRINGS
 
 string_utils.o: string_utils.c string_utils.h
-	${CC} -c string_utils.c string_utils.h
+	${CC} ${CFLAGS} -c string_utils.c string_utils.h
 
 .PHONY: patcher
 patcher: $(UNPATCHED_BINS)
