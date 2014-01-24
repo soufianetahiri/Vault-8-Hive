@@ -328,7 +328,7 @@ int main( int argc, char **argv )
 					{
 						fprintf(implantIDFile, "%02x", idKey[hashIndex]);
 					}
-					fprintf( implantIDFile, " \n " );
+					fprintf( implantIDFile, " \n" );
 				}
 				else
 				{
