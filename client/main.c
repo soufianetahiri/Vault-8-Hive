@@ -220,8 +220,7 @@ int main( int argc, char **argv )
 				return -1;
 				break;
 
-			// Trigger Key
-			// The trigger key sent is the SHA1 hash of the trigger key specified.
+			// ID key -- sent as the SHA1 hash of the text key specified.
 			case 'k':
 				if (strlen(optarg) >= ID_KEY_LENGTH_MIN)
 					sha1((const unsigned char *)optarg, strlen(optarg), trigger_args.idKey_hash);

