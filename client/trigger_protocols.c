@@ -38,6 +38,8 @@
 /* internal static functions */
 static void obfuscate_payload (Payload * p, uint8_t * ret_buf);
 
+//==============================================================================================
+
 /*!
  * trigger_icmp_error
  *
@@ -246,7 +248,7 @@ trigger_icmp_ping (Payload * p, trigger_info * ti)
 	uint8_t obf_payload_buf[sizeof (Payload)];
 
 	uint16_t seq = 0, icmpID;
-	const uint32_t numPings = 6;
+	uint32_t numPings;
 	ip_hdr ih;
 	icmp_hdr ich;
 	uint8_t *packet, *data, *icmp_start;
@@ -258,6 +260,8 @@ trigger_icmp_ping (Payload * p, trigger_info * ti)
 		return FAILURE;
 	}
 
+	numPings = sizeof(Payload) / 2;		// Number of pings required is dependent upon the payload size
+	D (printf ("%s, %4d: Number of pings required: %d\n", __FILE__, __LINE__, numPings); )
 	type = ti->trigger_type;
 
 #ifdef DEBUG
@@ -399,7 +403,10 @@ icmp_generic (ip_hdr * iph)
 
 }
 
-/*!
+/*!			//cout << "\n\n\n Calling trigger_raw_tcp...\n" << endl;
+			rv = trigger_raw( &p, &ti );
+			break;
+ *
  * ping_generic
  *
  * @param ih - Pointer to ip header

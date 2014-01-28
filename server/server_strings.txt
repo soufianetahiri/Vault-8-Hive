@@ -22,7 +22,8 @@
 
 //#define n insufficient_permissions " Insufficient permissions. Try again knucklehead.\n"
 #define n inp183Aq " Insufficient permissions. Try again...\n"
-//#define n cmdLineOptionFlags "I:a:p:d:i:t:s:j:hc"    //Added k option in next line.
+
+//#define n cmdLineOptionFlags "I:a:p:d:i:t:s:j:hc"
 #define n cIures4j "I:a:p:d:i:k:t:s:j:hc"
 //#define n proc_uptime "/proc/uptime"
 #define n uPasg18a "/proc/uptime"

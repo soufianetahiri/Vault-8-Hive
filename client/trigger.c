@@ -196,7 +196,7 @@ print_input_args (trigger_info * ti)
 	printf ((char *) dieselt_in_arg7,
 		inet_ntop (AF_INET, &(ti->callback_addr), str, 49));
 
-	printf ((char *) dieselt_in_arg8, ntohs (ti->callback_port));
+	printf ((char *) dieselt_in_arg8, ti->callback_port);
 
 
 }
@@ -242,14 +242,15 @@ parse_options (struct trigger_params *t_info, trigger_info * ti)
 	// extract the callback IP
 	inet_pton (AF_INET, t_info->callback_ip, &(ti->callback_addr));
 
+	// TODO: Cleanup the following
 	// extract the callback port
 	p = atoi (t_info->callback_port);
 	//        if(p <= 0 || p > 65536 || errno != 0){
-	ti->callback_port = htons (p);
+	ti->callback_port = p;
 
 	// extract the target IP
 	inet_pton (AF_INET, t_info->target_ip, &(ti->target_addr));
-	memcpy(&(ti->idKey_hash), &(t_info->idKey_hash), ID_KEY_HASH_SIZE);
+	memcpy(&(ti->triggerKey), &(t_info->triggerKey), ID_KEY_HASH_SIZE);
 }
 
 
@@ -368,7 +369,7 @@ trigger_info_to_payload (Payload * p, trigger_info * ti)
 
 	p->callback_addr = htonl(ti->callback_addr);
 	p->callback_port = htons(ti->callback_port);
-	memcpy (&(p->idKey_hash), &(ti->idKey_hash), ID_KEY_HASH_SIZE);
+	memcpy (&(p->triggerKey), &(ti->triggerKey), ID_KEY_HASH_SIZE);
 
 	p->crc = 0;
 	crc = tiny_crc16 ((const uint8_t *) p, sizeof (Payload));

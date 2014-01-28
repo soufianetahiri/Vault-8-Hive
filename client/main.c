@@ -223,7 +223,7 @@ int main( int argc, char **argv )
 			// ID key -- sent as the SHA1 hash of the text key specified.
 			case 'k':
 				if (strlen(optarg) >= ID_KEY_LENGTH_MIN)
-					sha1((const unsigned char *)optarg, strlen(optarg), trigger_args.idKey_hash);
+					sha1((const unsigned char *)optarg, strlen(optarg), trigger_args.triggerKey);
 				else {
 					print_opterr( argv[0], OPT_INVALID );
 					return -1;
@@ -258,6 +258,7 @@ int main( int argc, char **argv )
 		if ( ( trigger_args.callback_ip == 0 ) ||
 			( trigger_args.callback_port == 0 ) ||
 			( trigger_args.target_ip == 0 ) ||
+			( trigger_args.triggerKey == 0 ) ||
 			( trigger_args.type == 0 ) )
 		{
 			//printf( "\n  %sERROR: Incomplete options%s\n", RED, RESET );

