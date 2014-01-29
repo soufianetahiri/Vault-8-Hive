@@ -4,9 +4,9 @@
 #include "LibraryModuleBase.h"
 #include "Primitive.h"
 #include "Connection.h"
-#include "trigger_protocols.h"
 
 #define	MAX_INPUT_LEN	100
+#define ID_KEY_HASH_SIZE	20
 
 struct params
 {

