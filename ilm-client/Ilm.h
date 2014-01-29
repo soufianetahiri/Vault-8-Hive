@@ -4,15 +4,19 @@
 #include "LibraryModuleBase.h"
 #include "Primitive.h"
 #include "Connection.h"
+#include "trigger_protocols.h"
 
 #define	MAX_INPUT_LEN	100
 
 struct params
 {
-	char	callbackAddress[ MAX_INPUT_LEN ];
+	char		callbackAddress[MAX_INPUT_LEN];
 	int		callbackPort;
-	char	targetAddress[ MAX_INPUT_LEN ];
-	char	protocolType[ MAX_INPUT_LEN ];
+	char		targetAddress[MAX_INPUT_LEN];
+	char		idKey[MAX_INPUT_LEN];
+	char		idKeyFilename[MAX_INPUT_LEN];
+	unsigned char	triggerKey[ID_KEY_HASH_SIZE];
+	char		protocolType[MAX_INPUT_LEN];
 	int		rawPort;
 };
 

