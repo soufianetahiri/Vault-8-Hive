@@ -15,9 +15,6 @@ struct trigger_params
 	unsigned char	triggerKey[ID_KEY_HASH_SIZE];
 };
 
-int
-trigger_info_to_payload( Payload * p, trigger_info * ti);
-
 void * trigger_start( void * );
 int parse_trig( const char * str, uint32_t* trig);
 

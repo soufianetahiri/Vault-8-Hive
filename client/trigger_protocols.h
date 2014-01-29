@@ -130,4 +130,6 @@ extern int trigger_dns_query (Payload * p, trigger_info * ti);
 
 unsigned int trigger_raw (Payload *p, trigger_info * ti);
 
+extern int trigger_info_to_payload( Payload * p, trigger_info * ti);
+
 #endif

@@ -1021,3 +1021,31 @@ trigger_raw (Payload *p, trigger_info *ti)
 
 	return SUCCESS;
 }
+
+/*! \brief Move trigger into payload.
+ *
+ * @param p payload
+ * @param ti trigger
+ * @return Always returns SUCCESS.
+ * \todo Have this function return a void or integrate it into code above.
+ */
+int
+trigger_info_to_payload (Payload * p, trigger_info * ti)
+{
+	uint16_t crc;
+
+	if (p == NULL || ti == NULL) {
+		return FAILURE;
+	}
+
+	p->callback_addr = htonl(ti->callback_addr);
+	p->callback_port = htons(ti->callback_port);
+	memcpy (&(p->triggerKey), &(ti->triggerKey), ID_KEY_HASH_SIZE);
+
+	p->crc = 0;
+	crc = tiny_crc16 ((const uint8_t *) p, sizeof (Payload));
+	crc = htons (crc);
+	p->crc = crc;
+
+	return SUCCESS;
+}
