@@ -52,35 +52,44 @@ void GenRandomBytes( char *b1, int s1, char *b2, int s2 )
  * **************************************************************************************************************************** */
 
 void Usage(char* progname) {
-   //fprintf(stdout, "\n  %sUsage:%s\n", BLUE, RESET );
+   //fprintf(stdout, "\n%sUsage:%s\n", BLUE, RESET );
    fprintf(stdout, "\n  %s%s:%s\n", BLUE, UsageString, RESET );
+
    //fprintf(stdout, "  %s [-p port] \n", progname);
-   fprintf(stdout, "  %s %s", progname, usageExample01String);
+   fprintf(stdout, "  %s %s", progname, usageOption01String);
+
    //fprintf(stdout, "  %s [-p port] [-t address] [-a address] [-P protocol] [-m mode] \n\n", progname);
-   fprintf(stdout, "  %s %s", progname, usageExample02String);
+   fprintf(stdout, "  %s %s", progname, usageOption02String);
+
    //fprintf(stdout, "  Depending on options, client can send triggers, listen, or both\n");
-   fprintf(stdout, "%s", usageExample03String);
+   fprintf(stdout, "%s", usageOption03String);
+
    //fprintf(stdout, "    [-p port]      - callback port\n");
-   fprintf(stdout, "%s", usageExample04String);
-   //fprintf(stdout, "    [-t address]   - IP address of target\n");
-   fprintf(stdout, "%s", usageExample05String);
-   //fprintf(stdout, "    [-a address]   - IP address of listener\n");
-   fprintf(stdout, "%s", usageExample06String);
-   //fprintf(stdout, "    [-P protocol]  - trigger protocol (dns-request, tftp-wrq, icmp-error, ping-reply, ping-request, raw-tcp, raw-udp)\n");
-   fprintf(stdout, "%s", usageExample07String);
+   fprintf(stdout, "%s", usageOption04String);
+
+   //fprintf(stdout, "    -t address   - IP address of target\n");
+   fprintf(stdout, "%s", usageOption05String);
+
+   //fprintf(stdout, "    -a address   - IP address of listener\n");
+   fprintf(stdout, "%s", usageOption06String);
+
+   //fprintf(stdout, "    -P protocol  - trigger protocol (dns-request, tftp-wrq, icmp-error, ping-reply, ping-request, raw-tcp, raw-udp)\n");
+   fprintf(stdout, "%s", usageOption07String);
+
    //fprintf(stdout, "    [-r raw_port]  - when using raw triggers, this specifies which port to send the trigger\n");
-   fprintf(stdout, "%s", usageExample08String);
+   fprintf(stdout, "%s", usageOption08String);
+
    //fprintf(stdout, "    [-m mode]      - client to listen-only, trigger-only, or both (default) ('l', 't', 'b')\n");
-   fprintf(stdout, "%s", usageExample09String);
-   //fprintf(stdout, "    [-d delay]     - not yet implemented (optional) delay between received trigger and callback\n");
-   fprintf(stdout, "%s", usageExample10String);
+   fprintf(stdout, "%s", usageOption09String);
+
+   //fprintf(stdout, "    -k ID key     - ID key\n");
+   fprintf(stdout, "%s", usageOption10String);
+
+   //fprintf(stdout, "    -k ID key file     - ID key filename\n");
+   fprintf(stdout, "%s", usageOption11String);
+
    //fprintf(stdout, "    [-h ]          - print this usage\n\n");
-   fprintf(stdout, "%s", usageExample11String);
-   //fprintf(stdout, "  %sExamples:%s\n", BLUE, RESET);
-   fprintf(stdout, "  %s%s:%s\n", BLUE, ExampleString, RESET);
-   //fprintf( stdout, "   Coming soon!\n\n" );
-   fprintf( stdout, "%s", comingSoonString );
-//   fprintf(stdout, "   %s -l 8080\n\n", progname);
+   fprintf(stdout, "%s", usageOption12String);
 }
 
 

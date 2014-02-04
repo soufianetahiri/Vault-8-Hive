@@ -100,11 +100,60 @@ int main( int argc, char **argv )
         initSrandFlag = 1;
     }
 
-	while ( ( optval = getopt(argc, argv, ":t:a:p:P:d:m:r:k:")) != -1 )
+	while ( ( optval = getopt(argc, argv, ":a:d:k:m:p:P:r:t:")) != -1 )
 	{
 		switch( optval )
 		{
 			// mode: listen, trigger, or both (default)
+
+			// callback IP address
+			case 'a':
+				if ( !mode_set ) pvars.trigger = YES;
+				trigger_args.callback_ip = asloc( optarg );
+
+				if ( inet_aton(optarg, &pvars.remote.sin_addr) == 0 )
+				{
+					//fprintf( stderr, "invalid IP address specified\n" );
+					fprintf( stderr, "%s", invalidIPAddressString );
+					return -1;
+				}
+				break;
+
+				// trigger callback delay
+			case 'd':
+				if ( !mode_set ) pvars.trigger = YES;
+				pvars.trig_delay = (unsigned int)atoi( optarg );
+				break;
+
+			// ID key -- sent as the SHA1 hash of the text key specified.
+			case 'k':
+				if (strlen(optarg) >= ID_KEY_LENGTH_MIN)
+					sha1((const unsigned char *)optarg, strlen(optarg), trigger_args.triggerKey);
+				else {
+					print_opterr( argv[0], OPT_INVALID );
+					return -1;
+				}
+				break;
+
+			case 'K':
+				{	struct stat	statbuf;
+
+					if (access(optarg, R_OK)) {
+						fprintf( stderr, "%s", invalidFileParameter);
+					}
+					if (stat(optarg, &statbuf) != 0) {
+						perror("Option K");
+						return -1;
+					}
+					if (statbuf.st_size >= ID_KEY_LENGTH_MIN)
+						sha1_file((const char *)optarg, trigger_args.triggerKey);
+					else {
+						print_opterr( argv[0], OPT_INVALID );
+						return -1;
+					}
+					break;
+				}
+
 			case 'm':
 				if ( ( strncmp( optarg, "a", 1 ) == 0 ) || ( strncmp( optarg, "b", 1 ) == 0 ) )
 				{	// both or all (default)
@@ -123,37 +172,8 @@ int main( int argc, char **argv )
 				}
 				mode_set = YES;
 				break;
-				
-			// "target" to trigger; IP address
-			case 't':
-				if ( !mode_set ) pvars.trigger = YES;
-				trigger_args.target_ip = asloc( optarg );
 
-				// we don't need the address converted here, but this function
-				// helps validate user input in correct format
-				// 'local' unused, otherwise
-				if ( inet_aton(optarg, &pvars.local.sin_addr) == 0 )
-				{
-					//fprintf( stderr, "invalid IP address specified\n" );
-					fprintf( stderr, "%s", invalidIPAddressString );
-					return -1;
-				}
-				break;
-
-			// callback IP address
-			case 'a':
-				if ( !mode_set ) pvars.trigger = YES;
-				trigger_args.callback_ip = asloc( optarg );
-
-				if ( inet_aton(optarg, &pvars.remote.sin_addr) == 0 )
-				{
-					//fprintf( stderr, "invalid IP address specified\n" );
-					fprintf( stderr, "%s", invalidIPAddressString );
-					return -1;
-				}
-				break;
-
-			// callback port 
+				// callback port
 			case 'p':
 				port = atoi(optarg);
 
@@ -163,7 +183,7 @@ int main( int argc, char **argv )
 				trigger_args.callback_port = asloc( optarg );
 				break;
 
-			// trigger protocol
+				// trigger protocol
 			case 'P':
 				if ( !mode_set ) pvars.trigger = YES;
 				trigger_args.type = asloc( optarg );
@@ -198,12 +218,21 @@ int main( int argc, char **argv )
 				trigger_port = atoi( optarg );
 				break;
 
-			// trigger callback delay
-			case 'd':
+				// "target" to trigger; IP address
+			case 't':
 				if ( !mode_set ) pvars.trigger = YES;
-				pvars.trig_delay = (unsigned int)atoi( optarg );
-				break;
+				trigger_args.target_ip = asloc( optarg );
 
+				// we don't need the address converted here, but this function
+				// helps validate user input in correct format
+				// 'local' unused, otherwise
+				if ( inet_aton(optarg, &pvars.local.sin_addr) == 0 )
+				{
+					//fprintf( stderr, "invalid IP address specified\n" );
+					fprintf( stderr, "%s", invalidIPAddressString );
+					return -1;
+				}
+				break;
 			// if getopt() detects an option with a missing argument, it will return ':'
 			// and set the extern variable 'optopt' to the offending option 
 			// ':' is returned instead of '?' because the optstring starts with a leading ':'
@@ -218,16 +247,6 @@ int main( int argc, char **argv )
 			case '?':
 				print_opterr( argv[0], OPT_INVALID );
 				return -1;
-				break;
-
-			// ID key -- sent as the SHA1 hash of the text key specified.
-			case 'k':
-				if (strlen(optarg) >= ID_KEY_LENGTH_MIN)
-					sha1((const unsigned char *)optarg, strlen(optarg), trigger_args.triggerKey);
-				else {
-					print_opterr( argv[0], OPT_INVALID );
-					return -1;
-				}
 				break;
 		}
 	}

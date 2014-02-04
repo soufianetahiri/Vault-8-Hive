@@ -116,7 +116,6 @@ patcher: $(UNPATCHED_BINS) $(LIBPOLARSSL)
 	xxd -i $(UNPATCHED_MIKROTIK_MIPSBE) _unpatched_mikrotik_mipsbe.h
 	xxd -i $(UNPATCHED_MIKROTIK_MIPSLE) _unpatched_mikrotik_mipsle.h
 	xxd -i $(UNPATCHED_MIKROTIK_PPC) _unpatched_mikrotik_ppc.h
-	#gcc -m32 -Os -W -Wall -I. -I./ssl/polarssl/include/polarssl string_utils.c patcher.c -o hive-patcher 
 	gcc -m32 -Os -W -Wall -I. -I./ssl/polarssl/include/polarssl string_utils.c patcher.c -o hive-patcher $(LIBPOLARSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5
