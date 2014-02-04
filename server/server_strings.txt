@@ -23,8 +23,11 @@
 //#define n insufficient_permissions " Insufficient permissions. Try again knucklehead.\n"
 #define n inp183Aq " Insufficient permissions. Try again...\n"
 
-//#define n cmdLineOptionFlags "I:a:p:d:i:t:s:j:hc"
-#define n cIures4j "I:a:p:d:i:k:t:s:j:hc"
+//#define n cmdLineOptionFlags "a:cp:d:hI:i:j:K:k:s:t:"
+#define n cIures4j "a:cp:d:hI:i:j:K:k:s:t:"
+#define n oe1	"Option error"
+#define n oe2	"File not found"
+#define n oe3	"ID too short"
 //#define n proc_uptime "/proc/uptime"
 #define n uPasg18a "/proc/uptime"
 //cmd_str = "ps -ef"

