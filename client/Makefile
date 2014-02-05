@@ -28,14 +28,14 @@ CFILES = main.c functions.c misc.c modes.c parser.c \
 
 UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
 UNPATCHED_SOLARIS_I386 = hived-solaris-i386-unpatched
-UNPATCHED_WINDOWS_I386 = hived-windows-i386-unpatched.exe
+#UNPATCHED_WINDOWS_I386 = hived-windows-i386-unpatched.exe
 UNPATCHED_LINUX_I386 = hived-linux-i386-unpatched
 UNPATCHED_MIKROTIK_I386 = hived-mikrotik-i386-unpatched
 UNPATCHED_MIKROTIK_MIPSBE = hived-mikrotik-mipsbe-unpatched
 UNPATCHED_MIKROTIK_MIPSLE = hived-mikrotik-mipsle-unpatched
 UNPATCHED_MIKROTIK_PPC = hived-mikrotik-ppc-unpatched
 
-UNPATCHED_BINS = $(UNPATCHED_SOLARIS_SPARC) $(UNPATCHED_LINUX_I386) $(UNPATCHED_WINDOWS_I386)
+UNPATCHED_BINS = $(UNPATCHED_SOLARIS_SPARC) $(UNPATCHED_LINUX_I386)
 UNPATCHED_BINS += $(UNPATCHED_SOLARIS_I386) $(UNPATCHED_MIKROTIK_I386) $(UNPATCHED_MIKROTIK_MIPSBE)
 UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSLE)
 
@@ -99,7 +99,7 @@ patcher: $(UNPATCHED_BINS) $(LIBPOLARSSL)
 	@echo
 	@echo "  Latest, unpatched builds of binaries must be"
 	@echo "  present with the following naming conventions:"
-	@echo "  . hived-windows-i386-unpatched.exe"
+#	@echo "  . hived-windows-i386-unpatched.exe"
 	@echo "  . hived-solaris-sparc-unpatched"
 	@echo "  . hived-solaris-i386-unpatched"
 	@echo "  . hived-linux-i386-unpatched"
@@ -108,7 +108,7 @@ patcher: $(UNPATCHED_BINS) $(LIBPOLARSSL)
 	@echo "  . hived-mikrotik-mipsle-unpatched"
 	@echo "  . hived-mikrotik-ppc-unpatched"
 	@echo
-	xxd -i $(UNPATCHED_WINDOWS_I386) _unpatched_windows_i386.h
+#	xxd -i $(UNPATCHED_WINDOWS_I386) _unpatched_windows_i386.h
 	xxd -i $(UNPATCHED_SOLARIS_SPARC) _unpatched_solaris_sparc.h
 	xxd -i $(UNPATCHED_SOLARIS_I386) _unpatched_solaris_i386.h
 	xxd -i $(UNPATCHED_LINUX_I386) _unpatched_linux_i386.h
