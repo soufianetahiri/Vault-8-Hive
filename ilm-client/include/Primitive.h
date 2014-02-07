@@ -138,7 +138,7 @@ namespace InterfaceLibrary
          RefTableEntry*  myTableInstance;
 
          /// Used exclusively to build the Static member.
-         explicit ReferenceTable(bool isStatic)
+         explicit ReferenceTable(bool)
          {
             myTableInstance = refTable;
          }

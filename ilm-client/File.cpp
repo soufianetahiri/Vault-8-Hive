@@ -28,7 +28,7 @@ extern Connection *myConn;
 using namespace InterfaceLibrary;
 using namespace InterfaceLibrary::Primitive;
 
-void File::Delete( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void File::Delete( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
 	String			*argPtr = ( String * )( actvn.arguments );
 	string			filename = *argPtr;
@@ -70,7 +70,7 @@ void File::Delete( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, Pro
 	return;
 }
 
-void File::Get( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void File::Get( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
 	String		*argPtr = (String *)(actvn.arguments);
 	String		remote_file = *argPtr++;
@@ -152,7 +152,7 @@ void File::Get( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, Proces
 	return;
 }
 
-void File::Put( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void File::Put( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
 	String		*argPtr = (String *)(actvn.arguments);
 	String		local_file = *argPtr++;		// source

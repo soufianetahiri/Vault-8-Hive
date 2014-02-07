@@ -274,7 +274,7 @@ public:
         
       */ 
 
-      virtual void  InitializeTable (int numEntries) throw (std::runtime_error){}
+      virtual void  InitializeTable (int) throw (std::runtime_error){}
 
       /**
          Returns the Cell at the specified location in the table; row and col are zero-based.

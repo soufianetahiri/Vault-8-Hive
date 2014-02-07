@@ -478,7 +478,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 	return 0;
 }
 
-void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
 
 	ifstream	randomFile;
@@ -575,7 +575,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	} else {
 		sha1((const unsigned char *)t_param.idKey, strlen(t_param.idKey), ti.triggerKey);
 	}
-	displaySha1Hash("  . Trigger key: ", ti.triggerKey);
+	displaySha1Hash((char *)"  . Trigger key: ", ti.triggerKey);
 
    //------------Payload----------------
 	memset( &p, 0, sizeof( Payload ) );

