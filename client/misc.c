@@ -232,7 +232,7 @@ int TcpInit( struct proc_vars* info )
          return ERROR;
       }
       info->remote.sin_family = AF_INET;
-      rv = asprintf(&message, "Establishing a connection with %s on port %d ...\n", inet_ntoa(info->remote.sin_addr), ntohs(info->remote.sin_port));
+      (void) asprintf(&message, "Establishing a connection with %s on port %d ...\n", inet_ntoa(info->remote.sin_addr), ntohs(info->remote.sin_port));
       if (info->opslogfd != -1) {
          WriteToLog(info->opslogfd, message);
       }
@@ -308,7 +308,6 @@ int OpenFile(char* filename, struct proc_vars* info) {
 void DisplayStatus(struct proc_vars* info) {
    int argc = 0;
    char* message;
-	int		rv;
 
 //   fprintf(stdout, "\n****************************************************************\n\n");
    //fprintf(stdout, "\n %sSession configuration parameters:%s\n", BLUE, RESET);
@@ -336,19 +335,19 @@ void DisplayStatus(struct proc_vars* info) {
       fprintf(stdout, "%s", message);
       free(message);
       while (info->cstring[argc] != '\0') {
-         //rv = asprintf(&message, "      Command string [%d] = %s\n", argc, info->cstring[argc]);
-         rv = asprintf(&message, "%s [%d] = %s\n", commandString, argc, info->cstring[argc]);
+         //(void) asprintf(&message, "      Command string [%d] = %s\n", argc, info->cstring[argc]);
+         (void) asprintf(&message, "%s [%d] = %s\n", commandString, argc, info->cstring[argc]);
          fprintf(stdout, "%s", message);
          free(message);
          argc++;
       }
    }
-   //rv = asprintf(&message, "  . Remote IP address %s on port %d\n", inet_ntoa(info->remote.sin_addr), ntohs(info->remote.sin_port));
-   rv = asprintf(&message, "%s %s %s %d\n", remoteIPAddressString, inet_ntoa(info->remote.sin_addr), onPortString, ntohs(info->remote.sin_port));
+   //(void) asprintf(&message, "  . Remote IP address %s on port %d\n", inet_ntoa(info->remote.sin_addr), ntohs(info->remote.sin_port));
+   (void) asprintf(&message, "%s %s %s %d\n", remoteIPAddressString, inet_ntoa(info->remote.sin_addr), onPortString, ntohs(info->remote.sin_port));
    fprintf(stdout, "%s", message);
    free(message);
-   //rv = asprintf(&message, "  . Local IP address %s on port %d\n", inet_ntoa(info->local.sin_addr), ntohs(info->local.sin_port));
-   rv = asprintf(&message, "%s %s %s %d\n", localIPAddressString, inet_ntoa(info->local.sin_addr), onPortString, ntohs(info->local.sin_port));
+   //(void) asprintf(&message, "  . Local IP address %s on port %d\n", inet_ntoa(info->local.sin_addr), ntohs(info->local.sin_port));
+   (void) asprintf(&message, "%s %s %s %d\n", localIPAddressString, inet_ntoa(info->local.sin_addr), onPortString, ntohs(info->local.sin_port));
    fprintf(stdout, "%s", message);
    free(message);
 //   fprintf(stdout, "\n****************************************************************\n\n");

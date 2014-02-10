@@ -104,12 +104,12 @@ void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
 {
    char cline[525];
    char** argv;
-	char *chk;
+
 
    while ((info->command != EXIT) && (info->command != SHUTDOWNBOTH)) {
       memset(cline, 0, 525);
       fprintf(stdout, "%s> ", info->progname);
-      chk = fgets(cline, 525, stdin);
+      (void) fgets(cline, 525, stdin);
       cline[strlen(cline) - 1] = '\0';
       argv = BuildArgv(cline);
       if ((argv != NULL) && (argv[0] != '\0')) {

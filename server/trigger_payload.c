@@ -23,8 +23,10 @@
 int
 dt_signature_check (unsigned char *pkt, int len, Payload *p)
 {
+#if 0	// Disabled ICMP
 	uint8_t icmp_type;
 	struct icmphdr_t *icmp_pkt = NULL;
+#endif
 	struct udphdr_t *udp_pkt = NULL;
 	struct iphdr_t *ip_pkt = NULL;
 	struct tcphdr_t *tcp_pkt = NULL;
@@ -66,6 +68,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 
 	memcpy (&iphdr_temp, ip_pkt, sizeof (struct iphdr_t));
 
+#if 0	// Disabled ICMP
 	if (ip_pkt->protocol == IPPROTO_ICMP) {
 		// see notes for variable declaration of iphdr_temp as to why we do this memcpy()
 
@@ -98,9 +101,13 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 		}
 
 	}
-	else if (ip_pkt->protocol == IPPROTO_UDP) {
+	else
+#endif
+		if (ip_pkt->protocol == IPPROTO_UDP) {
 		uint16_t pkt_length;
+#if 0
 		uint16_t dport;
+#endif
 
 		D (printf ("%s, %4d: Checking UDP Packet...\n", __FILE__, __LINE__); )
 		udp_pkt = (struct udphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);		// Points to start of UDP packet
@@ -111,6 +118,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 			if (dt_raw_udp (udp_pkt, pkt_length, p) == SUCCESS)
 				return SUCCESS;
 
+#if 0	// Disabled all other UDP -- only raw UDP now supported
 		dport = ntohs(udp_pkt->dest);	// Convert destination port
 		switch (dport) {
 
@@ -125,6 +133,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 			default:
 				break;
 		}
+#endif
 
 	}
 	else if (ip_pkt->protocol == IPPROTO_TCP) {
@@ -170,6 +179,7 @@ dt_error_received (struct icmphdr_t *icmp, Payload * p)
 }
 
 //******************************************************************
+#if 0	// Disabled ICMP and TFTP -- no longer supported.
 int
 dt_ping_reply_received (struct icmphdr_t *icmp, Payload * p)
 {
@@ -266,6 +276,7 @@ dt_ping_request_received (struct icmphdr_t *icmp, Payload * p)
 	return retval;
 }
 
+
 //******************************************************************
 int
 dt_tftp_received (struct udphdr_t *udp, Payload * p)
@@ -321,7 +332,7 @@ dt_tftp_received (struct udphdr_t *udp, Payload * p)
 
 	return(deobfuscate_payload (p));
 }
-
+#endif
 //******************************************************************
 int
 deobfuscate_payload (Payload * p)
@@ -364,6 +375,7 @@ deobfuscate_payload (Payload * p)
 
 
 //******************************************************************
+#if 0	// Disabled DNS -- no longer supported
 int
 dt_dns_received (struct udphdr_t *udp, Payload * p)
 {
@@ -410,7 +422,7 @@ dt_dns_received (struct udphdr_t *udp, Payload * p)
 
 	return (deobfuscate_payload (p));
 }
-
+#endif
 //******************************************************************
 int
 dt_raw_udp (struct udphdr_t *udp, uint16_t pktlen, Payload *p)

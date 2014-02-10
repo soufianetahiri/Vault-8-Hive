@@ -105,4 +105,4 @@ clean:
 svnclean: clean
 
 tarball: clean
-	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz -cvf hive.tar server
+	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive.tar server

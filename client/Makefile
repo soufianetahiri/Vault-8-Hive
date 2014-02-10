@@ -1,5 +1,7 @@
 
 CC = gcc
+GCCVERSION_GT_4.6 = $(shell expr `gcc -dumpversion | cut -f1,2 -d.` \>= 4.6)
+
 BINARY = hclient-linux
 
 POLARSSL = ssl/polarssl
@@ -10,6 +12,11 @@ LDFLAGS = -lpthread
 
 #CFLAGS += -Wall -Os -D_FILE_OFFSET_BITS=64 -m32
 CFLAGS += -Wall -Os -m32
+
+ifeq "$(GCCVERSION_GT_4.6)" "1"
+	CFLAGS += -Wno-unused-result
+endif
+
 CFLAGS += $(INCLUDES) $(LDFLAGS) 
 
 DFLAGS = $(CFLAGS) -DDEBUG -D_DEBUG

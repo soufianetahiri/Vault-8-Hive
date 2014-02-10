@@ -48,7 +48,7 @@
 #define n usageOption04String "    -p <port>         - callback port\n"
 #define n usageOption05String "    -t <address>      - IP address of target\n"
 #define n usageOption06String "    -a <address>      - IP address of listener\n"
-#define n usageOption07String "    -P protocol       - trigger protocol (dns-request, tftp-wrq, icmp-error, ping-reply, ping-request, raw-tcp, raw-udp)\n"
+#define n usageOption07String "    -P protocol       - trigger protocol (raw-tcp or raw-udp)\n"
 #define n usageOption08String "    -r <raw port>     - when using raw triggers, this specifies which port to send the trigger\n"
 #define n usageOption09String "    -m <mode>         - (l) listen-only (default if only port specified), (t) trigger-only, or (b) both (default if more than port specified)\n"
 #define n usageOption10String "    -k <ID key>       - trigger ID key\n"

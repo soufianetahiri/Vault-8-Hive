@@ -79,8 +79,6 @@ int Upload(char **argv, struct proc_vars *info)
 	struct stat st;
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
-	char *chk;
-	int rv;
 
 	memset(rfile, 0, 255);
 	memset(lfile, 0, 255);
@@ -96,7 +94,7 @@ int Upload(char **argv, struct proc_vars *info)
 	if (argv[1] == '\0') {
 		//fprintf(stdout, "\tSource file (local)? ");
 		fprintf(stdout, "%s", upload2String);
-		chk = fgets(lfile, 255, stdin);
+		(void) fgets(lfile, 255, stdin);
 		lfile[strlen(lfile) - 1] = '\0';
 
 		if (lfile[0] == '\0') {
@@ -111,7 +109,7 @@ int Upload(char **argv, struct proc_vars *info)
 	if (argv[2] == '\0') {
 		//fprintf(stdout, "\tDestination file (remote) [%s]? ", lfile);
 		fprintf(stdout, "%s [%s]? ", upload4String, lfile);
-		chk = fgets(rfile, 255, stdin);
+		(void) fgets(rfile, 255, stdin);
 
 		// TODO: is -1 correct?
 		rfile[strlen(rfile) - 1] = '\0';
@@ -145,16 +143,16 @@ int Upload(char **argv, struct proc_vars *info)
 
 	if (rbuf.reply == 0) {
 		if ((rbuf.reply = SendFile(fd, st.st_size, info->tcpfd)) == 0) {
-			//rv = asprintf(&message, "successful upload of %d bytes from %s to %s\n", (int)st.st_size, lfile, rfile);
-			rv = asprintf(&message, "%s %d %s %s to %s\n", upload7String, (int) st.st_size, upload8String, lfile,
+			//(void) asprintf(&message, "successful upload of %d bytes from %s to %s\n", (int)st.st_size, lfile, rfile);
+			(void) asprintf(&message, "%s %d %s %s to %s\n", upload7String, (int) st.st_size, upload8String, lfile,
 				      rfile);
 		} else {
-			//rv = asprintf(&message, "application/network errors occurred during upload\n");
-			rv = asprintf(&message, "%s", upload9String);
+			//(void) asprintf(&message, "application/network errors occurred during upload\n");
+			(void) asprintf(&message, "%s", upload9String);
 		}
 	} else {
-		//rv = asprintf(&message, "unsuccessful upload due to problems at remote computer\n");
-		rv = asprintf(&message, "%s", upload10String);
+		//(void) asprintf(&message, "unsuccessful upload due to problems at remote computer\n");
+		(void) asprintf(&message, "%s", upload10String);
 	}
 
 	fprintf(stdout, "\t%s\n", message);
@@ -188,8 +186,6 @@ int Download(char **argv, struct proc_vars *info)
 	char *message;
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
-	char *chk;
-	int rv;
 
 	memset(rfile, 0, 255);
 	memset(lfile, 0, 255);
@@ -203,7 +199,7 @@ int Download(char **argv, struct proc_vars *info)
 	if (argv[1] == '\0') {
 		//fprintf(stdout, "\tSource file (remote)? ");
 		fprintf(stdout, "%s", download2String);
-		chk = fgets(rfile, 255, stdin);
+		(void) fgets(rfile, 255, stdin);
 		rfile[strlen(rfile) - 1] = '\0';
 		if (rfile[0] == '\0') {
 			//fprintf(stderr, "\tINVALID INPUT! User must specify a filename to download to the local computer!\n");
@@ -216,7 +212,7 @@ int Download(char **argv, struct proc_vars *info)
 	if (argv[2] == '\0') {
 		//fprintf(stdout, "\tDestination file (local) [%s]? ", rfile);
 		fprintf(stdout, "%s [%s]? ", download4String, rfile);
-		chk = fgets(lfile, 255, stdin);
+		(void) fgets(lfile, 255, stdin);
 		lfile[strlen(lfile) - 1] = '\0';
 		if (lfile[0] == '\0') {
 			strncat(lfile, rfile, 254);
@@ -231,24 +227,24 @@ int Download(char **argv, struct proc_vars *info)
 	if ((fd = OpenFile(lfile, info)) == ERROR) {
 		return ERROR;
 	}
-	//rv = asprintf(&message, "download %s %s\n", rfile, lfile);
-	rv = asprintf(&message, "%s %s %s\n", downloadString, rfile, lfile);
+	//(void) asprintf(&message, "download %s %s\n", rfile, lfile);
+	(void) asprintf(&message, "%s %s %s\n", downloadString, rfile, lfile);
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
 		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding), info->tcpfd)) == 0) {
-			//rv = asprintf(&message, "successful download of %d bytes from %s to %s\n", ntohl(rbuf.padding), rfile, lfile);
-			rv = asprintf(&message, "%s %d %s %s to %s\n", download5String, ntohl(rbuf.padding), upload8String, rfile,
+			//(void) asprintf(&message, "successful download of %d bytes from %s to %s\n", ntohl(rbuf.padding), rfile, lfile);
+			(void) asprintf(&message, "%s %d %s %s to %s\n", download5String, ntohl(rbuf.padding), upload8String, rfile,
 				      lfile);
 		} else {
-			//rv = asprintf(&message, "application/network errors occurred during download\n");
-			rv = asprintf(&message, "%s", download6String);
+			//(void) asprintf(&message, "application/network errors occurred during download\n");
+			(void) asprintf(&message, "%s", download6String);
 		}
 	} else {
-		//rv = asprintf(&message, "unsuccessful download due to problems at remote computer\n");
-		rv = asprintf(&message, "%s", download7String);
+		//(void) asprintf(&message, "unsuccessful download due to problems at remote computer\n");
+		(void) asprintf(&message, "%s", download7String);
 	}
 	fprintf(stdout, "\t%s\n", message);
 	free(message);
@@ -274,8 +270,6 @@ int Remove(char **argv, struct proc_vars *info)
 	char *message;
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
-	char *chk;
-	int rv;
 
 	memset(rfile, 0, 255);
 	memset(&sbuf, 0, 264);
@@ -288,7 +282,7 @@ int Remove(char **argv, struct proc_vars *info)
 	if (argv[1] == '\0') {
 		//fprintf(stdout, "\tFile/application to delete (remote)? ");
 		fprintf(stdout, "%s", remove1String);
-		chk = fgets(rfile, 255, stdin);
+		(void) fgets(rfile, 255, stdin);
 		rfile[strlen(rfile) - 1] = '\0';
 		if (rfile[0] == '\0') {
 			//fprintf(stderr, "\tINVALID INPUT! User must specify a filename to delete on the remote computer!\n");
@@ -298,18 +292,18 @@ int Remove(char **argv, struct proc_vars *info)
 	} else {
 		strncat(rfile, argv[1], 254);
 	}
-	//rv = asprintf(&message, "delete %s\n", rfile);
-	rv = asprintf(&message, "%s %s\n", deleteString, rfile);
+	//(void) asprintf(&message, "delete %s\n", rfile);
+	(void) asprintf(&message, "%s %s\n", deleteString, rfile);
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
-		//rv = asprintf(&message, "successful deletion of remote file %s\n", rfile);
-		rv = asprintf(&message, "%s %s\n", remove3String, rfile);
+		//(void) asprintf(&message, "successful deletion of remote file %s\n", rfile);
+		(void) asprintf(&message, "%s %s\n", remove3String, rfile);
 	} else {
-		//rv = asprintf(&message, "unsuccessful deletion due to problems at remote computer\n");
-		rv = asprintf(&message, "%s", remove4String);
+		//(void) asprintf(&message, "unsuccessful deletion due to problems at remote computer\n");
+		(void) asprintf(&message, "%s", remove4String);
 	}
 	fprintf(stdout, "\t%s\n", message);
 	free(message);
@@ -333,8 +327,6 @@ int Execute(char **argv, struct proc_vars *info)
 	char *message;
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
-	char *chk;
-	int rv;
 
 	memset(rfile, 0, 255);
 	memset(&sbuf, 0, 264);
@@ -347,7 +339,7 @@ int Execute(char **argv, struct proc_vars *info)
 	if (argv[1] == '\0') {
 		//fprintf(stdout, "\tApplication to execute (remote)? ");
 		fprintf(stdout, "%s", execute1String);
-		chk = fgets(rfile, 255, stdin);
+		(void) fgets(rfile, 255, stdin);
 		rfile[strlen(rfile) - 1] = '\0';
 		if (rfile[0] == '\0') {
 			//fprintf(stderr, "\tINVALID INPUT! User must specify an application to execute on the remote computer!\n");
@@ -357,18 +349,18 @@ int Execute(char **argv, struct proc_vars *info)
 	} else {
 		strncat(rfile, argv[1], 254);
 	}
-	//rv = asprintf(&message, "execute \"%s\"\n", rfile);
-	rv = asprintf(&message, "%s \"%s\"\n", executeString, rfile);
+	//(void) asprintf(&message, "execute \"%s\"\n", rfile);
+	(void) asprintf(&message, "%s \"%s\"\n", executeString, rfile);
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
-		//rv = asprintf(&message, "successful execution of remote application \"%s\"\n", rfile);
-		rv = asprintf(&message, "%s \"%s\"\n", execute3String, rfile);
+		//(void) asprintf(&message, "successful execution of remote application \"%s\"\n", rfile);
+		(void) asprintf(&message, "%s \"%s\"\n", execute3String, rfile);
 	} else {
-		//rv = asprintf(&message, "unsuccessful execution due to problems at remote computer\n");
-		rv = asprintf(&message, "%s", execute4String);
+		//(void) asprintf(&message, "unsuccessful execution due to problems at remote computer\n");
+		(void) asprintf(&message, "%s", execute4String);
 	}
 	fprintf(stdout, "\t%s\n", message);
 	free(message);
@@ -393,8 +385,6 @@ int StopSession(struct proc_vars *info)
 	char *message;
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
-	char *chk;
-	int rv;
 
 	memset(&sbuf, 0, 264);
 
@@ -417,7 +407,7 @@ int StopSession(struct proc_vars *info)
 			fprintf(stdout, "%s", stopSession2String);
 		}
 
-		chk = fgets(question, 4, stdin);
+		(void) fgets(question, 4, stdin);
 
 		if (strncmp(question, "yes", 3) != 0) {
 			info->command = HELP;
@@ -425,11 +415,11 @@ int StopSession(struct proc_vars *info)
 		}
 
 		if (info->command == SHUTDOWNBOTH) {
-			//rv = asprintf(&message, "shutdown (command confirmed with the operator)\n");
-			rv = asprintf(&message, "%s", stopSession4String);
+			//(void) asprintf(&message, "shutdown (command confirmed with the operator)\n");
+			(void) asprintf(&message, "%s", stopSession4String);
 		} else {
-			//rv = asprintf(&message, "exit (command confirmed with the operator)\n");
-			rv = asprintf(&message, "%s", stopSession5String);
+			//(void) asprintf(&message, "exit (command confirmed with the operator)\n");
+			(void) asprintf(&message, "%s", stopSession5String);
 		}
 
 	} else if ((info->listen == NO) && (info->command == SHUTDOWNBOTH)) {
@@ -438,17 +428,17 @@ int StopSession(struct proc_vars *info)
 		//fprintf(stdout, "\tWARNING! ARE YOU SURE YOU WANT TO SHUTDOWN THE REMOTE SERVER AND CONNECTION (yes/no)? ");
 		fprintf(stdout, "%s", stopSession6String);
 
-		chk = fgets(question, 4, stdin);
+		(void) fgets(question, 4, stdin);
 
 		if (strncmp(question, "yes", 3) != 0) {
 			info->command = HELP;
 			return ERROR;
 		}
-		//rv = asprintf(&message, "shutdown (command confirmed with the operator)\n");
-		rv = asprintf(&message, "%s", stopSession7String);
+		//(void) asprintf(&message, "shutdown (command confirmed with the operator)\n");
+		(void) asprintf(&message, "%s", stopSession7String);
 	} else {
-		//rv = asprintf(&message, "exit\n");
-		rv = asprintf(&message, "%s\n", exitString);
+		//(void) asprintf(&message, "exit\n");
+		(void) asprintf(&message, "%s\n", exitString);
 	}
 
 	fprintf(stdout, "\n\t%s", message);
@@ -461,18 +451,18 @@ int StopSession(struct proc_vars *info)
 
 	if (rbuf.reply == 0) {
 		if ((info->command == EXIT) && (info->listen == NO)) {
-			//rv = asprintf( &message, "TCP socket disconnected\n" );
-			rv = asprintf(&message, "%s", stopSession8String);
+			//(void) asprintf( &message, "TCP socket disconnected\n" );
+			(void) asprintf(&message, "%s", stopSession8String);
 		} else if ((info->command == EXIT)) {
-			//rv = asprintf( &message, "TCP socket disconnected\n" );
-			rv = asprintf(&message, "%s", stopSession8String);
+			//(void) asprintf( &message, "TCP socket disconnected\n" );
+			(void) asprintf(&message, "%s", stopSession8String);
 		} else {
-			//rv = asprintf(&message, "server shutdown and TCP socket disconnected\n");
-			rv = asprintf(&message, "%s", stopSession9String);
+			//(void) asprintf(&message, "server shutdown and TCP socket disconnected\n");
+			(void) asprintf(&message, "%s", stopSession9String);
 		}
 	} else {
-		//rv = asprintf(&message, "remote command failed due to problems at remote computer\n");
-		rv = asprintf(&message, "%s", stopSession10String);
+		//(void) asprintf(&message, "remote command failed due to problems at remote computer\n");
+		(void) asprintf(&message, "%s", stopSession10String);
 	}
 
 	fprintf(stdout, "\t%s\n", message);

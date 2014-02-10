@@ -146,7 +146,7 @@ print_input_args (trigger_info * ti)
 
 	switch (ti->trigger_type) {
 
-
+#if 0	// Disable all but raw TCP/UDP
 	case T_PING_REQUEST:
 
 		printf ("%s", (char *) dieselt_in_arg2);
@@ -172,6 +172,7 @@ print_input_args (trigger_info * ti)
 
 		printf ("%s", (char *) dieselt_in_arg9);
 		break;
+#endif
 
 	case T_RAW_TCP:
 
@@ -263,6 +264,7 @@ print_usage (void)
 }
 
 //******************************************************************
+#if 0	// As only raw triggers are now supported, the root_or_fail function is no longer needed.
 static void
 root_or_fail (void)
 {
@@ -278,7 +280,7 @@ root_or_fail (void)
 
 	return;
 }
-
+#endif
 /*!
  *
  * @param str
@@ -303,6 +305,7 @@ parse_trig (const char *str, uint32_t * trig)
 	if (str == NULL)
 		return FAILURE;
 
+#if 0	//Disable all but raw TCP/UDP
 	if (strcmp (str, (char *) dieselt_parse_trig1) == 0) {
 
 		*trig = T_PING_REQUEST;
@@ -331,6 +334,8 @@ parse_trig (const char *str, uint32_t * trig)
 		*trig = T_DNS_REQUEST;
 
 	}
+#endif
+
 	else if (strcmp (str, (char *) dieselt_parse_trig6) == 0) {
 
 		*trig = T_RAW_TCP;
