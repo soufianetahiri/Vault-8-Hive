@@ -53,7 +53,7 @@ extern int wsa_init_done;
 #endif
 
 // Global
-unsigned char	implantKey[ID_KEY_HASH_SIZE];
+unsigned char	ikey[ID_KEY_HASH_SIZE];		// Implant Key
 
 //**************************************************************
 struct cl_args
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 	int exe_path_size = 256;
 #endif
 
- 	implantKey[0] = '\0';
+ 	ikey[0] = '\0';
 
 	init_strings(); 	// De-scramble strings
 
@@ -214,7 +214,7 @@ int main(int argc, char** argv)
 		szInterface = args.iface;
 		initialDelay = args.init_delay;
 		interval = args.interval;
-		memcpy(implantKey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
+		memcpy(ikey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
 		trigger_delay = args.trigger_delay;
 		delete_delay = args.delete_delay;
 		jitter = args.jitter * 0.01f;
@@ -272,7 +272,7 @@ int main(int argc, char** argv)
 			case 'K':
 				{	struct stat	statbuf;
 
-					if (implantKey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
+					if (ikey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 //						fprintf(stderr, "Option error\n");
 						fprintf(stderr, "%s\n", oe1);
 						return -1;
@@ -287,10 +287,10 @@ int main(int argc, char** argv)
 						return -1;
 					}
 					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { // Validate that the key text is of sufficient length
-						sha1_file((const char *)optarg, implantKey);		// Generate the ID key
-						D( displaySha1Hash ("Trigger Key", implantKey); );
-						sha1(implantKey, ID_KEY_HASH_SIZE, implantKey);		// Generate the implant key
-						D( displaySha1Hash ("Implant Key", implantKey); );
+						sha1_file((const char *)optarg, ikey);		// Generate the ID key
+						D( displaySha1Hash ("Trigger Key", ikey); );
+						sha1(ikey, ID_KEY_HASH_SIZE, ikey);		// Generate the implant key
+						D( displaySha1Hash ("Implant Key", ikey); );
 						D( printf("\n\n\n" ); );
 					} else {
 						fprintf(stderr, "%s\n", oe3);
@@ -303,7 +303,7 @@ int main(int argc, char** argv)
 				// The implant key is generated from the SHA-1 hash of the SHA-1 hash of the
 				// text entered on the command line or by reading the key file.
 
-				if (implantKey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
+				if (ikey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 //					fprintf(stderr, "%s\n" "Option error");
 					fprintf(stderr, "%s\n", oe1);
 					return -1;
@@ -314,10 +314,10 @@ int main(int argc, char** argv)
             				return -1;
                                 }
 				D( printf( "\n\n\n DEBUG: keyPhrase=%s \n", optarg) );
-				sha1((const unsigned char *)optarg, strlen(optarg), implantKey);
-				D( displaySha1Hash ("Trigger Key", implantKey); );
-				sha1(implantKey, ID_KEY_HASH_SIZE, implantKey);
-				D( displaySha1Hash ("Implant Key", implantKey); );
+				sha1((const unsigned char *)optarg, strlen(optarg), ikey);
+				D( displaySha1Hash ("Trigger Key", ikey); );
+				sha1(ikey, ID_KEY_HASH_SIZE, ikey);
+				D( displaySha1Hash ("Implant Key", ikey); );
 				D( printf("\n\n\n" ); );
 				break;
 
@@ -382,7 +382,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	if (implantKey[0] == '\0')
+	if (ikey[0] == '\0')
 	{
 		D( printUsage(argv[0]); )
 		return 0;
