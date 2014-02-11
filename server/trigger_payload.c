@@ -343,14 +343,14 @@ deobfuscate_payload (Payload * p)
 
 	package = (uint8_t *)p;
 
-//	D (
+	D (
 		printf ("\n%s, %4d:\t deobfuscating payload of %d bytes\n\t               ", __FILE__, __LINE__, (int) sizeof(Payload));
 		for (i = 0; i < sizeof(Payload); i++)
 			printf(" %2.2i", (int)i );
 		printf ("\n\t    obfuscated:");
 		for (i = 0; i < sizeof(Payload); i++)
 			printf(" %2.2x", package[i]);
-//	)
+	)
 
 	for (i = 1; i < (int) sizeof (Payload); i++) {
 		package[i] ^= package[0];		//deobfuscate with XOR of first byte

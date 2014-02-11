@@ -36,6 +36,7 @@
 #define sniff_start_solaris  sdhjdhSkdwgery
 #define deobfuscate_payload akduwer247
 #define raw_check odyt5930f
+#define payload_to_trigger_info pttinf
 
 #define TriggerListen srtjwrJwjw65jkw5ssfhr
 #define GetMacAddr rtjsksE5yybt
