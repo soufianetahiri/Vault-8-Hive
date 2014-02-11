@@ -73,7 +73,7 @@ void Usage(char* progname) {
    //fprintf(stdout, "    -a address   - IP address of listener\n");
    fprintf(stdout, "%s", usageOption06String);
 
-   //fprintf(stdout, "    -P protocol  - trigger protocol (dns-request, tftp-wrq, icmp-error, ping-reply, ping-request, raw-tcp, raw-udp)\n");
+   //fprintf(stdout, "    -P protocol  - trigger protocol (raw-tcp or raw-udp)\n");
    fprintf(stdout, "%s", usageOption07String);
 
    //fprintf(stdout, "    [-r raw_port]  - when using raw triggers, this specifies which port to send the trigger\n");

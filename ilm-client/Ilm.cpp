@@ -375,6 +375,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 		//Get and verify protocolType 
 		triggerFile.getline( t_param->protocolType, MAX_INPUT_LEN, delim);
 
+#if 0	// Disable now-unsupported protocols
 		if (strcmp( t_param->protocolType, "dns-request") == 0)
 		{
 			badProtocolType = NO;
@@ -394,7 +395,9 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 			badProtocolType = NO;
 			checkRootPermissions = YES;
 		}
-		else if (strcmp( t_param->protocolType, "raw-tcp") == 0)
+		else
+#endif
+			if (strcmp( t_param->protocolType, "raw-tcp") == 0)
 		{
 			badProtocolType = NO;
 			checkRawPort = YES;
@@ -404,15 +407,16 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 			badProtocolType = NO;
 			checkRawPort = YES;
 		}
+#if 0
 		else if (strcmp( t_param->protocolType, "tftp-wrq") == 0)
 		{
 			badProtocolType = NO;
 		}
-
+#endif
 		if (badProtocolType != NO)
 		{
 			cout << "\n\n ERROR: Trigger protocol type [" << t_param->protocolType << "] invalid. It must be one of the following:" << endl;
-			cout << "        dns-request, icmp-error, ping-request, ping-reply, raw-tcp, raw-udp, or tftp-wrq" << endl;
+			cout << "        raw-tcp or raw-udp" << endl;
 			return -1;
 		}
 
@@ -519,7 +523,8 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	ti.icmp_error_code = 4;
 	ti.trigger_port = 0;
 
-	//Set the trigger_type 
+	//Set the trigger_type
+#if 0	// Disable unsupported protocols
 	if (strcmp( t_param.protocolType, "dns-request") == 0)
 	{
 		ti.trigger_type = T_DNS_REQUEST;
@@ -536,7 +541,9 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	{
 		ti.trigger_type = T_PING_REPLY;
 	}
-	else if (strcmp( t_param.protocolType, "raw-tcp") == 0)
+	else
+#endif
+		if (strcmp( t_param.protocolType, "raw-tcp") == 0)
 	{
 		ti.trigger_type = T_RAW_TCP;
 		ti.trigger_port = t_param.rawPort;
@@ -546,10 +553,12 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 		ti.trigger_type = T_RAW_UDP;
 		ti.trigger_port = t_param.rawPort;
 	}
+#if 0
 	else if (strcmp( t_param.protocolType, "tftp-wrq") == 0)
 	{
 		ti.trigger_type = T_TFTP_WRQ;
 	}
+#endif
 //	ti.callback_port = htons( t_param.callbackPort );
 	ti.callback_port = t_param.callbackPort;
 	inet_pton( AF_INET, t_param.callbackAddress, &(ti.callback_addr));
@@ -594,6 +603,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	//Finalize payloads and send the triggers...
 	switch (ti.trigger_type)
 	{
+#if 0
 		case T_PING_REQUEST:
 		case T_PING_REPLY:
 			//cout << "\n\n\n Calling trigger_icmp_ping...\n" << endl;
@@ -614,7 +624,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 			//cout << "\n\n\n Calling trigger_dns_query...\n" << endl;
 			rv = trigger_dns_query( &p, &ti );
 			break;
-
+#endif
 		case T_RAW_TCP:
 		case T_RAW_UDP:
 			//cout << "\n\n\n Calling trigger_raw...\n" << endl;
