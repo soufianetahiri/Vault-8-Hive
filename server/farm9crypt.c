@@ -17,20 +17,11 @@
  *  jojo@farm9.com -- 2 Oct 2000, no more printf of key cuz its stupid (yet another Dragos suggestion)
  *  jeff@wwti.com -- 9 Feb 2001, added string.h include for yet more linux brokenness
  */
-
-#ifndef WIN32
 #include <string.h>
 #include <sys/types.h>    // suggested by several people -- for OpenBSD, FreeBSD compiles
 #include <sys/socket.h>		/* basics, SO_ and AF_ defs, sockaddr, ... */
 #include <stdlib.h>	
 #include <unistd.h>
-#else
-#include <fcntl.h>
-#include <io.h>
-#include <conio.h>
-#include <winsock.h>
-#include <time.h>
-#endif
 
 #include "farm9crypt.h"
 #include "twofish.h"

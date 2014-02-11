@@ -5,69 +5,7 @@
 
 
 //*************************************************************
-#ifdef WIN32
-
-int GetMacAddr(char* mac)
-{
-    PIP_ADAPTER_INFO pAdapterInfo = NULL;
-    unsigned long size = 0;
-    unsigned long status = 0;
-	int i;
-
-	//allocate space for the adapter list
-    pAdapterInfo = (IP_ADAPTER_INFO*) malloc(sizeof(IP_ADAPTER_INFO));
-    size = sizeof(IP_ADAPTER_INFO);
-    
-	//get the size of the list of network adapters
-    status = GetAdaptersInfo(pAdapterInfo, &size);
-
-    if(status != ERROR_SUCCESS)
-    {
-        if(status == ERROR_BUFFER_OVERFLOW)
-        {
-			//reallocate space for the adapter list based on the size that
-			//was returned by the first GetAdapterInfo call
-            free(pAdapterInfo);
-            pAdapterInfo = (IP_ADAPTER_INFO*) malloc(size);
-
-			//get the adapter list
-            status = GetAdaptersInfo(pAdapterInfo,&size);
-            if(status != ERROR_SUCCESS)
-            {
-                free(pAdapterInfo);
-                return -1;
-            }
-        }
-        else
-        {
-            free(pAdapterInfo);
-            return -1;
-        }
-    }
-
-	//go through the list of network adapters until you find the ethernet
-	//adapter
-    do 
-    {
-        if(pAdapterInfo->Type == MIB_IF_TYPE_ETHERNET)
-        {       
-			for(i = 0; i < 6; ++i)
-			{
-				mac[i] = pAdapterInfo->Address[i];
-			}
-			free(pAdapterInfo);
-			return 0;
-        }
-  
-		//get next interface
-        pAdapterInfo = pAdapterInfo->Next;
-    } while (pAdapterInfo);
-
-    free(pAdapterInfo);
-    return -1;
-}
-
-#elif defined LINUX
+#if defined LINUX
 
 #include <sys/socket.h>
 #include <sys/types.h>

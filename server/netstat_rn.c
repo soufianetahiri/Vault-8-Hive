@@ -2,25 +2,6 @@
 #include "netstat_rn.h"
 #include "proj_strings.h"
 
-#ifdef WIN32
-#include <Windows.h>
-#include "get_data.h"
-
-unsigned char* get_netstat_rn(int* size)
-{
-	return get_data(size, GD_NETSTAT_RN);
-}
-
-void release_netstat_rn(unsigned char* netstat_rn)
-{
-	if( netstat_rn != NULL)
-	{
-		free(netstat_rn);
-	}
-}
-
-#endif
-
 #if defined LINUX && !defined _NETSTAT_RN
 #include <unistd.h>
 #include <stdlib.h>

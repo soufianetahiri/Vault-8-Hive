@@ -113,25 +113,8 @@ typedef
 /* Need a definitition for FILE */
 #include <stdio.h>
 
-#ifdef _WIN32
-#   include <windows.h>
-#   ifdef small
-      /* windows.h define small to char */
-#      undef small
-#   endif
-#   ifdef BZ_EXPORT
-#   define BZ_API(func) WINAPI func
-#   define BZ_EXTERN extern
-#   else
-   /* import windows dll dynamically */
-#   define BZ_API(func) (WINAPI * func)
-#   define BZ_EXTERN
-#   endif
-#else
-#   define BZ_API(func) func
-#   define BZ_EXTERN extern
-#endif
-
+#define BZ_API(func) func
+#define BZ_EXTERN extern
 
 /*-- Core (low-level) library functions --*/
 

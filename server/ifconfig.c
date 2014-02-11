@@ -3,25 +3,6 @@
 #include "proj_strings.h"
 #include "debug.h"
 
-#if defined WIN32
-#include "Windows.h"
-#include "get_data.h"
-
-unsigned char* get_ifconfig(int* size)
-{
-	return get_data(size,GD_IPCONFIG);
-}
-
-void release_ifconfig(unsigned char* ifconfig)
-{
-	if (ifconfig != NULL)
-	{
-		free(ifconfig);
-	}
-	
-}
-#endif
-
 // usually, non-MikroTik, Linux hosts
 #if !defined _IPCONFIG && defined LINUX
 #include <unistd.h>

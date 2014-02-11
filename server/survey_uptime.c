@@ -9,16 +9,7 @@
 
 
 //*************************************************************
-#ifdef WIN32
-
-//TODO: Check over calculations of time string
-unsigned long GetSystemUpTime( void )
-{
-	//get the system uptime in milliseconds
-	return GetTickCount()/1000;
-}
-
-#elif defined LINUX
+#if defined LINUX
 
 //extern unsigned char proc_uptime[];
 extern unsigned char uPasg18a[];

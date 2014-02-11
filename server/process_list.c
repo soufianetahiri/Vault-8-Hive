@@ -7,24 +7,6 @@
 #include <string.h>
 #include "compat.h"
 
-#ifdef WIN32
-#include <Windows.h>
-#include "get_data.h"
-
-unsigned char* get_process_list(int* size)
-{
-	return get_data(size,GD_PROC_LIST);
-}
-
-void release_process_list(unsigned char* list)
-{
-	if(list != NULL)
-	{
-		free(list);
-	}
-}
-#endif
-
 //---------------------------------------------------------------------------------------------------
 //NOT USED RIGHT NOW
 #if defined LINUX && !defined _PS_EF

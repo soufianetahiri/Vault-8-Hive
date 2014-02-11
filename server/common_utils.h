@@ -11,9 +11,9 @@
 	the program considers the second argument to be the file name.
 	
 */
-#ifndef WIN32
+
 #include <stdint.h>
-#endif
+
 /*!
 	\brief	Checks to see if process is running with elevated privileges.
 	

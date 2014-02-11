@@ -1,10 +1,7 @@
-#include "compression.h"
-
-#ifndef WIN32
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#endif
+#include "compression.h"
 
 void bz_internal_error(int errcode)
 {

@@ -14,20 +14,7 @@
 //******************************************************************
 //************** Platform specific functions ***********************
 //******************************************************************
-#ifdef WIN32
-int make_thread( void (*func)(void *), void *args )
-{
-	_beginthread( func, 0, args);
-	return SUCCESS;
-}
-
-int terminate_thread( void )
-{
-	//_end_thread();
-	return SUCCESS;
-}
-
-#elif defined LINUX || defined SOLARIS
+#if defined LINUX || defined SOLARIS
 
 int make_thread( void *(*func)(void *), void *args )
 {

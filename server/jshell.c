@@ -1,7 +1,5 @@
 #include "jshell.h"
 
-#ifndef	WIN32
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -237,6 +235,3 @@ void *jshell( void *input ) {
 	// not reached
 	return (void *)0;
 }
-
-#endif	// ifndef WIN32
-

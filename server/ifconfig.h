@@ -1,5 +1,5 @@
 // Section 1: Everything but MikroTik
-#if defined WIN32 || defined LINUX || defined SOLARIS
+#if defined LINUX || defined SOLARIS
 #ifndef __IFCONFIG_H
 #define __IFCONFIG_H
 

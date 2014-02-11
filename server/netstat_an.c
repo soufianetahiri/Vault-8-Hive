@@ -10,24 +10,6 @@
 #include "proj_strings.h"
 #include "netstat_an.h"
 
-#ifdef WIN32
-#include <Windows.h>
-#include "get_data.h"
-
-unsigned char* get_netstat_an(int* size)
-{
-	return get_data(size, GD_NETSTAT_AN);
-}
-
-void release_netstat_an(unsigned char* netstat_an)
-{
-	if(netstat_an != NULL)
-	{
-		free(netstat_an);
-	}
-}
-#endif
-
 #if !defined _NETSTAT_AN && defined LINUX
 #include <unistd.h>
 #include <stdlib.h>

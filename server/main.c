@@ -34,23 +34,14 @@
 int initSrandFlag = 0;       //Used as a flag to ensure srand is initialized only once...
 #endif
 
-#ifndef WIN32
 #include <signal.h>
 #include <unistd.h>
 #define _stat stat
-#else
-#undef _stat
-int _stat(const char *path, struct stat *buffer);
-#endif
 //const char* OPT_STRING  = (char*) cIures4j;
 const char* ohshsmdlas3r  = (char*) cIures4j;
 
 // from polarssl/net.c
-#ifdef WIN32
-int wsa_init_done;
-#else
 extern int wsa_init_done;
-#endif
 
 // Global
 unsigned char	ikey[ID_KEY_HASH_SIZE];		// Implant Key
@@ -131,7 +122,7 @@ int main(int argc, char** argv)
 
 
 
-#if defined SOLARIS || defined WIN32
+#if defined SOLARIS
 	int exe_path_size = 256;
 #endif
 
@@ -155,7 +146,6 @@ int main(int argc, char** argv)
         initSrandFlag = 1;
     }
 
-#ifndef WIN32
 	if(stat( (char *)sdfp,&st ) != 0)
 	{
 		D( perror( " stat()" ); )
@@ -176,7 +166,6 @@ int main(int argc, char** argv)
 	{
 		D( printf( " DEBUG: %s file already exists\n", (char *)sdfp ); )
 	}
-#endif
 
 #if defined SOLARIS
 	memset(exe_path,0,exe_path_size);

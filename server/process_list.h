@@ -3,7 +3,7 @@
 
 #include "function_strings.h"
 
-#if defined WIN32 || defined LINUX || defined SOLARIS
+#if defined LINUX || defined SOLARIS
 unsigned char* get_process_list(int* size);
 void release_process_list(unsigned char* list);
 #endif

@@ -92,11 +92,7 @@ typedef struct ssl_hdr
  *
  * @param param - void pointer to a BEACONINFO structure
  */
-#ifdef WIN32
-void beacon(void* param);
-#else
-void* beacon(void* param);
-#endif
+void *beacon(void *param);
 
 /*!
  * @brief BeaconStart
@@ -119,4 +115,3 @@ void* beacon(void* param);
 int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, int interval, float jitter );
 int calc_jitter(int baseTime, float jitterPercent);
 #endif //__BEACON_H
- 

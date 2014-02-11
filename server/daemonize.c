@@ -14,13 +14,7 @@
 
 #include "daemonize.h"
 
-#if defined WIN32
-int daemonize( void )
-{
-	return 0;
-}
-
-#elif defined UCLIBC || defined SOLARIS
+#if defined UCLIBC || defined SOLARIS
 int daemonize( void )
 {
 	int	i;

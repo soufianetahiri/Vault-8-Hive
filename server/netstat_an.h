@@ -3,7 +3,7 @@
 
 #include "function_strings.h"
 
-#if defined WIN32 || defined LINUX || defined SOLARIS
+#if defined LINUX || defined SOLARIS
 unsigned char* get_netstat_an(int* size);
 void release_netstat_an(unsigned char* netstat_an);
 #endif

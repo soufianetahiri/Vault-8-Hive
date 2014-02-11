@@ -3,10 +3,8 @@
 
 #include "function_strings.h"
 
-//#if defined WIN32 || defined LINUX || defined SOLARIS
 unsigned char* get_netstat_rn(int* size);
 void release_netstat_rn(unsigned char* netstat_rn);
-//#endif
 
 //#ifdef _NETSTAT_RN
 //int get_netstat_rn(unsigned char* buf, int* size);  //Mikrotik netstat -rn command function call
