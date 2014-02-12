@@ -161,21 +161,6 @@ int GetMacAddr( unsigned char *mac )
 			break;
 		}
 
-#if 0
-		// does the interface name match "e1000g0"?
-		if ( !strcmp( nicnumber[i].ifr_name, if_e1000g0 ) )
-		{	// match found
-			D( printf( " DEBUG: interface %i matched 'e1000g0'\n", i ); )
-			break;
-		}
-		// does the interface name match "hme0"?
-		else if ( !strcmp( nicnumber[i].ifr_name, if_hme0 ) )
-		{	// match found
-			D( printf( " DEBUG: interface %i matched 'hme0'\n", i ); )
-			break;
-		}
-#endif
-
 		if ( i == ( nicount - 1 ) )
 		{
 			close( fd );

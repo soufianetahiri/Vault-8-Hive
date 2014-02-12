@@ -251,8 +251,4 @@ payload_to_trigger_info (Payload *p, TriggerInfo *ti);
 void
 displaySha1Hash(char *label, unsigned char *sha1Hash);
 
-#ifdef WIN32
-#include <PopPack.h>
-#endif
-
 #endif // _DT_PAYLOAD

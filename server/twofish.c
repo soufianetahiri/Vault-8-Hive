@@ -425,15 +425,6 @@ static void tf_makeSubKeys( struct tf_context *ctx, char* k ) {
     }
 }
 
-
-#if 0
-static void bzero( char* ptr, int size ) {
-    for ( int i = 0; i < size; i++ ) {
-        *ptr++ = 0;
-    }
-}
-#endif
-
 //
 //  write output to all active output areas
 //
@@ -789,15 +780,6 @@ static int Fe323( int* sBox, int x ) {
            sBox[   0x200 + (b1(x) << 1)    ] ^
            sBox[ ( 0x200 + (b2(x) << 1) ) | ( 1 ) ];
 }
-
-#if 0
-static int Fe32( int* sBox, int x, int R ) {
-    return sBox[        2*_b(x, R  )    ] ^
-           sBox[        2*_b(x, R+1) + 1] ^
-           sBox[0x200 + 2*_b(x, R+2)    ] ^
-           sBox[0x200 + 2*_b(x, R+3) + 1];
-}
-#endif
 
 static char key[32];
 char* generateKey( char* s ) {

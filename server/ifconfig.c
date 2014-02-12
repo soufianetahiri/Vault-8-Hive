@@ -874,13 +874,6 @@ static void ife_print( struct interface *ifi )
 	}
 
 	ife_print6( ifi );
-#if 0
-		if (ifi->has_ip6 )
-			printf( "  inet6 addr:\t%s\n", sock_ntop_host( (struct sockaddr *)&(ifi->addr6), sizeof( ifi->addr6) ) );
-		else
-			printf( "  inet6 addr:\t[n/a]\n" );
-#endif
-
 	return;
 }
 
@@ -902,14 +895,6 @@ void free_interface_list( void )
 
 	D( int i = 0; )
 	struct interface *ife_prev;
-
-#if 0
-    struct interface *ife;
-// this works, but it accesses ife->prev which is in free'd memory
-    for ( ife = int_last; ife; ife = ife->prev ) {
-        if ( ife != NULL ) free( ife );
-    }
-#endif
 
 	while ( int_last != int_list ) {
 		D( i++; )
@@ -969,37 +954,6 @@ char * sock_ntop_host(const struct sockaddr *sa, socklen_t salen)
 	return (NULL);
 }
 
-#if 0
-int main( void )
-//int if_print( void )
-{
-	struct interface	*ife;
-	int					rv;
-
-	D( printf ( " starting\n" ); )
-	rv = if_readlist();
-	if ( rv < 0 )
-	{
-		D( printf ( " if_readlist() failed. exiting\n" ); )
-		return -1;
-	}
-
-	D( printf ( " main(): do_if_print()\n" ); )
-	for ( ife = int_list; ife; ife = ife-> next ) {
-		rv = do_if_print( ife );
-		if ( rv < 0 )
-		{
-			D( printf( " main(): do_if_print() fail\n" ); )
-			return -1;
-		}
-	}
-
-	D( printf( " main(): do_if_print() success\n" ); )
-	free_interface_list();
-
-	return 0;
-}
-#endif
 
 //int get_ifconfig(unsigned char* buf, int* size)
 unsigned char* get_ifconfig( int* size)
