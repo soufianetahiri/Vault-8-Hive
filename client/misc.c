@@ -224,27 +224,6 @@ int TcpInit( struct proc_vars* info )
 		close(tempfd);
 		
 	}
-	else
-	{                            /* Active Connections */
-#if 0
-      if ((ntohl(info->remote.sin_addr.s_addr) == 0) || (info->remote.sin_port == 0)) {
-         fprintf(stderr, "\nINVALID INPUT! User must specify the -a and -p options on the command line.\n\n");
-         return ERROR;
-      }
-      info->remote.sin_family = AF_INET;
-      (void) asprintf(&message, "Establishing a connection with %s on port %d ...\n", inet_ntoa(info->remote.sin_addr), ntohs(info->remote.sin_port));
-      if (info->opslogfd != -1) {
-         WriteToLog(info->opslogfd, message);
-      }
-      fprintf(stdout, "%s", message);
-      free(message);
-      if (connect(info->tcpfd, (struct sockaddr*)&info->remote, sizeof(info->remote)) == ERROR) {
-         perror("TcpInit()");
-         close(info->tcpfd);
-         return ERROR;
-      }
-#endif
-	}
 
 	len = sizeof( info->local );
 

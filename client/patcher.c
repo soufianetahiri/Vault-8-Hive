@@ -166,6 +166,7 @@ int main(int argc, char **argv)
 	struct tm *idKeyTime;				// Pointer to the ID key generation data structure
 	unsigned char implantKey[ID_KEY_HASH_SIZE];
 	unsigned char triggerKey[ID_KEY_HASH_SIZE];
+	enum {FALSE=0, TRUE} keyed = FALSE;		// Boolean to verify that a key was entered
 
 	implantKey[0] = '\0';
 
@@ -273,14 +274,14 @@ int main(int argc, char **argv)
 
 					fprintf(implantIDFile, "\n");				// Close the record file
 					fclose(implantIDFile);
-					memcpy(args.idKey, implantKey, sizeof(args.idKey));	// Copy the implant key to the patched args
 					D(printSha1Hash (stdout, "Implant Key", implantKey));
 					D(printf("\n\n\n" ));
 				} else {
 					fprintf(stderr, "ERROR: ID key length must be at least %i characters\n", ID_KEY_LENGTH_MIN);
 					return -1;
 				}
-				memcpy(args.idKey, implantKey, sizeof(args.idKey));			// Copy the implant key to the patched args
+				memcpy(args.idKey, implantKey, sizeof(args.idKey));		// Copy the implant key to the patched args
+				keyed = TRUE;
 				break;
 			}
 
@@ -320,6 +321,7 @@ int main(int argc, char **argv)
 			fprintf(implantIDFile, "\n");						// Close the record file
 			fclose(implantIDFile);
 			memcpy(args.idKey, implantKey, sizeof(args.idKey));			// Copy the implant key to the patched args
+			keyed = TRUE;
 			break;
 
 		case 'm':	// operating system: valid linux, solaris, all, or raw
@@ -385,6 +387,12 @@ int main(int argc, char **argv)
 			return -1;
 			break;
 		}
+	}
+
+	if (! keyed) {		// Verify that a key was supplied
+		printf("\n    %sERROR: Key missing%s\n ", RED, RESET);
+		usage(argv);
+		return -1;
 	}
 
 	if (raw == 0) {
@@ -660,68 +668,3 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 
 	return 0;
 }
-
-//********************************************************************************
-//********************************************************************************
-#if 0
-int local_gen_keys(char *pubkeyfile, char *privkeyfile, int keySz)
-{
-	int ret;
-	havege_state hs;
-	FILE *fpub = NULL, *fpriv = NULL;
-
-	printf("\n Seeding the random number generator...");
-	fflush(stdout);
-
-	havege_init(&hs);
-	printf("ok\n  . Generating RSA key [ %d-bit ]...", keySz);
-	fflush(stdout);
-
-	if ((ret = rsa_gen_key(&rsa, keySz, PUB_EXPONENT, havege_rand, &hs)) != 0) {
-		printf(" failed\n  ! rsa_gen_key returned %08x\n\n", ret);
-		goto exit;
-	}
-
-	printf(" ok\n  . Exporting the public key....");
-	fflush(stdout);
-
-	if ((fpub = fopen(pubkeyfile, "wb+")) == NULL) {
-		printf(" failed\n  ! could not open public key file for writing\n\n");
-		ret = -1;
-		goto exit;
-	}
-
-	if ((ret = rsa_write_public(&rsa, fpub)) != 0) {
-		printf(" failed\n  ! rsa_write_public returned %08x\n\n", ret);
-		goto exit;
-	}
-
-	printf(" ok\n  . Exporting the private key...");
-	fflush(stdout);
-
-	if ((fpriv = fopen(privkeyfile, "wb+")) == NULL) {
-		printf(" failed\n  ! could not open private key file for writing\n");
-		ret = -1;
-		goto exit;
-	}
-
-	if ((ret = rsa_write_private(&rsa, fpriv)) != 0) {
-		printf(" failed\n  ! rsa_write_private returned %08x\n\n", ret);
-		goto exit;
-	}
-
-	printf(" ok\n");
-	ret = 0;
-
-      exit:
-	if (fpub != NULL)
-		fclose(fpub);
-
-	if (fpriv != NULL)
-		fclose(fpriv);
-
-//    rsa_free( &rsa );
-
-	return (ret);
-}
-#endif

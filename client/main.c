@@ -199,11 +199,6 @@ int main( int argc, char **argv )
 					//fprintf( stderr, "\traw-tcp\n" );				rawTcpString
 					//fprintf( stderr, "\traw-udp\n" );				rawUdpString
 					fprintf( stderr, "\n  %s%s:%s %s", RED, ErrorString, invalidProtocolString, RESET );
-					fprintf( stderr, "%s", pingRequestString);
-					fprintf( stderr, "%s", pingReplyString );
-					fprintf( stderr, "%s", icmpErrorString );
-					fprintf( stderr, "%s", tftpWrqString );
-					fprintf( stderr, "%s", dnsRequestString );
 					fprintf( stderr, "%s", rawTcpString );
 					fprintf( stderr, "%s", rawUdpString );
 					Usage( argv[0] );

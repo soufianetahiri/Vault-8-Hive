@@ -124,40 +124,4 @@ void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
 void AutomaticMode(struct proc_vars* info) {
 
 	return;
-#if 0
-   int argc = 0;
-   int retval = 0;
-   char cline[525];
-   char** argv = NULL;
-
-   if (info->ignore == NO)  {
-      while ((retval == 0) && (info->cstring[argc] != '\0')) {
-         memset(cline, 0, 525);
-         strncat(cline, info->cstring[argc], 524);
-         argv = BuildArgv(cline);
-         if ((argv != NULL) && (argv[0] != '\0')) {
-            retval = CommandToFunction(argv, info);
-         }
-         FreeArgv(argv);
-         argc++;
-      }
-   } else {
-      while (info->cstring[argc] != '\0') {
-         memset(cline, 0, 525);
-         strncat(cline, info->cstring[argc], 524);
-         argv = BuildArgv(cline);
-         if ((argv != NULL) && (argv[0] != '\0')) {
-            CommandToFunction(argv, info);
-         }
-         FreeArgv(argv);
-         argc++;
-      }
-   }
-   if ((info->command != EXIT) && (info->command != SHUTDOWNBOTH)) {
-      info->command = EXIT;
-      if (StopSession(info) != 0) {
-         InteractiveMode(info);
-      }
-   }
-#endif
 }

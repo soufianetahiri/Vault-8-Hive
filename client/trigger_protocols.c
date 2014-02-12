@@ -824,92 +824,6 @@ trigger_icmp_dest_unreachable (Payload * p, trigger_info * ti)
 	return SUCCESS;
 }
 
-#if 0
-int
-trigger_raw_udp (Payload *p, trigger_info *ti)
-{
-	in_addr_t s_addr;
-	in_addr_t d_addr;
-	uint16_t s_port;
-	uint16_t d_port;
-	uint8_t *raw_data = NULL;
-	uint8_t obf_payload_buf[sizeof (Payload)];
-	unsigned int data_size;
-
-	D (printf ("%s, %4d: raw_udp\n", __FILE__, __LINE__); )
-
-	if ((raw_data = (uint8_t *) calloc (MAX_PACKET_SIZE, 1)) == NULL) {
-		// calloc() memory allocation failed
-		perror (" calloc()");
-		exit (-1);
-	}
-
-	//now add in trigger dst, the target ip
-	d_addr = ti->target_addr;
-	s_addr = INADDR_ANY;	// system will set to true IP
-	s_port = randShort ();
-	d_port = htons (ti->trigger_port);
-	D (printf ("%s, %4d: Sending UDP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
-
-	//now set up raw data
-//	obfuscate_payload(p, obf_payload_buf);
-	data_size = formRawPacketData(raw_data, (Payload *)p);
-
-	send_UDP_data (s_addr, d_addr, s_port, d_port, raw_data, data_size);
-
-	// free the packet
-	if (raw_data != NULL) {
-		free (raw_data);
-	}
-	return SUCCESS;
-}
-
-int
-trigger_raw_tcp (Payload *p, trigger_info * ti)
-{
-	in_addr_t	s_addr;
-	in_addr_t	d_addr;
-	uint16_t	s_port;
-	uint16_t	d_port;
-	uint8_t		*raw_data;
-	unsigned int	data_size;
-	int		rv;
-
-	D (printf ("%s, %4d: DEBUG: raw_tcp\n", __FILE__, __LINE__); )
-
-	if ((raw_data = (uint8_t *) calloc (MAX_PACKET_SIZE, 1)) == NULL) {
-		perror (" calloc()");	// calloc() memory allocation failed
-		exit (-1);
-	}
-
-	//now add in trigger dst, the target ip
-	d_addr = ti->target_addr;
-	s_addr = INADDR_ANY;	// system will set to true IP
-	s_port = randShort();
-	d_port = htons (ti->trigger_port);
-	D (printf ("%s, %4d: Sending TCP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
-
-	// Build payload
-	p->callback_addr = htonl(ti->callback_addr);
-	p->callback_port = htons(ti->callback_port);
-	memcpy(&(p->idKey_hash)), &(ti->idKey_hash), ID_KEY_HASH_SIZE;
-	p->crc = htons(tiny_crc16(p, sizeof(p)-2));
-
-	data_size = formRawPacketData(raw_data, p);
-
-	rv = send_TCP_data (s_addr, d_addr, s_port, d_port, raw_data, data_size);
-
-	// free the packet
-	if (raw_data != NULL)
-		free (raw_data);
-	raw_data = NULL;
-
-	if (rv == -1)
-		return FAILURE;
-
-	return SUCCESS;
-}
-#endif
 /*!
  * trigger_raw
  * @param p	- The location of the payload to be sent.
@@ -949,15 +863,6 @@ trigger_raw (Payload *p, trigger_info *ti)
 	s_port = randShort();
 	d_port = htons (ti->trigger_port);
 	D (printf ("%s, %4d: Sending TCP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
-
-#if 0	// This code not needed, already done in trigger.c by call to trigger_info_to_payload.
-	// Build payload
-	p->callback_addr = htonl(ti->callback_addr);
-	p->callback_port = htons(ti->callback_port);
-	memcpy(&(p->idKey_hash)), &(ti->idKey_hash), ID_KEY_HASH_SIZE;
-	p->crc = 0;
-	p->crc = htons(tiny_crc16(p, sizeof(p)));
-#endif
 
 	// Fill maximum packet size with random data
 	for (i = 0; i < MAX_PACKET_SIZE; i++) {
@@ -1026,8 +931,7 @@ trigger_raw (Payload *p, trigger_info *ti)
  *
  * @param p payload
  * @param ti trigger
- * @return Always returns SUCCESS.
- * \todo Have this function return a void or integrate it into code above.
+ * @return SUCCESS or FAILURE.
  */
 int
 trigger_info_to_payload (Payload * p, trigger_info * ti)

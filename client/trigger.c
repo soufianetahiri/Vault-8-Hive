@@ -146,34 +146,6 @@ print_input_args (trigger_info * ti)
 
 	switch (ti->trigger_type) {
 
-#if 0	// Disable all but raw TCP/UDP
-	case T_PING_REQUEST:
-
-		printf ("%s", (char *) dieselt_in_arg2);
-		break;
-
-	case T_PING_REPLY:
-
-		printf ("%s", (char *) dieselt_in_arg3);
-		break;
-
-	case T_ICMP_ERROR:
-
-		printf ((char *) dieselt_in_arg4, ti->icmp_error_code);
-
-		break;
-
-	case T_TFTP_WRQ:
-
-		printf ("%s", (char *) dieselt_in_arg5);
-		break;
-
-	case T_DNS_REQUEST:
-
-		printf ("%s", (char *) dieselt_in_arg9);
-		break;
-#endif
-
 	case T_RAW_TCP:
 
 		printf ("%s", (char *) dieselt_in_arg10);
@@ -184,6 +156,8 @@ print_input_args (trigger_info * ti)
 		printf ("%s", (char *) dieselt_in_arg11);
 		break;
 
+	default:
+		break;
 	}
 
 	printf ((char *) dieselt_in_arg6,
@@ -264,23 +238,6 @@ print_usage (void)
 }
 
 //******************************************************************
-#if 0	// As only raw triggers are now supported, the root_or_fail function is no longer needed.
-static void
-root_or_fail (void)
-{
-	// geteuid() returns the effective user ID of the calling process
-	// if root, geteuid() will return 0
-	if (geteuid () != 0) {
-		//fprintf( stderr, "\n  %sERROR:%s Must be root to send %sping-reply, ping-response, or icmp-error%s triggers.\n\n", RED, RESET, BLUE, RESET );
-		fprintf (stderr, "\n  %s%s:%s %s %s%s%s %s", RED, ErrorString,
-			 RESET, root_or_fail1String, BLUE,
-			 root_or_fail2String, RESET, root_or_failFinalString);
-		exit (-1);
-	}
-
-	return;
-}
-#endif
 /*!
  *
  * @param str
@@ -305,51 +262,14 @@ parse_trig (const char *str, uint32_t * trig)
 	if (str == NULL)
 		return FAILURE;
 
-#if 0	//Disable all but raw TCP/UDP
-	if (strcmp (str, (char *) dieselt_parse_trig1) == 0) {
-
-		*trig = T_PING_REQUEST;
-		root_or_fail ();
-
-	}
-	else if (strcmp (str, (char *) dieselt_parse_trig2) == 0) {
-
-		*trig = T_PING_REPLY;
-		root_or_fail ();
-
-	}
-	else if (strcmp (str, (char *) dieselt_parse_trig3) == 0) {
-
-		*trig = T_ICMP_ERROR;
-		root_or_fail ();
-
-	}
-	else if (strcmp (str, (char *) dieselt_parse_trig4) == 0) {
-
-		*trig = T_TFTP_WRQ;
-
-	}
-	else if (strcmp (str, (char *) dieselt_parse_trig5) == 0) {
-
-		*trig = T_DNS_REQUEST;
-
-	}
-#endif
-
-	else if (strcmp (str, (char *) dieselt_parse_trig6) == 0) {
-
+	if (strcmp (str, (char *) dieselt_parse_trig6) == 0) {
 		*trig = T_RAW_TCP;
-
 	}
 	else if (strcmp (str, (char *) dieselt_parse_trig7) == 0) {
-
 		*trig = T_RAW_UDP;
-
 	}
 	else {
-
 		return FAILURE;
-
 	}
 
 	return SUCCESS;
