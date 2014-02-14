@@ -85,13 +85,10 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	D( printf( " DEBUG: TLS handshake complete.\n" ); )
 	printf( "\n" );
 
+	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
 	if ( info->interactive == YES )
 	{
 		InteractiveMode( info, &ssl );
-	}
-	else
-	{	// TODO: not used
-		AutomaticMode( info );
 	}
 
 	crypt_close_notify( &ssl );
@@ -118,10 +115,4 @@ void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
       FreeArgv(argv);
    }
 
-}
-
-//**************************************************************
-void AutomaticMode(struct proc_vars* info) {
-
-	return;
 }
