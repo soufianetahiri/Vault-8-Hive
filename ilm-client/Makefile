@@ -22,7 +22,7 @@ SRC += Utilities.cpp
 SRC += hive.cpp $(LIBS)
 OUTFILE=hive
 #CFLAGS=-fPIC -shared -Wall -lpthread
-CFLAGS=-fPIC -Wall -lpthread -lc
+CFLAGS=-fPIC -Wall -Werror -Wextra -lpthread -lc -ansi
 
 # building hclient will build the requisite PolarSSL libraries. This could be done directly
 .PHONY: all
