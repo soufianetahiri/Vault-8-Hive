@@ -11,7 +11,7 @@ LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
 LDFLAGS = -lpthread
 
 #CFLAGS += -Wall -Os -D_FILE_OFFSET_BITS=64 -m32
-CFLAGS += -Wall -Os -m32
+CFLAGS += -Wall -Wextra -Werror -Os -m32 -ansi -std=gnu99
 
 ifeq "$(GCCVERSION_GT_4.6)" "1"
 	CFLAGS += -Wno-unused-result

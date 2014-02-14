@@ -283,7 +283,7 @@ trigger_icmp_ping (Payload * p, trigger_info * ti)
 
 #ifdef DEBUG
 	{
-		int i;
+		unsigned int i;
 
 		info ("Post-obfuscation\n");
 		info ("RAW BYTES: ");

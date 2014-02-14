@@ -234,7 +234,7 @@ int Download(char **argv, struct proc_vars *info)
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
-		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding), info->tcpfd)) == 0) {
+		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding))) == 0) {
 			//(void) asprintf(&message, "successful download of %d bytes from %s to %s\n", ntohl(rbuf.padding), rfile, lfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", download5String, ntohl(rbuf.padding), upload8String, rfile,
 				      lfile);

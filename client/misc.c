@@ -7,19 +7,9 @@
 
 extern pthread_mutex_t 		tlock;
 
-void Decode(unsigned char* buf1, unsigned char* buf2, unsigned long size)
-{
-	return;
-}
-
-void Encode(unsigned char *buf1, unsigned char *buf2, unsigned long size)
-{
-	return;
-}
-
 void GenRandomBytes( char *b1, int s1, char *b2, int s2 )
 {
-	unsigned int i;
+	int i;
 
     //srand((unsigned int)rand());  NOT NEEDED...
 
@@ -90,19 +80,6 @@ void Usage(char* progname) {
 
    //fprintf(stdout, "    [-h ]          - print this usage\n\n");
    fprintf(stdout, "%s", usageOption12String);
-}
-
-
-int OpenLog(char* filename) {
-	return 0;
-}
-
-void CloseLog(int fd) {
-	return;
-}
-
-void WriteToLog(int fd, char* string) {
-	return;
 }
 
 /* ******************************************************************************************************************************
