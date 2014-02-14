@@ -36,12 +36,11 @@ PS = process_list.c
 NETSTAT = netstat_an.c netstat_rn.c
 IFC = ifconfig.c
 
-#OBJECTS = $(SRCS:%.c=%.o)
-#CFLAGS += -g -Os -W -Wall -D_IH_X86_BUILD -D_FILE_OFFSET_BITS=64 -m32 -lpthread 
-CFLAGS += -W -Wall -D_X86 -D_FILE_OFFSET_BITS=64 -m64 -lpthread -lutil
+CFLAGS = -Wall -Wextra -ansi -std=gnu99
+CFLAGS += -D_X86 -D_FILE_OFFSET_BITS=64 -m64 -lpthread -lutil
 CFLAGS += $(INCLUDES)
-#CFLAGS += -D_USE_BASH
 CFLAGS += -DLINUX
+
 DBGFLAGS += -DDEBUG -D_DEBUG -g
 
 STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note

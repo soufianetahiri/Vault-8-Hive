@@ -35,9 +35,10 @@ SERVER_SRCS = beacon.c persistence.c \
 	trigger_b64.c trigger_exec.c trigger_payload.c trigger_sniff.c \
 	threads.c connect_shell.c shell.c ../libs/crypto.c $(LIBPOLARSSL)
 
-#OBJECTS = $(SRCS:%.c=%.o)
+CFLAGS = -Wall -Wextra -ansi -std=gnu99
 CFLAGS += -L$(UCLIBC_LIBS) -Os -W -Wall -D_IH_X86_BUILD -lpthread
 CFLAGS += $(INCLUDES) -DLINUX -DUCLIBC
+
 DBGFLAGS += -DDEBUG -D_DEBUG -g
 
 #STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
