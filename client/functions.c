@@ -142,7 +142,7 @@ int Upload(char **argv, struct proc_vars *info)
 	SendCommand(&sbuf, &rbuf, info);
 
 	if (rbuf.reply == 0) {
-		if ((rbuf.reply = SendFile(fd, st.st_size, info->tcpfd)) == 0) {
+		if ((rbuf.reply = SendFile(fd, st.st_size)) == 0) {
 			//(void) asprintf(&message, "successful upload of %d bytes from %s to %s\n", (int)st.st_size, lfile, rfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", upload7String, (int) st.st_size, upload8String, lfile,
 				      rfile);
@@ -535,7 +535,7 @@ void DisplayHelp(char *progname)
  *
  * **************************************************************************************************************************** */
 
-int SendFile(int fd, int size, int tcpfd)
+int SendFile(int fd, int size)
 {
 	int rbytes;
 	unsigned char buffer[4096];
@@ -553,7 +553,6 @@ int SendFile(int fd, int size, int tcpfd)
 			GenRandomBytes((char *) &buffer[rbytes], (4096 - rbytes), NULL, 0);
 		}
 		// always send 4k chunks. crypt_write() will return number of bytes written
-//      if (send(tcpfd, buffer, 4096, 0) == ERROR) {
 		if (crypt_write(ssl_f, buffer, 4096) <= 0) {
 			//fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
 			fprintf(stderr, "%s", sendFile1String);
@@ -564,7 +563,6 @@ int SendFile(int fd, int size, int tcpfd)
 	}
 
 	// crypt_read() returns number of bytes written
-//   if ((rbytes = recv(tcpfd, &rbuf, 8, MSG_WAITALL)) == ERROR) {
 	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
 		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
 		fprintf(stderr, "%s", sendFile2String);
@@ -585,7 +583,7 @@ int SendFile(int fd, int size, int tcpfd)
  *
  * **************************************************************************************************************************** */
 
-int RecvFile(int fd, int size, int tcpfd)
+int RecvFile(int fd, int size)
 {
 	int rbytes;
 	unsigned char buffer[4096];
@@ -594,14 +592,11 @@ int RecvFile(int fd, int size, int tcpfd)
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
-//              if ( ( rbytes = recv( tcpfd, buffer, 4096, MSG_WAITALL ) ) == ERROR )
 		if ((rbytes = crypt_read(ssl_f, buffer, 4096)) == ERROR) {
 			//fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
 			fprintf(stderr, "%s", recvFile1String);
 			return ERROR;
 		}
-
-		Decode((unsigned char *) buffer, (unsigned char *) buffer, 4096);
 
 		if (size < rbytes) {
 			if (write(fd, buffer, size) == ERROR) {
@@ -618,14 +613,11 @@ int RecvFile(int fd, int size, int tcpfd)
 		size -= rbytes;
 	}
 
-//      if ( ( rbytes = recv( tcpfd, &rbuf, 8, MSG_WAITALL ) ) == ERROR )
 	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) == ERROR) {
 		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
 		fprintf(stderr, "%s", recvFile2String);
 		return ERROR;
 	}
-
-	Decode((unsigned char *) &rbuf, (unsigned char *) &rbuf, 8);
 
 	return (rbuf.reply);
 }
