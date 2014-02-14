@@ -243,7 +243,7 @@ int
 dt_raw_tcp( struct tcphdr_t * tcp, uint16_t pktlen, Payload* p);
 
 int
-raw_check( void * incload, uint16_t pktlen, Payload* p);
+raw_check(uint8_t *data, uint16_t pktlen, Payload* p);
 
 int
 payload_to_trigger_info (Payload *p, TriggerInfo *ti);

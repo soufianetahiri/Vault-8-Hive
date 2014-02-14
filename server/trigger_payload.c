@@ -163,14 +163,14 @@ deobfuscate_payload (Payload * p)
 int
 dt_raw_udp (struct udphdr_t *udp, uint16_t pktlen, Payload *p)
 {
-	return raw_check ((char *) udp + sizeof (struct udphdr_t), pktlen, p);
+	return raw_check ((uint8_t *) udp + sizeof (struct udphdr_t), pktlen, p);
 }
 
 //******************************************************************
 int
 dt_raw_tcp (struct tcphdr_t *tcp, uint16_t pktlen, Payload *p)
 {
-	return raw_check ((char *) tcp + (tcp->tcphdrleng * 4), pktlen, p);
+	return raw_check ((uint8_t *) tcp + (tcp->tcphdrleng * 4), pktlen, p);
 }
 //******************************************************************
 /*!
@@ -187,10 +187,10 @@ dt_raw_tcp (struct tcphdr_t *tcp, uint16_t pktlen, Payload *p)
  *
  */
 int
-raw_check (void *data, uint16_t pktlen, Payload *p)
+raw_check (uint8_t *data, uint16_t pktlen, Payload *p)
 {
 	uint16_t crc = 0;
-	void *fieldPtr;			// Packet field pointer
+	uint8_t *fieldPtr;			// Packet field pointer
 	uint16_t uint16buf = 0;
 	uint16_t netcrc;
 	uint16_t validator;

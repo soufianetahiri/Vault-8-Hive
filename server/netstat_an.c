@@ -162,3 +162,4 @@ typedef enum {
  * xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:ddd.ddd.ddd.ddd
  */
 #define ADDR_WIDE                51  /* INET6_ADDRSTRLEN + 5 for the port number */
+#endif

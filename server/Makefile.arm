@@ -42,7 +42,8 @@ SERVER_SRCS = beacon.c persistence.c launchshell.c \
         get_data.c process_list.c ifconfig.c netstat_rn.c netstat_an.c compression.c $(LIBBZIP2)
 
 #OBJECTS = $(SRCS:%.c=%.o)
-CFLAGS += -L$(UCLIBC_LIBS) -Os -W -Wall -D_IH_X86_BUILD -lpthread -lutil
+CFLAGS += -L$(UCLIBC_LIBS) -Os -Wall -Wextra -Werror -ansi -std=gnu99
+CFLAGS += -D_IH_X86_BUILD -lpthread -lutil
 CFLAGS += $(INCLUDES) -DLINUX -DUCLIBC
 DBGFLAGS += -DDEBUG -D_DEBUG -g
 
