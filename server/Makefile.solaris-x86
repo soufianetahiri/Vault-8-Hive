@@ -29,7 +29,7 @@ SERVER_SRCS = beacon.c persistence.c launchshell.c \
 	client_session.c threads.c run_command.c self_delete.c $(POLARSSL)/crypto.c $(LIBPOLARSSL) \
 	get_data.c process_list.c netstat_an.c netstat_rn.c ifconfig.c compression.c $(LIBBZIP2)
 
-CFLAGS = -Wall -Wextra -ansi
+CFLAGS = -Wall -Wextra
 CFLAGS += -Os -D_X86 -D_FILE_OFFSET_BITS=64 -m32 -lpthread
 CFLAGS += $(INCLUDES) -D__BYTE_ORDER=LITTLE_ENDIAN
 
@@ -43,6 +43,8 @@ ifeq ($(OS),SunOS)
 CFLAGS += -DSOLARIS
 ARCH = $(shell uname -p)
 SERVER = $(SERVER_BASENAME)-solaris-$(ARCH)
+else
+CFLAGS += -ansi
 endif
 
 .PHONY: all
