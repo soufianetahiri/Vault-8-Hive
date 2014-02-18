@@ -29,7 +29,7 @@ int TriggerCallbackSession( char *ip, int port )
 	// connect to client
 	if ( net_connect( &sock, ip, port ) < 0 )
 	{
-		D( printf( "%s:%i: net_connect() failed\n", __FILE__, __LINE__ ); );
+		D( printf( "%s:%i: net_connect() failed to %s:%i\n", __FILE__, __LINE__, ip , port); );
 		retval = -1;
 		goto cleanup;
 	}

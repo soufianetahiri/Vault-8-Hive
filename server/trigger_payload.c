@@ -268,7 +268,7 @@ payload_to_trigger_info (Payload *p, TriggerInfo *ti)
 		D (printf ("%s, %4d:\tCRC failed.\n", __FILE__, __LINE__); )
 		return FAILURE;
 	}
-//	p->crc = crc;
+
 	ti->callback_addr = ntohl(p->callback_addr);
 	ti->callback_port = ntohs(p->callback_port);
 	memcpy (&(ti->idKey_hash), &(p->idKey_hash), ID_KEY_HASH_SIZE);
