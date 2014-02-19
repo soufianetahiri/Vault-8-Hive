@@ -9,12 +9,12 @@
 #define n dieselt_in_arg4 "ICMP error packet, type 3, code %d\n"
 #define n dieselt_in_arg5 "TFTP write request packet, (UDP)\n"
 #define n dieselt_in_arg6 "\tTarget Address: \t\t%s\n"
-#define n dieselt_in_arg12 "\tTrigger Port: \t\t\t%d\n"
 #define n dieselt_in_arg7 "\tCallback Address: \t\t%s\n"
 #define n dieselt_in_arg8 "\tCallback port: \t\t\t%d\n\n"
 #define n dieselt_in_arg9 "DNS query packet, (UDP)\n"
 #define n dieselt_in_arg10 "Raw TCP packet\n"
 #define n dieselt_in_arg11 "Raw UDP datagram\n"
+#define n dieselt_in_arg12 "\tTrigger Port: \t\t\t%d\n"
 
 #define n dieselt_parse_trig1 "ping-request"
 #define n dieselt_parse_trig2 "ping-reply"
@@ -151,6 +151,7 @@
 #define n buildArgv2String "BuildArgv(): failure to allocate memory for the argument vector\n"
 
 //trigger.c
+#define n triggerParseOptions "Trigger parameter error."
 #define n triggerStart1String "Sending trigger ..."
 #define n triggerStart2String "failed."
 #define n triggerStart3String "Could not create TCP socket connection with remote host."

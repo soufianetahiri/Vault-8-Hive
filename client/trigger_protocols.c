@@ -942,7 +942,7 @@ trigger_info_to_payload (Payload * p, trigger_info * ti)
 		return FAILURE;
 	}
 
-	p->callback_addr = htonl(ti->callback_addr);
+	p->callback_addr = ti->callback_addr;	// Previous call to inet_pton() already converted address to network byte order.
 	p->callback_port = htons(ti->callback_port);
 	memcpy (&(p->triggerKey), &(ti->triggerKey), ID_KEY_HASH_SIZE);
 

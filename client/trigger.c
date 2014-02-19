@@ -33,7 +33,7 @@
 extern pthread_mutex_t tlock;
 //************************************************************
 static void print_usage ();
-static void parse_options (struct trigger_params *t_info, trigger_info * ti);
+static int parse_options (struct trigger_params *t_info, trigger_info * ti);
 static void print_input_args (trigger_info * ti);
 int trigger_info_to_payload (Payload * p, trigger_info * ti);
 //************************************************************
@@ -51,7 +51,10 @@ trigger_start (void *arg)
 	// Get the interface and filename from the command line
 	// This is where the user's input for the trigger type is validated
 	// This is an artifact of two tools' clients joined into one
-	parse_options (t_info, &ti);
+	if (parse_options (t_info, &ti) != SUCCESS) {
+		printf ("    %s%s%s\n\n", RED, triggerParseOptions, RESET);
+		exit(-1);
+	}
 
 	// Try to take the lock. Lock will be released when the socket is ready for callback.
 	// This is to ensure the socket is ready before the trigger is sent.
@@ -191,7 +194,7 @@ print_input_args (trigger_info * ti)
  * to determine the course of execution. Uses long options
  * and prints error messages as needed.
  */
-static void
+static int
 parse_options (struct trigger_params *t_info, trigger_info * ti)
 {
 	int p;
@@ -215,7 +218,9 @@ parse_options (struct trigger_params *t_info, trigger_info * ti)
 	}
 
 	// extract the callback IP
-	inet_pton (AF_INET, t_info->callback_ip, &(ti->callback_addr));
+	if (inet_pton (AF_INET, t_info->callback_ip, &(ti->callback_addr)) != 1)
+		return FAILURE;
+
 
 	// TODO: Cleanup the following
 	// extract the callback port
@@ -224,8 +229,11 @@ parse_options (struct trigger_params *t_info, trigger_info * ti)
 	ti->callback_port = p;
 
 	// extract the target IP
-	inet_pton (AF_INET, t_info->target_ip, &(ti->target_addr));
+	if (inet_pton (AF_INET, t_info->target_ip, &(ti->target_addr)) != 1)
+		return FAILURE;
+
 	memcpy(&(ti->triggerKey), &(t_info->triggerKey), ID_KEY_HASH_SIZE);
+	return SUCCESS;
 }
 
 

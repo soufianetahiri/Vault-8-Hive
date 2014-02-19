@@ -269,7 +269,7 @@ payload_to_trigger_info (Payload *p, TriggerInfo *ti)
 		return FAILURE;
 	}
 
-	ti->callback_addr = ntohl(p->callback_addr);
+	ti->callback_addr = p->callback_addr;
 	ti->callback_port = ntohs(p->callback_port);
 	memcpy (&(ti->idKey_hash), &(p->idKey_hash), ID_KEY_HASH_SIZE);
 
