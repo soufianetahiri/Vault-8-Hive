@@ -132,7 +132,7 @@ clean:
 	rm -f ${BINARY}* ${BINARY}-dbg* *.o *.a init_strings.c core cryptcat/*.o cryptcat/cryptcat
 #	rm -f _unpatched_solaris_sparc.h _unpatched_windows_i386.h _unpatched_linux_i386.h
 	rm -f _unpatched_*.h
-	rm -f hive-patcher *PATCHED *PATCHED.exe
+	rm -f hive-patcher hive-patcher.md5 *PATCHED *PATCHED.exe
 	rm -f *UNpatched*
 	rm -f init_strings.*
 	rm -f init_crypto_strings.*
@@ -141,6 +141,8 @@ clean:
 	rm -f string_utils.h.*
 	rm -f crypto_proj_strings.h
 	rm -f mod_hexify.pyc
+	rm -f proj_strings_main.h
+	rm -f proj_strings.h
 	make -C $(POLARSSL)/library clean
 
 .PHONY: svnclean
