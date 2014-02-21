@@ -267,7 +267,8 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 				break;
 			} while (1);
 
-			cout << " Trigger type [dns-request, icmp-error, ping-request, ping-reply, raw-tcp, raw-udp, tftp-wrq]? ";
+//			cout << " Trigger type [dns-request, icmp-error, ping-request, ping-reply, raw-tcp, raw-udp, tftp-wrq]? ";
+			cout << " Trigger type [raw-tcp, raw-udp]? ";
 			cin >> t_param->protocolType;
 			newTriggerFile << t_param->protocolType;
 			newTriggerFile << '|';
