@@ -67,7 +67,6 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 	if (ip_pkt->protocol == IPPROTO_UDP) {
 		uint16_t pkt_length;
 
-		D (printf ("%s, %4d: Checking UDP Packet...\n", __FILE__, __LINE__); )
 		udp_pkt = (struct udphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);		// Points to start of UDP packet
 		pkt_length = ntohs(ip_pkt->tot_len) - sizeof(struct iphdr_t) - sizeof(struct udphdr_t); // Payload packet length = total length - headers
 
@@ -79,7 +78,6 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 	else if (ip_pkt->protocol == IPPROTO_TCP) {
 		uint16_t pkt_length;
 
-		D (printf ("%s, %4d: Checking TCP Packet...\n", __FILE__, __LINE__); )
 		tcp_pkt = (struct tcphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);
 		pkt_length = ntohs(iphdr_temp.tot_len) - (iphdr_temp.ihl * 4) - (tcp_pkt->tcphdrleng * 4);
 
