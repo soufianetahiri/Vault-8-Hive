@@ -47,7 +47,7 @@ void b64_decodeblock(unsigned char in[4], unsigned char out[3])
 
 int b64_encode_message(const uint8_t * message, uint8_t * output, int message_length, int *output_length)
 {
-	unsigned char in[4], out[3];
+	unsigned char in[3], out[4];
 	int i, block_length;
 	int message_index = 0;
 	int output_index = 0;
