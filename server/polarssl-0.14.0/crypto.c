@@ -31,19 +31,18 @@ int crypt_handshake( ssl_context *ssl )
     /*
      * 5. Handshake
      */
-    D( printf( "  . Performing the TLS handshake.........." ); )
+    DLX(4, printf( "\tPerforming the TLS handshake... "));
 
     while( ( ret = ssl_handshake( ssl ) ) != 0 )
     {
         if( ret != POLARSSL_ERR_NET_TRY_AGAIN )
         {
-            D( printf( " failed\n" ); )
-			D( printf( " ERROR: ! ssl_handshake returned %d\n", ret ); )
-			return -1;
+            DLX(4, printf( "failed, returned: %d\n", ret));
+            return -1;
         }
     }
 
-    D( printf( " ok\n" ); )
+    DLX(4, printf( "ok\n"));
 
 	return 0;
 }
@@ -53,18 +52,18 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 {
 	int		ret;
 
-	D( printf( " DEBUG: crypt_write():" ); )
+	DL(4);
 
     while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
     {
         if( ret != POLARSSL_ERR_NET_TRY_AGAIN )
         {
-            D( printf( " failed  ! ssl_write returned %d\n", ret ); )
+            DLX(4, printf( " failed. ssl_write returned %d\n", ret ));
 			return ret;
         }
     }
 
-	D( printf( " %d bytes written\n", ret ); )
+	DLX(4, printf( " %d bytes written\n", ret));
 	return ret;
 
 }
@@ -84,23 +83,23 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 
         if( ret == POLARSSL_ERR_NET_TRY_AGAIN )
 		{
-			D( printf( " DEBUG: crypt_read(): POLARSSL_ERR_NET_TRY_AGAIN\n" ); )
+			DLX(4, printf( "POLARSSL_ERR_NET_TRY_AGAIN\n"));
             continue;
 		}
 
         if( ret == POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY )
 		{
-			D( printf( " DEBUG: crypt_read(): POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n" ); )
+			DLX(4, printf( "POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
             break;
 		}
 
         if( ret <= 0 )
         {
-            D( printf( " ! ERROR: crypt_read() failed. ssl_read returned %d\n", ret ); )
+            DLX(4, printf( "ERROR: crypt_read() failed. ssl_read returned %d\n", ret));
             break;
         }
 
-        D( printf( " . DEBUG: crypt_read(): %d bytes read\n", ret ); )
+        DLX(4, printf( "crypt_read(): %d bytes read\n", ret ));
     }
     while( 0 );
 
@@ -127,15 +126,14 @@ int crypt_setup_client( havege_state *hs, ssl_context *ssl, ssl_session *ssn, in
     /*
      * 2. Setup stuff
      */
-    D( printf( "  . Initializing the TLS structure........" ); )
+    DLX(4, printf( "\tInitializing the TLS structure..."));
 
     if( ( ret = ssl_init( ssl ) ) != 0 )
     {
-        D( printf( " failed\n" ); )
-		D( printf( " ERROR: ! ssl_init returned %d\n", ret ); )
-		return -1;
+        DLX(4, printf( " failed, ssl_init returned: %d\n", ret));
+	return -1;
     }
-    D( printf( " ok\n" ); )
+    DLX(4, printf( " ok\n"));
 
     ssl_set_endpoint( ssl, SSL_IS_CLIENT );
     ssl_set_authmode( ssl, SSL_VERIFY_NONE );

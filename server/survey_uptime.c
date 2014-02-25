@@ -26,24 +26,18 @@ unsigned long GetSystemUpTime( void )
 	if ( fp == NULL )
 	{
 		// if fails, will return zero uptime
-		D( printf( " ERROR: could not read /proc/uptime\n" ); )
+		DLX(2, printf( "Could not read /proc/uptime\n"));
     	return 0;
 	}
 	
 	// fopen success
 	rv = fscanf( fp, "%i", &tm);
-
 	if ( rv == EOF )
 	{
 		D( perror( " fscanf()" ); )
 		return 0;
 	}
-
-#ifdef	DEBUG
-	printf( " DEBUG: uptime: %i seconds\n", (int)tm );
-//	printf( " DEBUG: from system(): " );
-//	rv = system( "cat /proc/uptime" );
-#endif
+	DLX(3, printf("Uptime: %i seconds\n", (int)tm ));
 
 	fclose( fp );
 	
@@ -74,8 +68,7 @@ unsigned long GetSystemUpTime( void )
 		}
 	} }
 
-	D( printf( " DEBUG: boottime = %d\n", boottime ); )
-	D( printf( " DEBUG: currtime = %d\n", currtime ); )
+	DLX(5, printf( "Boottime: %d\t Current time:%d\n", boottime, currtime));
 
 	// tm here will be uptime in seconds
 	tm = currtime - boottime;	
@@ -83,11 +76,11 @@ unsigned long GetSystemUpTime( void )
 	if ( tm == 0 )
 	{
 		// could not read Solaris user accounting database
-		D( printf( " ERROR: Could not pull uptime from Solaris user accounting database\n" ); )
+		DLX(1, printf("ERROR: Could not pull uptime from Solaris user accounting database\n"));
 		return 0;
 	}
 	
-	D( printf( " DEBUG: uptime: %i seconds\n", (int)tm ); )
+	DLX(5, printf("Uptime: %i seconds\n", (int)tm));
 
 	return (unsigned long)tm;
 }

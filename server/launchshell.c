@@ -11,7 +11,7 @@
 
 int launchShell( char *charinput )
 {
-	D( printf( " . DEBUG: calling jshell as %s\n", charinput ); )
+	D (printf ("%s, %4d:\tCalling jshell with parameters: %s\n", __FILE__, __LINE__, charinput); )
 
 // fork_process could be used, but would work best if some refactoring
 // where done. fork_process() tries to keep the same function prototype

@@ -491,10 +491,10 @@ unsigned long StartClientSession( int sock )
 			}
 			ExpandEnvStrings(cmd.path, &commandpath);
 
-			D( printf( " DEBUG: about to enter case statement to parse command.\n" ); )
+			D (printf ("%s, %4d:\tExecuting command: 0x%0x\n", __FILE__, __LINE__, cmd.command); )
 
-				//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
-				switch(cmd.command)
+			//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
+			switch(cmd.command)
 			{
 				case EXIT:
 					D( printf( " DEBUG: EXIT command received.\n" ); )

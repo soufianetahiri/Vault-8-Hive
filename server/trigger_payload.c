@@ -50,7 +50,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 		// packet is considered IP if its 1st byte id 0x45,
 		// this means IPv4 and standard 20 byte length
 
-		D (printf ("%s, %4d: Packet does NOT have ethdhr\n", __FILE__, __LINE__); )
+		DLX(4, printf ("Packet does NOT have ethdhr\n"));
 		ip_pkt = (struct iphdr_t *) pkt;
 	}
 	else {
@@ -102,23 +102,24 @@ deobfuscate_payload (Payload * p)
 
 	package = (uint8_t *)p;
 
-	D (
-		printf ("\n%s, %4d:\t deobfuscating payload of %d bytes\n\t               ", __FILE__, __LINE__, (int) sizeof(Payload));
+	DLX(5,
+		printf ("\t deobfuscating payload of %d bytes\n\t               ", (int) sizeof(Payload));
 		for (i = 0; i < sizeof(Payload); i++)
 			printf(" %2.2i", (int)i );
 		printf ("\n\t    obfuscated:");
 		for (i = 0; i < sizeof(Payload); i++)
 			printf(" %2.2x", package[i]);
-	)
+	);
 
 	for (i = 1; i < (int) sizeof (Payload); i++) {
 		package[i] ^= package[0];		//deobfuscate with XOR of first byte
 	}
 
-	D (printf ("\n\t de-obfuscated:");
-	for (i = 0; i < sizeof(Payload); i++)
-		printf(" %2.2x", package[i]);
-	printf("\n");)
+	DLX(5, printf ("\n\t de-obfuscated:");
+		for (i = 0; i < sizeof(Payload); i++)
+			printf(" %2.2x", package[i]);
+		printf("\n")
+	);
 
 	crc = ntohs(p->crc);
 	p->crc = 0;
@@ -128,7 +129,7 @@ deobfuscate_payload (Payload * p)
 		return SUCCESS;
 	}
 
-	D (printf ("%s, %4d:\t CRC check failed. Payload CRC = 0x%0x\n", __FILE__, __LINE__, crc); )
+	DLX(5, printf ("CRC check failed. Payload CRC = 0x%0x\n", crc));
 	return FAILURE;
 }
 
@@ -187,37 +188,37 @@ raw_check (uint8_t *data, uint16_t pktlen, Payload *p)
 	if (fieldPtr == 0 || (fieldPtr > (data + pktlen)))		// Make sure it's within bounds
 		return FAILURE;
 
-	D (printf ("%s, %4d:\n", __FILE__, __LINE__); )
+	DL(5);
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	netcrc = ntohs(uint16buf);
-	D (printf ("%s, %4d:\tCRC is at 0x%0x into data, \n\tNET CRC = 0x%2.2x\n", __FILE__, __LINE__, (unsigned int)(fieldPtr - data), netcrc); )
+	DLX(5, printf ("CRC is at 0x%0x into data, \n\tNET CRC = 0x%2.2x\n", (unsigned int)(fieldPtr - data), netcrc));
 
 	if (crc != netcrc) {
-		D (printf ("%s, %4d:\t    CRC = 0x%2.2x, CRC check failed\n", __FILE__, __LINE__, crc); )
+		DLX(5, printf ("CRC = 0x%2.2x, CRC check failed\n", crc));
 		return FAILURE;			// Check 1 failure: CRCs don't match
 	}
 
 	fieldPtr += sizeof(crc);
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	validator = ntohs(uint16buf);
-	D (printf ("%s, %4d:\tValidator location: 0x%0x, Trigger validator = %d\n", __FILE__, __LINE__, (unsigned int)(fieldPtr - data), validator); )
+	DLX(5, printf ("Validator location: 0x%0x, Trigger validator = %d\n", (unsigned int)(fieldPtr - data), validator));
 	if ( (validator % 127) != 0) {
-		D (printf ("%s, %4d:\tValidator check failed: validator = 0x%2.2x\n", __FILE__, __LINE__, validator); )
+		DLX(5, printf ("Validator check failed: validator = 0x%2.2x\n", validator));
 		return FAILURE;			// Check 2 failure: integer not divisible by 127
 	}
 
 	fieldPtr += sizeof(validator) + PAD1;		// Update field pointer to point to trigger payload.
 	payloadIndex = fieldPtr;
 	payloadKeyIndex = (uint8_t *)(data + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(Payload))));	// Compute the start of the payload key
-	D (printf ("%s, %4d:\tEncoded Payload offset\t0x%0x, Payload key offset: 0x%0x\tPayload follows:\n", __FILE__, __LINE__, (unsigned int)(fieldPtr - data), (unsigned int)(payloadKeyIndex - (uint8_t *)data)); )
+	DLX(5, printf("Encoded Payload offset\t0x%0x, Payload key offset: 0x%0x\tPayload follows:\n", (unsigned int)(fieldPtr - data), (unsigned int)(payloadKeyIndex - (uint8_t *)data)));
 	for (i = 0; i < (int)sizeof(Payload); i++) {
 		uint8_t trigger;
 
 		trigger = payloadKeyIndex[i] ^ payloadIndex[i];			// XOR the trigger payload with the key
-		D (printf ("\tByte[%2.2d]: encoded payload = 0x%2.2x,  payloadKey= 0x%2.2x, decoded payload = 0x%2.2x\n", i, payloadIndex[i], payloadKeyIndex[i], trigger); )
+		DLX(5, printf ("\tByte[%2.2d]: encoded payload = 0x%2.2x,  payloadKey= 0x%2.2x, decoded payload = 0x%2.2x\n", i, payloadIndex[i], payloadKeyIndex[i], trigger));
 		memcpy((void *)(pp + i), (void *)&trigger, sizeof(uint8_t));
 	}
-	D (printf ("\n"); )
+	DLX(5, printf ("\n"));
 	return SUCCESS;
 }
 
@@ -238,7 +239,7 @@ payload_to_trigger_info (Payload *p, TriggerInfo *ti)
 	crc = ntohs(p->crc);
 	p->crc = 0;
 	if (tiny_crc16 ((const uint8_t *) p, sizeof (Payload)) != crc ) {
-		D (printf ("%s, %4d:\tCRC failed.\n", __FILE__, __LINE__); )
+		DLX(4, printf ("CRC failed.\n"));
 		return FAILURE;
 	}
 
