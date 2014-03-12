@@ -26,6 +26,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+/*
+ * forkpty()	SOLARIS ONLY
+ */
 int forkpty( int *amaster, char *name, void *unused1, void *unused2 ) {
 	
     char	*slave; 
