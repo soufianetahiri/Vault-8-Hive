@@ -82,9 +82,10 @@ static void printUsage(char* exeName)
 #ifdef SOLARIS
 	printf("\t\t-I <interface>         - interface on which to listen\n");
 #endif
-	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)D( \n");
+	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)\n");
 	printf("\t\t-t <callback delay>    - delay between trigger received and callback +/- 30 seconds (in seconds)\n");
 	printf("\t\t-s <self-delete delay> - since last successful trigger/beacon (in seconds, default: 60 days)\n");
+	printf("\n\t\t-D <debug level>     - debug level between 1 and 9, higher numbers are more verbose\n");
 	printf("\t\t-h                     - print this help menu\n");
 
 	printf( "\n\tExample:\n" );
@@ -351,7 +352,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	if ( interval == 0 )
+	if ( initialDelay > 0 && interval == 0 )
 	{
 		D( printf("No Beacon Interval specified!\n"); )
 		D( printUsage(argv[0]); )
