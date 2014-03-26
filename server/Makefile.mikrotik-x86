@@ -54,8 +54,7 @@ endif
 all: $(LIBPOLARSSL) $(SERVER) $(SERVER)-dbg
 
 $(LIBPOLARSSL): strings
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.mikrotik-x86
-#	cd $(POLARSSL)/library && $(MAKE) -f Makefile.mikrotik-x86 && cd ../../../server
+	cd $(POLARSSL)/library && $(MAKE) TARGET=mikrotik-x86
 
 bzip: $(LIBBZIP2)
 

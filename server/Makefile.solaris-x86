@@ -53,7 +53,8 @@ all: $(SERVER) $(SERVER)-dbg
 polarssl: $(LIBPOLARSSL)
 
 $(LIBPOLARSSL): strings
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.solaris-x86
+	cd $(POLARSSL)/library && $(MAKE) TARGET=solaris-x86
+
 bzip:   $(LIBBZIP2)
 
 bzip2:  $(LIBBZIP2)

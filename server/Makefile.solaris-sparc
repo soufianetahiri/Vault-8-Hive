@@ -61,7 +61,7 @@ all: $(SERVER) $(SERVER)-dbg
 polarssl: $(LIBPOLARSSL)
 
 $(LIBPOLARSSL): strings
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.solaris-sparc
+	cd $(POLARSSL)/library && $(MAKE) TARGET=solaris-sparc
 
 bzip: $(LIBBZIP2)
 
