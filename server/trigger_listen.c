@@ -264,14 +264,14 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 				tParams = calloc( 1, sizeof( TriggerInfo ) );
 				if (tParams == NULL) {
 					DLX(2, printf("Calloc failed."));
-					return FAILURE;
+					continue;	// If this fails, try again on next trigger.
 				}
 
 				// Populate the structure with the parameters needed inside the thread.
 				if (payload_to_trigger_info(&recvd_payload, tParams) == FAILURE) {
 					DLX(2, printf( "payload_to_trigger_info() failed.\n"));
 					free(tParams);
-					return FAILURE;
+					continue;	// If payload_to_trigger_info() fails, then the payload was corrupted. Listen for a trigger with a good payload.
 				}
 
 				sha1(tParams->idKey_hash, ID_KEY_HASH_SIZE, recvdKey);
@@ -304,7 +304,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 				if ( fork_process( start_triggered_connect, (void *)tParams) != SUCCESS )
 				{
 					if ( tParams != NULL ) free( tParams );
-					return FAILURE;
+					continue;	// If the fork fails, wait until next trigger and try again.
 				}
 #endif
 				// main trigger thread loops to continue listening for additional trigger packets
