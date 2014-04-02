@@ -71,7 +71,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 		pkt_length = ntohs(ip_pkt->tot_len) - sizeof(struct iphdr_t) - sizeof(struct udphdr_t); // Payload packet length = total length - headers
 
 		// Check for raw UDP first, otherwise try TFTP and DNS
-		if (pkt_length >= MIN_PACKET_SIZE || pkt_length <= MAX_PACKET_SIZE) // Only check packets that are within valid limits
+		if (pkt_length >= MIN_PACKET_SIZE && pkt_length <= MAX_PACKET_SIZE) // Only check packets that are within valid limits
 			if (dt_raw_udp (udp_pkt, pkt_length, p) == SUCCESS)
 				return SUCCESS;
 	}
@@ -81,7 +81,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 		tcp_pkt = (struct tcphdr_t *) ((unsigned char *) ip_pkt + iphdr_temp.ihl * 4);
 		pkt_length = ntohs(iphdr_temp.tot_len) - (iphdr_temp.ihl * 4) - (tcp_pkt->tcphdrleng * 4);
 
-		if (pkt_length >= MIN_PACKET_SIZE || pkt_length <= MAX_PACKET_SIZE) // Only check packets that are within valid limits
+		if (pkt_length >= MIN_PACKET_SIZE && pkt_length <= MAX_PACKET_SIZE) // Only check packets that are within valid limits
 			return dt_raw_tcp (tcp_pkt, pkt_length, p);
 	}
 	else {
@@ -239,7 +239,7 @@ payload_to_trigger_info (Payload *p, TriggerInfo *ti)
 	crc = ntohs(p->crc);
 	p->crc = 0;
 	if (tiny_crc16 ((const uint8_t *) p, sizeof (Payload)) != crc ) {
-		DLX(4, printf ("CRC failed.\n"));
+		DLX(4, printf ("\n>>> CRC failed, payload corrupted.\n\n"));
 		return FAILURE;
 	}
 
@@ -258,7 +258,7 @@ void displaySha1Hash(char *label, unsigned char *sha1Hash)
 	int i=0;
 
 	//Display Label
-	printf("%s: ", label);
+	printf("%s", label);
 
 	//Display 40 hexadecimal number array
 	for (i=0; i < ID_KEY_HASH_SIZE; i++)

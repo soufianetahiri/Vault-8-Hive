@@ -295,9 +295,9 @@ int main(int argc, char** argv)
 					}
 					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { // Validate that the key text is of sufficient length
 						sha1_file((const char *)optarg, ikey);		// Generate the ID key
-						DLX(1, displaySha1Hash ("Trigger Key", ikey));
+						DLX(1, displaySha1Hash ("Trigger Key: ", ikey));
 						sha1(ikey, ID_KEY_HASH_SIZE, ikey);		// Generate the implant key
-						DLX(1, displaySha1Hash ("Implant Key", ikey));
+						DLX(1, displaySha1Hash ("Implant Key: ", ikey));
 						DLX(1, printf("\n\n\n" ));
 					} else {
 						fprintf(stderr, "%s\n", oe3);
@@ -322,9 +322,9 @@ int main(int argc, char** argv)
                                 }
 				DLX(1, printf( "KeyPhrase: %s \n", optarg));
 				sha1((const unsigned char *)optarg, strlen(optarg), ikey);
-				DLX(1, displaySha1Hash ("Trigger Key", ikey));
+				DLX(1, displaySha1Hash ("Trigger Key: ", ikey));
 				sha1(ikey, ID_KEY_HASH_SIZE, ikey);
-				DLX(1, displaySha1Hash ("Implant Key", ikey));
+				DLX(1, displaySha1Hash ("Implant Key: ", ikey));
 				DLX(1, printf("\n\n\n"));
 				break;
 

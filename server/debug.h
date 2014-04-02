@@ -13,7 +13,7 @@
 	#define DL(l)											\
 		do {											\
 			if (l <= dbug_level_) {								\
-				fprintf(stderr, "%s:%d: %s()\n", __FILE__, __LINE__,__FUNCTION__);	\
+				fprintf(stdout, "%s:%d: %s()\n", __FILE__, __LINE__,__FUNCTION__);	\
 			}}										\
 		while (0)
 
@@ -21,7 +21,7 @@
 	#define DLX(l, x)										\
 		do {											\
 			if (l <= dbug_level_) {								\
-				fprintf(stderr, "%s:%d: %s(): ", __FILE__, __LINE__,__FUNCTION__);	\
+				fprintf(stdout, "%s:%d: %s(): ", __FILE__, __LINE__,__FUNCTION__);	\
 				x;									\
 			}}										\
 		while (0)
