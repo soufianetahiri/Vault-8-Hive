@@ -11,19 +11,19 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <stdlib.h>			// used for the system() and rand()
+#include <stdlib.h>		// used for the system() and rand()
 
 #ifdef DEBUG
 #include <stdio.h>
 #endif
 
-int GetMacAddr( unsigned char *mac )
+int GetMacAddr(unsigned char *mac)
 {
 // TODO: encode these strings
-	const char	ifname[]="eth0";
-    struct 		ifreq ifr;
-    int 		fd;
-    int 		rv;         // return value - error value from df or ioctl call
+	const char ifname[] = "eth0";
+	struct ifreq ifr;
+	int fd;
+	int rv;			// return value - error value from df or ioctl call
 
 #warning
 #warning GetMacAddr() is not portable to Linux systems without an "eth0" named interface
@@ -36,38 +36,32 @@ int GetMacAddr( unsigned char *mac )
 	 * Also, get_ifi_info() is re-written on page 500 using Routing Sockets
 	 */
 
-    /* determine the local MAC address */
-    strncpy(ifr.ifr_name, ifname, sizeof(ifname) );
+	/* determine the local MAC address */
+	strncpy(ifr.ifr_name, ifname, sizeof(ifname));
 
-    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if ( fd < 0 ) 	/* socket open failed */
-	{
-		D( printf( " ERROR: socket() open failed\n" ); )
-		D( perror( "socket" ); )
-        rv = FAILURE;	// return failure
-	}
-    else			/* socket open success */
-	{
-		D( printf( " DEBUG: socket() open success\n" ); )
-        rv = ioctl(fd, SIOCGIFHWADDR, &ifr);
+	fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (fd < 0) {		/* socket open failed */
+	      DLX(2, perror("socket open failed: "));
+	      rv = FAILURE;	// return failure
+	} else {		/* socket open success */
 
-        if (rv >= 0)	/* ioctl success */
-		{
-			D( printf( " DEBUG: ioctl() success\n" ); )
-            memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
+		DLX(3, printf("socket() open success\n"));
+		rv = ioctl(fd, SIOCGIFHWADDR, &ifr);
+
+		if (rv >= 0) {	/* ioctl success */
+			DLX(3, printf("ioctl() success\n"));
+			memcpy(mac, ifr.ifr_hwaddr.sa_data, IFHWADDRLEN);
 			rv = SUCCESS;	// return success
-		}
-		else			// ioctl failed
+		} else		// ioctl failed
 		{
-			D( printf( " ERROR: ioctl() failed\n" ); )
+			DLX(2,printf("ERROR: ioctl() failed\n"));
 			rv = FAILURE;	// return failure
 		}
 
-		close( fd );
+		close(fd);
 	}
 
-	if ( rv < 0 )
-	{
+	if (rv < 0) {
 		/* put in junk data into buffer */
 		// this OUI corresponds to PRIVATE in the IEEE database
 		// if the leading byte is dropped (as it is in how the MAC is transmitted to the LP,
@@ -77,31 +71,26 @@ int GetMacAddr( unsigned char *mac )
 		mac[2] = 0x48;
 
 		// lower three byte are psuedo-random
-		mac[3] = (unsigned char)( htonl( rand() ) >> 24 );
-		mac[4] = (unsigned char)( htonl( rand() ) >> 24 );
-		mac[5] = (unsigned char)( htonl( rand() ) >> 24 );
+		mac[3] = (unsigned char) (htonl(rand()) >> 24);
+		mac[4] = (unsigned char) (htonl(rand()) >> 24);
+		mac[5] = (unsigned char) (htonl(rand()) >> 24);
 	}
 
+	DLX(2,
+		int j;
+		printf("MAC address is: ");
 
-#if	DEBUG
-	printf( " DEBUG: MAC address is " );
-	int j;
-
-	for ( j = 0; j < IFHWADDRLEN; j++ )
-	{
-		printf( "%.2X", (unsigned char) *( mac + j ) );
-		if ( ( j % 6 ) == 5 )
-		{
-			printf( "\n" );
+		for (j = 0; j < IFHWADDRLEN; j++) {
+			printf("%.2X", (unsigned char) *(mac + j));
+			if ((j % 6) == 5) {
+				printf("\n");
+			} else {
+				printf(":");
+			}
 		}
-		else
-		{
-			printf( ":" );
-		}
-	}
-#endif
+	);
 
-    return rv;		// return success
+	return rv;		// return success
 }
 
 #elif defined SOLARIS
@@ -110,7 +99,7 @@ int GetMacAddr( unsigned char *mac )
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
-#include <stdlib.h>			// used for the system() and rand()
+#include <stdlib.h>		// used for the system() and rand()
 #include <utmpx.h>
 #include <time.h>
 #include <net/if_arp.h>
@@ -118,77 +107,66 @@ int GetMacAddr( unsigned char *mac )
 
 #define IFHWADDRLEN	6
 
-int GetMacAddr( unsigned char *mac )
+int GetMacAddr(unsigned char *mac)
 {
 
 //#warning get_local_hwaddr() is not portable to Solaris systems without an active "hme0" or "e1000g0" named interface
 
 //TODO: encode these strings
-//	char	if_e1000g0[] = "e1000g0";
-//	char	if_hme0[] = "hme0";
-	char	if_lo[] = "lo";
-	int 	i, fd, nicount, rv;
-	struct	arpreq arpreq;
-	struct 	ifreq nicnumber[24];
-	struct 	ifconf ifconf;
+//      char    if_e1000g0[] = "e1000g0";
+//      char    if_hme0[] = "hme0";
+	char if_lo[] = "lo";
+	int i, fd, nicount, rv;
+	struct arpreq arpreq;
+	struct ifreq nicnumber[24];
+	struct ifconf ifconf;
 
-	if ( ( fd = socket( AF_INET, SOCK_DGRAM, 0 ) ) < 0 )
-	{
-		D( printf( " ERROR: Could not create socket\n" ); )
+	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+		DLX(2, printf("ERROR: Could not create socket\n"));
 		return FAILURE;
 	}
 
 	ifconf.ifc_buf = (caddr_t) nicnumber;
-	ifconf.ifc_len = sizeof( nicnumber );
-        
-	if ( ioctl( fd, SIOCGIFCONF, &ifconf ) != 0 )
-	{	// error - ioctl() returns zero on success
-		close( fd );
-		D( printf( " ERROR: ioctl() error\n" ); )
+	ifconf.ifc_len = sizeof(nicnumber);
+
+	if (ioctl(fd, SIOCGIFCONF, &ifconf) != 0) {	// error - ioctl() returns zero on success
+		close(fd);
+		DLX(2, printf("ERROR: ioctl() error\n"));
 		return FAILURE;
 	}
 
-    nicount = ifconf.ifc_len / (sizeof( struct ifreq ) );
+	nicount = ifconf.ifc_len / (sizeof(struct ifreq));
 
-	for (i = 0; i <= nicount; i++)
-	{ 
+	for (i = 0; i <= nicount; i++) {
 
-		D( printf( " DEBUG: found interface %s\n", nicnumber[i].ifr_name ); )
+		DLX(3, printf("Found interface: %s\n", nicnumber[i].ifr_name));
 
-		if ( strstr( nicnumber[i].ifr_name, if_lo ) == NULL )
-		{
-			D( printf( " DEBUG: non-loopback interface #%i [%s] found\n", i, nicnumber[i].ifr_name ); )
+		if (strstr(nicnumber[i].ifr_name, if_lo) == NULL) {
+			DLX(3, printf("Non-loopback interface #%i [%s] found\n", i, nicnumber[i].ifr_name));
 			break;
 		}
 
-		if ( i == ( nicount - 1 ) )
-		{
-			close( fd );
-			D( printf( " ERROR: No matching interface found\n" ); )
+		if (i == (nicount - 1)) {
+			close(fd);
+			DLX(3, printf("ERROR: No matching interface found\n"));
 			return FAILURE;
 		}
 	}
 
-	((struct sockaddr_in*)&arpreq.arp_pa)->sin_addr.s_addr =
-	((struct sockaddr_in*)&nicnumber[i].ifr_addr)->sin_addr.s_addr;
+	((struct sockaddr_in *) &arpreq.arp_pa)->sin_addr.s_addr = ((struct sockaddr_in *) &nicnumber[i].ifr_addr)->sin_addr.s_addr;
 
-	rv = ioctl( fd, SIOCGARP, (char*)&arpreq );
-	close( fd );
+	rv = ioctl(fd, SIOCGARP, (char *) &arpreq);
+	close(fd);
 
-	if ( rv >= 0 )
-	{	//success
-		D( printf( " DEBUG: ioctl() success\n" ); )
+	if (rv >= 0) {		//success
+		DLX(3,printf("ioctl() success\n"));
 		rv = SUCCESS;
-
-		memcpy( mac, arpreq.arp_ha.sa_data, IFHWADDRLEN );
-
+		memcpy(mac, arpreq.arp_ha.sa_data, IFHWADDRLEN);
 	}
 
-	if ( rv < 0 )
-	{	// error
+	if (rv < 0) {		// error
 		rv = FAILURE;
-		D( printf( " DEBUG: ioctl() failed.\n" ); )
-		D( printf( " ERROR: Could not determine MAC address.\n" ); )
+		DLX(2, printf("ioctl() failed. Could not determine MAC address.\n"));
 
 		/* put in junk data into buffer */
 		// this OUI corresponds to PRIVATE in the IEEE database
@@ -199,29 +177,25 @@ int GetMacAddr( unsigned char *mac )
 		mac[2] = 0x48;
 
 		// lower three byte are psuedo-random
-		mac[3] = (unsigned char)( htonl( rand() ) >> 24 );
-		mac[4] = (unsigned char)( htonl( rand() ) >> 24 );
-		mac[5] = (unsigned char)( htonl( rand() ) >> 24 );
+		mac[3] = (unsigned char) (htonl(rand()) >> 24);
+		mac[4] = (unsigned char) (htonl(rand()) >> 24);
+		mac[5] = (unsigned char) (htonl(rand()) >> 24);
 	}
 
-#if	DEBUG
-	printf( " DEBUG: MAC address is " );
-	int j;
+	DLX(2,
+		int j;
+		printf("MAC address is: ");
 
-	for ( j = 0; j < IFHWADDRLEN; j++ )
-	{
-		printf( "%.2X", (unsigned char) *( mac + j ) );
-		if ( ( j % 6 ) == 5 )
-		{
-			printf( "\n" );
+		for (j = 0; j < IFHWADDRLEN; j++) {
+			printf("%.2X", (unsigned char) *(mac + j));
+			if ((j % 6) == 5) {
+				printf("\n");
+			} else {
+				printf(":");
+			}
 		}
-		else
-		{
-			printf( ":" );
-		}
-	}
-#endif
-	
+	);
+
 	return rv;
 }
 #endif

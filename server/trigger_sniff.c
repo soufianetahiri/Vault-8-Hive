@@ -120,7 +120,7 @@ int sniff_read_solaris( int fd, void *out, int outlen )
      indicates that both types of information remain.  */
 	if ( ( ret = getmsg( fd, NULL, &data, &flags ) ) < 0 )
 	{	// ERROR
-		D( printf( " ERROR: getmsg() failed\n" ); )
+		DLX(6, perror("getmsg() error: "));
 		return FAILURE;
 	}
 
