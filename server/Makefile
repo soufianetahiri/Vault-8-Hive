@@ -96,7 +96,7 @@ clean:
 	rm -f string_utils.h.gch
 	rm -f mod_hexify.pyc
 	rm -f hive.tar
-	make -C $(POLARSSL) clean
+	make -C $(POLARSSL)/library clean
 	make -C bzip/bzip2-1.0.6 clean
 	@echo
 	@echo " Done cleaning Hive server."

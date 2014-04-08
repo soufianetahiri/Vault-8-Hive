@@ -128,10 +128,6 @@ libpolarssl.dll: libpolarssl.a
 	echo "  CC    $<"
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 
+.PHONY: clean
 clean:
-ifndef WINDOWS
 	rm -f *.o libpolarssl.*
-endif
-ifdef WINDOWS
-	del /Q /F *.o libpolarssl.*
-endif
