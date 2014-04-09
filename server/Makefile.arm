@@ -1,7 +1,7 @@
 #------------------------------------------------
-# Makefile for compiling MIPS little-endian
+# Makefile for compiling ARM
 #
-# Makefile.mipsel
+# Makefile.arm
 #
 # For other possible targets, please enter:
 #	
@@ -62,8 +62,7 @@ $(LIBBZIP2):
 	cd $(BZIP2) && $(MAKE) -f Makefile.$(ARCH)
 
 $(LIBPOLARSSL): strings
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.$(ARCH)
-#	cd $(POLARSSL)/library && $(MAKE) -f Makefile.$(ARCH) && cd ../../../server
+	cd $(POLARSSL)/library && $(MAKE) TARGET=arm
 
 .PHONY: debug
 debug: $(LIBPOLARSSL) $(SERVER)-dbg

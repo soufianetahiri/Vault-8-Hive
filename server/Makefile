@@ -36,8 +36,8 @@ all:
 	@echo "  make solaris-x86"
 	@echo "  make solaris-sparc"
 	@echo "  make mikrotik-x86"
-	@echo "  make mikrotik-mipsbe"
-	@echo "  make mikrotik-mipsle"
+	@echo "  make mikrotik-mips"
+	@echo "  make mikrotik-mipsel"
 	@echo "  make mikrotik-ppc"
 	@echo "  make arm"
 	@echo
@@ -64,11 +64,11 @@ solaris-sparc: clean
 mikrotik-x86: clean
 	@make -f Makefile.mikrotik-x86
 
-mikrotik-mipsle: clean
-	@make -f Makefile.mikrotik-mipsle
+mikrotik-mipsel: clean
+	@make -f Makefile.mikrotik-mipsel
 
-mikrotik-mipsbe: clean
-	@make -f Makefile.mikrotik-mipsbe
+mikrotik-mips: clean
+	@make -f Makefile.mikrotik-mips
 
 mikrotik-ppc: clean
 	@make -f Makefile.mikrotik-ppc
@@ -96,7 +96,7 @@ clean:
 	rm -f string_utils.h.gch
 	rm -f mod_hexify.pyc
 	rm -f hive.tar
-	make -C $(POLARSSL) clean
+	make -C $(POLARSSL)/library clean
 	make -C bzip/bzip2-1.0.6 clean
 	@echo
 	@echo " Done cleaning Hive server."

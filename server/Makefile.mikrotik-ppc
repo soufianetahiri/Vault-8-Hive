@@ -57,7 +57,7 @@ all: $(SERVER) $(SERVER)-dbg
 polarssl: $(LIBPOLARSSL)
 
 $(LIBPOLARSSL): strings
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.mikrotik-ppc
+	cd $(POLARSSL)/library && $(MAKE) TARGET=mikrotik-ppc
 
 bzip:   $(LIBBZIP2)
 

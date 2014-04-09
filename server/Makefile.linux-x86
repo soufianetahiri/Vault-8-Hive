@@ -58,7 +58,7 @@ all: $(SERVER) $(SERVER)-dbg
 polarssl: $(LIBPOLARSSL)
 
 $(LIBPOLARSSL): strings
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
+	cd $(POLARSSL)/library && $(MAKE) TARGET=linux-x86
 
 bzip:	$(LIBBZIP2)
 
