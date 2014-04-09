@@ -31,18 +31,18 @@ int crypt_handshake( ssl_context *ssl )
     /*
      * 5. Handshake
      */
-    DLX(4, printf( "\tPerforming the TLS handshake... "));
+    DLX(4, printf("\tPerforming the TLS handshake... "));
 
     while( ( ret = ssl_handshake( ssl ) ) != 0 )
     {
-        if (ret != POLARSSL_ERR_NET_TRY_AGAIN)
+        if (ret != POLARSSL_ERR_NET_WANT_WRITE || ret != POLARSSL_ERR_NET_WANT_READ)
         {
-            DLX(4, printf( "failed, returned: %0x\n", ret));
+            DLX(4, printf("failed, returned: %0x\n", ret));
             return -1;
         }
     }
 
-    DLX(4, printf( "ok\n"));
+    DLX(4, printf("ok\n"));
 
 	return 0;
 }
@@ -58,12 +58,12 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
     {
         if (ret != POLARSSL_ERR_NET_WANT_WRITE)
         {
-            DLX(4, printf(" failed. POLARSSL_ERR_NET_WANT_WRITE\n"));
+            DLX(4, printf("failed. POLARSSL_ERR_NET_WANT_WRITE\n"));
             return ret;
         }
     }
 
-	DLX(4, printf( " %d bytes written\n", ret));
+	DLX(4, printf(" %d bytes written\n", ret));
 	return ret;
 
 }
@@ -81,25 +81,25 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 
         ret = ssl_read( ssl, buf, bufsize );
 
-        ifi (ret == POLARSSL_ERR_NET_WANT_READ)
+        if (ret == POLARSSL_ERR_NET_WANT_READ)
 		{
-			DLX(4, printf( "POLARSSL_ERR_NET_WANT_READ\n"));
+			DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
             continue;
 		}
 
         if( ret == POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY )
 		{
-			DLX(4, printf( "POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
+			DLX(4, printf("POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
             break;
 		}
 
         if( ret <= 0 )
         {
-            DLX(4, printf( "ERROR: crypt_read() failed. ssl_read returned %0x\n", ret));
+            DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned %0x\n", ret));
             break;
         }
 
-        DLX(4, printf( "crypt_read(): %d bytes read\n", ret ));
+        DLX(4, printf("crypt_read(): %d bytes read\n", ret ));
     }
     while( 0 );
 
@@ -138,11 +138,11 @@ int crypt_setup_client( havege_state *hs, ssl_context *ssl, ssl_session *ssn, in
     ssl_set_endpoint( ssl, SSL_IS_CLIENT );
     ssl_set_authmode( ssl, SSL_VERIFY_NONE );
 
-    ssl_set_rng( ssl, havege_rand, hs );
+    ssl_set_rng( ssl, havege_random, hs );
     ssl_set_dbg( ssl, my_debug, stdout );
     ssl_set_bio( ssl, net_recv, sockfd, net_send, sockfd );
 
-    ssl_set_ciphers( ssl, ssl_default_ciphers );
+    ssl_set_ciphersuites( ssl, ssl_default_ciphersuites );
     ssl_set_session( ssl, 1, 600, ssn );
 
 	return 0;

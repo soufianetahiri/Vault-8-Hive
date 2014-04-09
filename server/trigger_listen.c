@@ -69,7 +69,6 @@ static int havege_state_init = 0;
 void CalcVariance( signed int* variance, int range )
 {
 
-#if defined LINUX || defined SOLARIS
 	if ( havege_state_init != 1 )
 	{
 		DLX(6, printf( "Initializing Havege State.\n"));
@@ -77,26 +76,10 @@ void CalcVariance( signed int* variance, int range )
 		havege_state_init = 1;
 	}
 
-	*variance = ( havege_rand( &hs ) % range );
+	havege_random(&hs, (unsigned char *)variance, sizeof(int));
+	*variance %= range;
+
 	DLX(6, printf( "CalcVariance() called. %i\n", *variance));
-
-	return;
-#endif
-
-
-	DLX(6, printf( "CalcVariance() called.\n"));
-
-	//first decide if it will be plus or minus
-	if( rand() > RAND_MAX / 2 )
-	{
-		//make it positive
-		*variance = rand() % range;
-	}
-	else
-	{
-		//make it negative
-		*variance = -(rand() % range);
-	}
 
 	return;
 }

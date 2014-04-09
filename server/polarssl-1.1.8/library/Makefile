@@ -1,8 +1,41 @@
 
 # Also see "include/polarssl/config.h"
 
-CFLAGS	+= -I../include -D_FILE_OFFSET_BITS=64 -Wall -W -Wdeclaration-after-statement
-OFLAGS	= -O
+CFLAGS	= -I../include -Wall -W -Wdeclaration-after-statement
+OFLAGS	= -O2
+
+ifeq ("$(TARGET)", "linux-x86")
+	include ../../Makefile-include.linux-x86
+endif
+ifeq ("$(TARGET)", "linux-x86_64")
+	include ../../Makefile-include.linux-x86_64
+endif
+ifeq ("$(TARGET)", "mikrotik-mips")
+	include ../../Makefile-include.mikrotik-mips
+endif
+ifeq ("$(TARGET)", "mikrotik-mipsel")
+	include ../../Makefile-include.mikrotik-mipsel
+endif
+ifeq ("$(TARGET)", "mikrotik-x86")
+	include ../../Makefile-include.mikrotik-x86
+endif
+ifeq ("$(TARGET)", "mikrotik-ppc")
+	include ../../Makefile-include.mikrotik-ppc
+endif
+ifeq ("$(TARGET)", "arm")
+	include ../../Makefile-include.arm
+endif
+ifeq ("$(TARGET)", "solaris-sparc")
+	include ../../Makefile-include.solaris-sparc
+endif
+ifeq ("$(TARGET)", "solaris-x86")
+	include ../../Makefile-include.solaris-x86
+endif
+
+ifdef DEBUG
+CFLAGS += -g3
+endif
+
 
 # MicroBlaze specific options:
 # CFLAGS += -mno-xl-soft-mul -mxl-barrel-shift
