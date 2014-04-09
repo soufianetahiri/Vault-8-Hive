@@ -35,9 +35,9 @@ int crypt_handshake( ssl_context *ssl )
 
     while( ( ret = ssl_handshake( ssl ) ) != 0 )
     {
-        if( ret != POLARSSL_ERR_NET_TRY_AGAIN )
+        if (ret != POLARSSL_ERR_NET_TRY_AGAIN)
         {
-            DLX(4, printf( "failed, returned: %d\n", ret));
+            DLX(4, printf( "failed, returned: %0x\n", ret));
             return -1;
         }
     }
@@ -56,10 +56,10 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 
     while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
     {
-        if( ret != POLARSSL_ERR_NET_TRY_AGAIN )
+        if (ret != POLARSSL_ERR_NET_WANT_WRITE)
         {
-            DLX(4, printf( " failed. ssl_write returned %d\n", ret ));
-			return ret;
+            DLX(4, printf(" failed. POLARSSL_ERR_NET_WANT_WRITE\n"));
+            return ret;
         }
     }
 
@@ -81,9 +81,9 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 
         ret = ssl_read( ssl, buf, bufsize );
 
-        if( ret == POLARSSL_ERR_NET_TRY_AGAIN )
+        ifi (ret == POLARSSL_ERR_NET_WANT_READ)
 		{
-			DLX(4, printf( "POLARSSL_ERR_NET_TRY_AGAIN\n"));
+			DLX(4, printf( "POLARSSL_ERR_NET_WANT_READ\n"));
             continue;
 		}
 
@@ -95,7 +95,7 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 
         if( ret <= 0 )
         {
-            DLX(4, printf( "ERROR: crypt_read() failed. ssl_read returned %d\n", ret));
+            DLX(4, printf( "ERROR: crypt_read() failed. ssl_read returned %0x\n", ret));
             break;
         }
 
