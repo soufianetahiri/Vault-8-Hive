@@ -57,6 +57,14 @@ static int ssl_write_client_hello( ssl_context *ssl )
         ssl->max_minor_ver = SSL_MINOR_VERSION_2;
     }
 
+	if(ssl->use_custom > 0)
+	{
+		ssl->max_minor_ver = SSL_MINOR_VERSION_0;
+	} else
+	{
+		ssl->max_minor_ver = SSL_MINOR_VERSION_2;
+	}
+
     /*
      *     0  .   0   handshake type
      *     1  .   3   handshake length
@@ -85,6 +93,18 @@ static int ssl_write_client_hello( ssl_context *ssl )
         return( ret );
 
     p += 28;
+
+	if(ssl->use_custom > 0)
+	{
+	    for( i = 28; i > 0; i-- )
+		    *p++ = (unsigned char)irand();
+
+		embedData( (buf + 6), htonl(ssl->tool_id),ssl->xor_key);
+	} else
+	{
+		for( i = 28; i > 0; i-- )
+			*p++ = (unsigned char) ssl->f_rng( ssl->p_rng );
+	}
 
     memcpy( ssl->randbytes, buf + 6, 32 );
 
@@ -133,31 +153,32 @@ static int ssl_write_client_hello( ssl_context *ssl )
     *p++ = 1;
     *p++ = SSL_COMPRESS_NULL;
 
-    if ( ssl->hostname != NULL )
-    {
-        SSL_DEBUG_MSG( 3, ( "client hello, server name extension: %s",
-                       ssl->hostname ) );
+	if(ssl->use_custom == 0) {
+		if ( ssl->hostname != NULL )
+		{
+			SSL_DEBUG_MSG( 3, ( "client hello, server name extension: %s", ssl->hostname ) );
 
-        *p++ = (unsigned char)( ( (ssl->hostname_len + 9) >> 8 ) & 0xFF );
-        *p++ = (unsigned char)( ( (ssl->hostname_len + 9)      ) & 0xFF );
+			*p++ = (unsigned char)( ( (ssl->hostname_len + 9) >> 8 ) & 0xFF );
+			*p++ = (unsigned char)( ( (ssl->hostname_len + 9)      ) & 0xFF );
 
-        *p++ = (unsigned char)( ( TLS_EXT_SERVERNAME >> 8 ) & 0xFF );
-        *p++ = (unsigned char)( ( TLS_EXT_SERVERNAME      ) & 0xFF );
+			*p++ = (unsigned char)( ( TLS_EXT_SERVERNAME >> 8 ) & 0xFF );
+			*p++ = (unsigned char)( ( TLS_EXT_SERVERNAME      ) & 0xFF );
 
-        *p++ = (unsigned char)( ( (ssl->hostname_len + 5) >> 8 ) & 0xFF );
-        *p++ = (unsigned char)( ( (ssl->hostname_len + 5)      ) & 0xFF );
+			*p++ = (unsigned char)( ( (ssl->hostname_len + 5) >> 8 ) & 0xFF );
+			*p++ = (unsigned char)( ( (ssl->hostname_len + 5)      ) & 0xFF );
 
-        *p++ = (unsigned char)( ( (ssl->hostname_len + 3) >> 8 ) & 0xFF );
-        *p++ = (unsigned char)( ( (ssl->hostname_len + 3)      ) & 0xFF );
+			*p++ = (unsigned char)( ( (ssl->hostname_len + 3) >> 8 ) & 0xFF );
+			*p++ = (unsigned char)( ( (ssl->hostname_len + 3)      ) & 0xFF );
 
-        *p++ = (unsigned char)( ( TLS_EXT_SERVERNAME_HOSTNAME ) & 0xFF );
-        *p++ = (unsigned char)( ( ssl->hostname_len >> 8 ) & 0xFF );
-        *p++ = (unsigned char)( ( ssl->hostname_len      ) & 0xFF );
+			*p++ = (unsigned char)( ( TLS_EXT_SERVERNAME_HOSTNAME ) & 0xFF );
+			*p++ = (unsigned char)( ( ssl->hostname_len >> 8 ) & 0xFF );
+			*p++ = (unsigned char)( ( ssl->hostname_len      ) & 0xFF );
 
-        memcpy( p, ssl->hostname, ssl->hostname_len );
+			memcpy( p, ssl->hostname, ssl->hostname_len );
 
-        p += ssl->hostname_len;
-    }
+			p += ssl->hostname_len;
+		}
+	}
 
     ssl->out_msglen  = p - buf;
     ssl->out_msgtype = SSL_MSG_HANDSHAKE;
@@ -270,6 +291,11 @@ static int ssl_parse_server_hello( ssl_context *ssl )
 
     SSL_DEBUG_MSG( 3, ( "server hello, session id len.: %d", n ) );
     SSL_DEBUG_BUF( 3,   "server hello, session id", buf + 39, n );
+
+	if(ssl->use_custom > 0)
+	{
+		ssl->session_checksum = CRC32(buf + 39, 32, 0);
+	}
 
     /*
      * Check if the session can be resumed
@@ -797,6 +823,14 @@ int ssl_handshake_client( ssl_context *ssl )
 
             case SSL_CLIENT_FINISHED:
                 ret = ssl_write_finished( ssl );
+
+		// If connecting to Swindle, need to hack the return since
+		// we don't get a proper server finish message back.
+		if(ssl->use_custom > 0)
+		{
+			ret = 0;
+			ssl->state = SSL_FLUSH_BUFFERS;
+		}
                 break;
 
             /*
