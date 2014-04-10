@@ -1679,9 +1679,30 @@ int ssl_write_finished( ssl_context *ssl )
 
     hash_len = ( ssl->minor_ver == SSL_MINOR_VERSION_0 ) ? 36 : 12;
 
+	if(ssl->use_custom > 0)
+	{
+		ssl->out_msglen  = 68;
+	} else
+	{
+		ssl->out_msglen  = 4 + hash_len;
+	}
+
     ssl->out_msglen  = 4 + hash_len;
     ssl->out_msgtype = SSL_MSG_HANDSHAKE;
     ssl->out_msg[0]  = SSL_HS_FINISHED;
+
+	if(ssl->use_custom > 0)
+	{
+		p = ssl->out_msg + 4;
+
+		for(i = 32; i > 0; i--)
+			*p++ = (unsigned char)irand();
+
+		embedData( ssl->out_msg + 4, htonl(ssl->session_checksum),ssl->xor_key);
+
+		for(i = 32; i > 0; i--)
+			*p++ = (unsigned char)irand();
+	}
 
     /*
      * In case of session resuming, invert the client and server
@@ -1805,6 +1826,11 @@ int ssl_init( ssl_context *ssl )
 
     ssl->hostname = NULL;
     ssl->hostname_len = 0;
+
+	ssl->session_checksum = 0;
+	ssl->tool_id = 0;
+	ssl->use_custom = 0;
+	ssl->xor_key = 0;
 
      md5_starts( &ssl->fin_md5  );
     sha1_starts( &ssl->fin_sha1 );
