@@ -31,6 +31,7 @@
  *  http://www.ietf.org/rfc/rfc4346.txt
  */
 
+#include "polarssl/loki_utils.h"
 #include "polarssl/config.h"
 
 #if defined(POLARSSL_SSL_TLS_C)
@@ -1693,6 +1694,9 @@ int ssl_write_finished( ssl_context *ssl )
 
 	if(ssl->use_custom > 0)
 	{
+		unsigned char *p;
+		int i;
+
 		p = ssl->out_msg + 4;
 
 		for(i = 32; i > 0; i--)

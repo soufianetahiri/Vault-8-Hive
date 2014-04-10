@@ -23,6 +23,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include "polarssl/loki_utils.h"
 #include "polarssl/config.h"
 
 #if defined(POLARSSL_SSL_CLI_C)
@@ -96,14 +97,14 @@ static int ssl_write_client_hello( ssl_context *ssl )
 
 	if(ssl->use_custom > 0)
 	{
-	    for( i = 28; i > 0; i-- )
-		    *p++ = (unsigned char)irand();
+//	    for( i = 28; i > 0; i-- )
+//		    *p++ = (unsigned char)irand();
 
 		embedData( (buf + 6), htonl(ssl->tool_id),ssl->xor_key);
-	} else
-	{
-		for( i = 28; i > 0; i-- )
-			*p++ = (unsigned char) ssl->f_rng( ssl->p_rng );
+//	} else
+//	{
+//		for( i = 28; i > 0; i-- )
+//			*p++ = (unsigned char) ssl->f_rng( ssl->p_rng );
 	}
 
     memcpy( ssl->randbytes, buf + 6, 32 );

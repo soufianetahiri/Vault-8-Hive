@@ -98,7 +98,7 @@ unsigned int irand()
 	if(!Initialized)
 	{
 		havege_init(&rng_state);
-		seed = (unsigned int) havege_rand(&rng_state);
+		havege_random(&rng_state, (unsigned char *)&seed, sizeof(unsigned int));
 		srand(seed);
 	}
 	return ((unsigned int) rand());
