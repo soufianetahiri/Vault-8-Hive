@@ -67,7 +67,8 @@ OBJS=	aes.o		arc4.o		asn1parse.o		\
 		rsa.o		sha1.o		sha2.o			\
 		sha4.o		ssl_cli.o	ssl_srv.o		\
 		ssl_tls.o	timing.o	version.o		\
-		x509parse.o	xtea.o
+		x509parse.o	xtea.o				\
+		loki_utils.o
 	
 
 .SILENT:
