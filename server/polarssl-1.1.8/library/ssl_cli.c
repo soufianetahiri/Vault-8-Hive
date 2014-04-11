@@ -141,8 +141,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
 
     for( i = 0; i < n; i++ )
     {
-        SSL_DEBUG_MSG( 3, ( "client hello, add ciphersuite: %2d",
-                       ssl->ciphersuites[i] ) );
+        SSL_DEBUG_MSG( 3, ( "client hello, add ciphersuite: %2d", ssl->ciphersuites[i] ) );
 
         *p++ = (unsigned char)( ssl->ciphersuites[i] >> 8 );
         *p++ = (unsigned char)( ssl->ciphersuites[i]      );

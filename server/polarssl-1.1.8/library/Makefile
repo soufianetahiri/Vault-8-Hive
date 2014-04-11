@@ -34,6 +34,7 @@ endif
 
 ifdef DEBUG
 CFLAGS += -g3
+CFLAGS += -DPOLARSSL_DEBUG_C
 endif
 
 
