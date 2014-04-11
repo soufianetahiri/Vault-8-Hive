@@ -526,7 +526,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//compress packet
 	compressed_packet = compress_packet(packet,packetSize,&compressedPacketSize);
-
+	DLX(5, printf("Original packet size: %d, Compressed packet size: %d\n", packetSize, compressedPacketSize));
 	//combine compressed_packet with beacon header.
 	if(packet != NULL)
 	{
