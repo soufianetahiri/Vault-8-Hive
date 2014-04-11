@@ -50,22 +50,24 @@ int crypt_handshake( ssl_context *ssl )
 //*******************************************************
 int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 {
-	int		ret;
+	int	ret = 0;
+	int	sent = 0;
 
 	DL(4);
-
-    while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
-    {
-        if (ret != POLARSSL_ERR_NET_WANT_WRITE)
-        {
-            DLX(4, printf("failed. POLARSSL_ERR_NET_WANT_WRITE\n"));
-            return ret;
-        }
-    }
-
-	DLX(4, printf(" %d bytes written\n", ret));
-	return ret;
-
+	do {
+		ret = ssl_write( ssl, buf, size );
+		if (ret == POLARSSL_ERR_NET_WANT_WRITE) {
+			DLX(4, printf("POLARSSL_ERR_NET_WANT_WRITE\n"));
+			continue;
+		}
+		else if (ret < 0) {
+			DLX(4, printf("failed: ret = %0x\n", ret));
+			return ret;
+		}
+		size -= ret;
+		sent += ret;
+	} while (size);
+	return (sent);
 }
 
 //*******************************************************
