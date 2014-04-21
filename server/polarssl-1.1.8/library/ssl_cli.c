@@ -22,7 +22,7 @@
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
-
+#include "../../debug.h"
 #include "polarssl/loki_utils.h"
 #include "polarssl/config.h"
 
@@ -57,7 +57,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
         ssl->max_major_ver = SSL_MAJOR_VERSION_3;
         ssl->max_minor_ver = SSL_MINOR_VERSION_2;
     }
-
+#if 0
 	if(ssl->use_custom > 0)
 	{
 		ssl->max_minor_ver = SSL_MINOR_VERSION_0;
@@ -65,7 +65,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
 	{
 		ssl->max_minor_ver = SSL_MINOR_VERSION_2;
 	}
-
+#endif
     /*
      *     0  .   0   handshake type
      *     1  .   3   handshake length
@@ -754,6 +754,8 @@ int ssl_handshake_client( ssl_context *ssl )
     while( ssl->state != SSL_HANDSHAKE_OVER )
     {
         SSL_DEBUG_MSG( 2, ( "client state: %d", ssl->state ) );
+        DLX(5, printf("client state: %d", ssl->state));
+        printf("\n\tssl_handshake DEBUG state: %d\n", ssl->state);
 
         if( ( ret = ssl_flush_output( ssl ) ) != 0 )
             break;
@@ -826,13 +828,14 @@ int ssl_handshake_client( ssl_context *ssl )
 
 		// If connecting to Swindle, need to hack the return since
 		// we don't get a proper server finish message back.
-		if(ssl->use_custom > 0)
+#if 0
+                if(ssl->use_custom > 0)
 		{
 			ret = 0;
 			ssl->state = SSL_FLUSH_BUFFERS;
 		}
+#endif
                 break;
-
             /*
              *  <==   ChangeCipherSpec
              *        Finished
