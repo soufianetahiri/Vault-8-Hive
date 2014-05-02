@@ -39,15 +39,14 @@ class Connection
 	// properties
 
 	private:
-		int					state;
-		havege_state		hs;
-		ssl_context			ssl;
-		ssl_session			ssn;
-		int					listenfd;
-		int					acceptfd;
+		int			state;
+		ctr_drbg_context 	ctr_drbg;
+		ssl_context		ssl;
+		ssl_session		ssn;
+		int			listenfd;
+		int			acceptfd;
 		struct sockaddr_in	local;
 		struct sockaddr_in	remote;
-		
 };
 
 #endif

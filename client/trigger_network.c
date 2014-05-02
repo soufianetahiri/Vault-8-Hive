@@ -11,7 +11,6 @@
 #include <linux/if_ether.h>
 
 #include "trigger_network.h"
-#include "trigger_debug.h"
 
 /* Sends a packet starting with the ip header.
  * this means that the IP header is manually specified
@@ -67,14 +66,14 @@ int send_UDP_data(uint32_t s_addr, uint32_t d_addr, uint16_t s_port, uint16_t d_
 	if ((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
 
 		perror(" socket(): ");
-		debug("Error, cannot create socket\n");
+		DLX(1, printf("Error, cannot create socket\n"));
 		close(s);
 		return -1;
 	}
 
 	if (bind(s, (struct sockaddr *) &source_sa, sizeof(struct sockaddr_in)) == -1) {
 		perror(" bind(): ");
-		debug("Error, cannot create socket\n");
+		DLX(1, printf("Error, cannot create socket\n"));
 		close(s);
 		return -1;
 	}
@@ -128,20 +127,20 @@ int send_TCP_data(uint32_t s_addr, uint32_t d_addr, uint16_t s_port, uint16_t d_
 	/* open up a UDP socket, no spoof except the s_addr may be needed
 	 */
 	if ((s = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		debug("Error, cannot create socket");
+		DLX(1, printf("Error, cannot create socket"));
 		perror(" socket(): ");
 		return -1;
 	}
 
 	if (bind(s, (struct sockaddr *) &source_sa, sizeof(struct sockaddr_in)) == -1) {
-		debug("Error, cannot create socket");
+		DLX(1, printf("Error, cannot bind socket"));
 		perror(" bind(): ");
 		close(s);
 		return -1;
 	}
 
 	if (connect(s, (struct sockaddr *) &dest_sa, sizeof(dest_sa)) < 0) {
-		debug("Error, cannot connect tcp socket");
+		DLX(1, printf("Error, cannot connect TCP socket"));
 		perror(" connect(): ");
 		close(s);
 		return -1;

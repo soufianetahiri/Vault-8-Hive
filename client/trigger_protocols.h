@@ -19,6 +19,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include "trigger_network.h"
+#include "debug.h"
 
 /* constants for use in switching on the different possible triggers to use */
 #define T_PING_REQUEST	1

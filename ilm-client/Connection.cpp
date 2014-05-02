@@ -170,7 +170,7 @@ int Connection::Accept( std::string& ip )
 	cout << endl << " Enabling encrypted communications:" << endl;
 
     // from a SSL/TLS perspective, the client acts like a SSL server
-    if ( crypt_setup_server( &hs, &ssl, &ssn, &acceptfd ) != SUCCESS )
+    if ( crypt_setup_server( &ctr_drbg, &ssl, &ssn, &acceptfd ) != SUCCESS )
     {
 		state = CONNERROR;
         D( printf( " * ERROR: crypt_setup_server() failed\n" ); )

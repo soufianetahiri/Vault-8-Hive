@@ -50,8 +50,9 @@ UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSLE)
 all: $(LIBPOLARSSL) hclient debug patcher
 
 $(LIBPOLARSSL):
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
+#	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
 #	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86_64
+	cd $(POLARSSL)/library && $(MAKE) TARGET=linux-x86
 
 .PHONY: release
 release: hclient

@@ -29,7 +29,6 @@
 #include "trigger_protocols.h"
 #include "trigger_network.h"
 #include "trigger_utils.h"
-#include "trigger_debug.h"
 #include "debug.h"
 
 #define ERROR_DATA_SZ 8		// MUST be an even number
@@ -261,38 +260,38 @@ trigger_icmp_ping (Payload * p, trigger_info * ti)
 	}
 
 	numPings = sizeof(Payload) / 2;		// Number of pings required is dependent upon the payload size
-	D (printf ("%s, %4d: Number of pings required: %d\n", __FILE__, __LINE__, numPings); )
+	DLX (4, printf ("Number of pings required: %d\n", numPings));
 	type = ti->trigger_type;
 
-#ifdef DEBUG
-	{
-		size_t i;
+	DLX(3,
+		{
+			size_t i;
 
-		info ("Pre-obfuscation");
-		info ("Seed: %2.2X", p->seed);
-		printf ("  Payload: ");
-		for (i = 0; i < sizeof(Payload); i++) {
-			printf ("%2.2X ", ((uint8_t *) p)[i]);
+			printf ("Pre-obfuscation");
+			printf ("Seed: %2.2X", p->seed);
+			printf ("  Payload: ");
+			for (i = 0; i < sizeof(Payload); i++) {
+				printf ("%2.2X ", ((uint8_t *) p)[i]);
+			}
+			printf ("  CRC: 0x%4.4X\n", p->crc);
+			printf ("\n");
 		}
-		printf ("  CRC: 0x%4.4X\n", p->crc);
-		printf ("\n");
-	}
-#endif
+	);
 
 	obfuscate_payload (p, obf_payload_buf);
 
-#ifdef DEBUG
-	{
-		unsigned int i;
+	DLX(3,
+		{
+			unsigned int i;
 
-		info ("Post-obfuscation\n");
-		info ("RAW BYTES: ");
-		for (i = 0; i < sizeof (obf_payload_buf); i++) {
-			printf ("%2.2X ", ((uint8_t *) obf_payload_buf)[i]);
+			printf ("Post-obfuscation\n");
+			printf ("RAW BYTES: ");
+			for (i = 0; i < sizeof (obf_payload_buf); i++) {
+				printf ("%2.2X ", ((uint8_t *) obf_payload_buf)[i]);
+			}
+			printf ("\n");
 		}
-		printf ("\n");
-	}
-#endif
+	);
 
 	// data_sz must be an even number, verify this or pad if necessary
 	if (data_sz % 2 != 0)
@@ -468,20 +467,20 @@ trigger_tftp_wrq (Payload * p, trigger_info * ti)
 	size_t data_size;
 
 
-#ifdef DEBUG
-	{
-		size_t i;
+	DLX(3,
+		{
+			size_t i;
 
-		info ("Pre-obfuscation");
-		info ("Seed: %2.2X", p->seed);
-		printf ("  Payload: ");
-		for (i = 0; i < sizeof(Payload); i++) {
-			printf ("%2.2X ", ((uint8_t *) p)[i]);
+			printf ("Pre-obfuscation");
+			printf ("Seed: %2.2X", p->seed);
+			printf ("  Payload: ");
+			for (i = 0; i < sizeof(Payload); i++) {
+				printf ("%2.2X ", ((uint8_t *) p)[i]);
+			}
+			printf ("  CRC: 0x%4.4X\n", p->crc);
+			printf ("\n");
 		}
-		printf ("  CRC: 0x%4.4X\n", p->crc);
-		printf ("\n");
-	}
-#endif
+	);
 
 	// parameter error checks
 	if (p == NULL || ti == NULL) {
@@ -490,18 +489,18 @@ trigger_tftp_wrq (Payload * p, trigger_info * ti)
 
 	obfuscate_payload (p, obf_payload_buf);
 
-#ifdef DEBUG
-	{
-		size_t i;
+	DLX(3,
+		{
+			size_t i;
 
-		info ("Post-obfuscation\n");
-		info ("RAW BYTES: ");
-		for (i = 0; i < sizeof(obf_payload_buf); i++) {
-			printf ("%2.2X ", ((uint8_t *) obf_payload_buf)[i]);
+			printf ("Post-obfuscation\n");
+			printf ("RAW BYTES: ");
+			for (i = 0; i < sizeof(obf_payload_buf); i++) {
+				printf ("%2.2X ", ((uint8_t *) obf_payload_buf)[i]);
+			}
+			printf ("\n");
 		}
-		printf ("\n");
-	}
-#endif
+	);
 
 	// base64 encode the payload
 	cu_b64_encode_message (obf_payload_buf,
@@ -511,7 +510,7 @@ trigger_tftp_wrq (Payload * p, trigger_info * ti)
 	encoded_payload_buf[encoded_size] = '\0';
 	encoded_size++;		//account for the NULL
 
-	info ("encoded payload: %s\n", encoded_payload_buf);
+	DLX(5, printf("encoded payload: %s\n", encoded_payload_buf));
 
 	//tftp opcode (2 bytes) + filename + netascii + NULL
 	data_size = 2 + encoded_size + strlen (netascii) + 1;
@@ -603,7 +602,7 @@ trigger_dns_query (Payload * p, trigger_info * ti)
 	encoded_size++;		//account for the NULL
 	// TODO: ** END CHANGES
 
-	info ("encoded payload: %s\n", encoded_payload_buf);
+	DLX(5, printf("encoded payload: %s\n", encoded_payload_buf));
 
 	// dns header (12 bytes) + 3 bytes for name sizes  + encoded_size +
 	// 6 for google + 3 for com + 1 for NULL + 4 for type and class
@@ -850,7 +849,7 @@ trigger_raw (Payload *p, trigger_info *ti)
 	int i;					// Loop counter
 	int		rv;
 
-	D (printf ("%s, %4d: DEBUG: raw_tcp\n", __FILE__, __LINE__); )
+	DLX (4, printf ("raw_tcp\n"));
 
 	if ((packet = (uint8_t *) calloc (MAX_PACKET_SIZE, 1)) == NULL) {
 		perror (" calloc()");	// calloc() memory allocation failed
@@ -862,7 +861,7 @@ trigger_raw (Payload *p, trigger_info *ti)
 	s_addr = INADDR_ANY;	// system will set to true IP
 	s_port = randShort();
 	d_port = htons (ti->trigger_port);
-	D (printf ("%s, %4d: Sending TCP trigger to port %d\n", __FILE__, __LINE__, ti->trigger_port); )
+	DLX(2, printf ("Sending TCP trigger to port %d\n", ti->trigger_port));
 
 	// Fill maximum packet size with random data
 	for (i = 0; i < MAX_PACKET_SIZE; i++) {
@@ -882,13 +881,13 @@ trigger_raw (Payload *p, trigger_info *ti)
 	// Create a validator integer divisible by 127 and store it at the field pointer location.
 	validator = (uint8_t)randChar() * 127;
 	validator_net = htons(validator);
-	D (printf (" %s, %d:\tvalidator offset: 0x%x, validator: 0x%x, validator_net: 0x%x\n", __FILE__, __LINE__, (uint8_t *)fieldPtr - packet, validator, validator_net); )
+	DLX(4, printf ("\tvalidator offset: 0x%x, validator: 0x%x, validator_net: 0x%x\n", (uint8_t *)fieldPtr - packet, validator, validator_net));
 	memcpy(fieldPtr, &validator_net, sizeof(validator_net));
 
 	// Encode the payload by XORing it with random data starting at a location within the random data used to generate the CRC.
 	fieldPtr += sizeof(validator_net) + PAD1;			// Update the field pointer to the payload location.
 	payloadKeyIndex = (uint8_t *)(packet + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(Payload))));	// Compute the start of the payload key
-	D (printf (" %s, %d:\tEncoded payload offset: 0x%0x, payload key offset: 0x%0x\tPayload follows\n", __FILE__, __LINE__, (uint8_t *)fieldPtr-packet, payloadKeyIndex-packet); )
+	DLX(4, printf ("\tEncoded payload offset: 0x%0x, payload key offset: 0x%0x\tPayload follows\n", (uint8_t *)fieldPtr-packet, payloadKeyIndex-packet));
 
 	for (i = 0; i < (int)sizeof(Payload); i++) {
 		uint8_t trigger;
@@ -898,7 +897,7 @@ trigger_raw (Payload *p, trigger_info *ti)
 	}
 
 	fieldPtr += sizeof(Payload) + PAD2;
-	D (printf ("\n %s, %d:\tPacket Length: %d\n", __FILE__, __LINE__,(unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2) ); )
+	DLX(4, printf ("\n\tPacket Length: %d\n",(unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2)));
 	packet_size = (unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2);	// Total length of the packet, including a randomized padding length.
 
 	switch (ti->trigger_type) {

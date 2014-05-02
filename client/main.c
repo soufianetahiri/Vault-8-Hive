@@ -17,7 +17,11 @@
 #include "crypto_strings_main.h"
 //extern void init_crypto_strings();
 
-int initSrandFlag = 0;       //Used as a flag to ensure srand is initialized only once...
+#ifdef DEBUG
+int dbug_level_ = 2;	// debug level
+#endif
+
+int initSrandFlag = 0;	//Used as a flag to ensure srand is initialized only once...
 
 //****************************************************************************
 // for getopt()

@@ -14,7 +14,7 @@ pthread_mutex_t		tlock;
 //**************************************************************
 void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 {
-	havege_state	hs;
+	ctr_drbg_context 	ctr_drbg;
 	ssl_context		ssl;
 	ssl_session		ssn;
  
@@ -68,7 +68,7 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	printf( "\n %s%s:%s\n", BLUE, run1String, RESET );
 
 	// from a SSL/TLS perspective, the client acts like a SSL server
-	if ( crypt_setup_server( &hs, &ssl, &ssn, &(info->tcpfd) ) != SUCCESS )
+	if ( crypt_setup_server( &ctr_drbg, &ssl, &ssn, &(info->tcpfd) ) != SUCCESS )
 	{
 		D( printf( " ERROR: crypt_setup_server() failed\n" ); )
 		return;
