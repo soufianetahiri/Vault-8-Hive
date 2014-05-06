@@ -48,7 +48,8 @@ STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 OS = $(shell uname)
 
 ifeq ($(OS),Linux)
-ARCH = $(shell uname -m)
+#ARCH = $(shell uname -m)
+ARCH=x86
 SERVER = $(SERVER_BASENAME)-linux-$(ARCH)
 endif
 
@@ -102,13 +103,13 @@ endif
 strings: init_strings.o string_utils.o
 
 init_strings.o: init_strings.c string_utils.o
-	gcc -c init_strings.c
+	gcc -c $(CFLAGS) init_strings.c
 
 init_strings.c: server_strings.txt string_utils.h
 	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
 
 string_utils.o: string_utils.h string_utils.c
-	gcc -c string_utils.c 
+	gcc -c $(CFLAGS) string_utils.c 
 
 .PHONY: clean
 clean:

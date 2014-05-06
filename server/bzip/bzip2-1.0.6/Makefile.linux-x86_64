@@ -28,7 +28,7 @@ BIGFILES=-D_FILE_OFFSET_BITS=64
 # Hive binary (on Linux x86) goes from 177,808 to 169,584 bytes
 # Before bzip library added, application binary was 121,448 bytes 
 #STDIO_FREE=-DBZ_NO_STDIO
-CFLAGS=-Wall -Os $(BIGFILES) $(STDIO_FREE) -m32
+CFLAGS=-Wall -Os $(BIGFILES) $(STDIO_FREE)
 
 # Where you want it installed when you do 'make install'
 PREFIX=/usr/local

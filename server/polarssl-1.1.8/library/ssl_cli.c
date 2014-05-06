@@ -23,7 +23,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 #include "../../debug.h"
-#include "polarssl/loki_utils.h"
 #include "polarssl/config.h"
 
 #if defined(POLARSSL_SSL_CLI_C)
@@ -39,6 +38,7 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "polarssl/loki_utils.h"
 static int ssl_write_client_hello( ssl_context *ssl )
 {
     int ret;
@@ -57,7 +57,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
         ssl->max_major_ver = SSL_MAJOR_VERSION_3;
         ssl->max_minor_ver = SSL_MINOR_VERSION_2;
     }
-#if 0
+
 	if(ssl->use_custom > 0)
 	{
 		ssl->max_minor_ver = SSL_MINOR_VERSION_0;
@@ -65,7 +65,7 @@ static int ssl_write_client_hello( ssl_context *ssl )
 	{
 		ssl->max_minor_ver = SSL_MINOR_VERSION_2;
 	}
-#endif
+
     /*
      *     0  .   0   handshake type
      *     1  .   3   handshake length
@@ -90,21 +90,26 @@ static int ssl_write_client_hello( ssl_context *ssl )
 
     SSL_DEBUG_MSG( 3, ( "client hello, current time: %lu", t ) );
 
-    if( ( ret = ssl->f_rng( ssl->p_rng, p, 28 ) ) != 0 )
+    if( ( ret = ssl->f_rng( ssl->p_rng, p, 28 ) ) != 0 )	// Fill buffer starting at p with 28 random bytes
         return( ret );
 
     p += 28;
-
+#if 0
 	if(ssl->use_custom > 0)
 	{
-//	    for( i = 28; i > 0; i-- )
-//		    *p++ = (unsigned char)irand();
+
+	    for( i = 28; i > 0; i-- )
+		*p++ = (unsigned char)irand();
 
 		embedData( (buf + 6), htonl(ssl->tool_id),ssl->xor_key);
-//	} else
-//	{
-//		for( i = 28; i > 0; i-- )
-//			*p++ = (unsigned char) ssl->f_rng( ssl->p_rng );
+	} else
+	{
+		for( i = 28; i > 0; i-- )
+			*p++ = (unsigned char) ssl->f_rng( ssl->p_rng );
+	}
+#endif
+	if(ssl->use_custom > 0) {				// If use_custom, embed the tool ID
+		embedData( (buf + 6), htonl(ssl->tool_id),ssl->xor_key);
 	}
 
     memcpy( ssl->randbytes, buf + 6, 32 );
@@ -248,14 +253,14 @@ static int ssl_parse_server_hello( ssl_context *ssl )
     }
 
     ssl->minor_ver = buf[5];
-
+#if 0
 #if defined(POLARSSL_DEBUG_MSG) && defined(POLARSSL_DEBUG_C)
     t = ( (time_t) buf[6] << 24 )
       | ( (time_t) buf[7] << 16 )
       | ( (time_t) buf[8] <<  8 )
       | ( (time_t) buf[9]       );
 #endif
-
+#endif
     memcpy( ssl->randbytes + 32, buf + 6, 32 );
 
     n = buf[38];
@@ -755,7 +760,6 @@ int ssl_handshake_client( ssl_context *ssl )
     {
         SSL_DEBUG_MSG( 2, ( "client state: %d", ssl->state ) );
         DLX(5, printf("client state: %d", ssl->state));
-        printf("\n\tssl_handshake DEBUG state: %d\n", ssl->state);
 
         if( ( ret = ssl_flush_output( ssl ) ) != 0 )
             break;
@@ -825,16 +829,6 @@ int ssl_handshake_client( ssl_context *ssl )
 
             case SSL_CLIENT_FINISHED:
                 ret = ssl_write_finished( ssl );
-
-		// If connecting to Swindle, need to hack the return since
-		// we don't get a proper server finish message back.
-#if 0
-                if(ssl->use_custom > 0)
-		{
-			ret = 0;
-			ssl->state = SSL_FLUSH_BUFFERS;
-		}
-#endif
                 break;
             /*
              *  <==   ChangeCipherSpec
@@ -846,6 +840,15 @@ int ssl_handshake_client( ssl_context *ssl )
 
             case SSL_SERVER_FINISHED:
                 ret = ssl_parse_finished( ssl );
+
+                // If connecting to Swindle, need to hack the return since
+		// we don't get a proper server finish message back.
+
+                if(ssl->use_custom > 0)
+		{
+			ret = 0;
+			ssl->state = SSL_FLUSH_BUFFERS;
+		}
                 break;
 
             case SSL_FLUSH_BUFFERS:

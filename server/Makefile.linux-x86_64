@@ -65,7 +65,7 @@ bzip:	$(LIBBZIP2)
 bzip2:	$(LIBBZIP2)
 
 $(LIBBZIP2):
-	cd $(BZIP2) && $(MAKE) -f Makefile.linux-x86 libbz2.a
+	cd $(BZIP2) && $(MAKE) -f Makefile.linux-x86_64 libbz2.a
 
 .PHONY: debug
 debug: $(SERVER)-dbg

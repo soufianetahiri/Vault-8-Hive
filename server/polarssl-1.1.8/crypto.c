@@ -12,7 +12,7 @@ extern "C" {
 #include "../debug.h"
 
 //*******************************************************
-#define DEBUG_LEVEL 0
+#define DEBUG_LEVEL 0	// This controls the debug output level of PolarSSL. 0 = Debugging OFF
 
 //*******************************************************
 void my_debug( void *ctx, int level, const char *str )
@@ -33,12 +33,13 @@ int crypt_handshake( ssl_context *ssl )
      */
     DLX(4, printf("\tPerforming the TLS handshake... "));
 
-    while( ( ret = ssl_handshake( ssl ) ) != 0 )
-    {
-        if (ret != POLARSSL_ERR_NET_WANT_WRITE)
-        {
-            DLX(4, printf("failed, returned: %0x\n", ret));
-            return -1;
+    while( ( ret = ssl_handshake( ssl ) ) != 0 ) {
+
+        if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
+        	char *errbuf[256];
+        	error_strerror(ret, errbuf, sizeof(errbuf));
+        	DLX(4, printf("failed, returned: %0x - %s\n", ret, errbuf));
+        	return -1;
         }
     }
 
@@ -65,8 +66,7 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 			DLX(4, printf("failed: ret = %0x, %d bytes sent\n", ret, sent));
 			return ret;
 		}
-		size -= ret;
-		sent += ret;
+		size -= ret, sent += ret;
 	} while (size);
 	return (sent);
 }
@@ -76,19 +76,14 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 	int		ret;
 
 	DL(4);
-
-    while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
-    {
-        if( ret != POLARSSL_ERR_NET_WANT_WRITE )
-        {
-            DLX(4, printf( " failed. ssl_write returned %d\n", ret ));
-			return ret;
-        }
-    }
-
+	while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 ) {
+		if( ret != POLARSSL_ERR_NET_WANT_WRITE ) {
+		    DLX(4, printf( " failed. ssl_write returned %d\n", ret ));
+		    return ret;
+		}
+	}
 	DLX(4, printf( " %d bytes written\n", ret));
 	return ret;
-
 }
 
 //*******************************************************
