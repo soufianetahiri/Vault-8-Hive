@@ -1,0 +1,15 @@
+#------------------------------------------------
+# Makefile for arm
+#------------------------------------------------
+ARCH=arm
+TOOLROOT=arm-unknown-linux-gnueabi-
+UCLIBC_HDRS=/include
+UCLIBC_LIBS=/lib
+CC=${TOOLROOT}gcc
+AR=${TOOLROOT}ar
+RANLIB=${TOOLROOT}ranlib
+
+CFLAGS  += -I$(UCLIBC_HDRS) -L$(UCLIBC_LIBS)
+CFLAGS  += -D_MIPS_SZPTR=32 -DLINUX -DMIPS_LE
+
+OFLAGS	= -Os

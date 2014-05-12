@@ -14,7 +14,7 @@
 #include <fcntl.h>  
 #include <string.h>
 #include <signal.h>
-#include "polarssl/havege.h"
+#include "../common/crypto.h"
 #include "polarssl/sha1.h"
 
 #if defined LINUX || defined SOLARIS
@@ -64,19 +64,25 @@ void printSha1Hash(char *label, unsigned char *sha1Hash)
 //
 //RETURN: SUCCESS if generated a variance
 //        variance will hold the returned variance
-static havege_state hs;
-static int havege_state_init = 0;
+entropy_context entropy;
+ctr_drbg_context ctr_drbg;
+int rng_state_init;
 void CalcVariance( signed int* variance, int range )
 {
 
-	if ( havege_state_init != 1 )
+	if ( rng_state_init != 1 )
 	{
-		DLX(6, printf( "Initializing Havege State.\n"));
-		havege_init( &hs );
-		havege_state_init = 1;
+		D(int ret;)
+		DLX(6, printf( "Initializing RNG.\n"));
+		entropy_init( &entropy );
+		if ( (D(ret =) ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, 0, 0)) != 0 ) {
+		    DLX(4, printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret));
+		    return;
+		}
+		rng_state_init = 1;
 	}
-
-	havege_random(&hs, (unsigned char *)variance, sizeof(int));
+	if( ctr_drbg_random( &ctr_drbg, (unsigned char *)variance, sizeof(int)) != 0 )
+		return;
 	*variance %= range;
 
 	DLX(6, printf( "CalcVariance() called. %i\n", *variance));

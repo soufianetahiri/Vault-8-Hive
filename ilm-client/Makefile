@@ -32,7 +32,9 @@ all: cryptcat $(LIBPOLARSSL) $(LIBHCLIENT) $(HCLIENT)
 	rm -f cryptcat.h
 
 $(LIBPOLARSSL):
-	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
+#	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
+        cd $(POLARSSL)/library && $(MAKE) TARGET=linux-x86
+
 
 $(HCLIENT):
 	cd ../client && $(MAKE) release 

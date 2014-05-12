@@ -22,6 +22,7 @@
 #include "run_command.h"
 #include "trigger_payload.h"
 #include "polarssl/sha1.h"
+#include "crypto.h"
 
 
 //PolarSSL Files

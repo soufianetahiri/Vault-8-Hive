@@ -44,37 +44,36 @@ all:
 	@echo
 	@echo " Administrative tasks, ..."
 	@echo "  make clean"
-	@echo "  make svnclean"
 	@echo "  make tarball    ( on Linux machines only)"
 	@echo
 	@echo
 
 linux-x86: clean
-	@make -f Makefile.linux-x86
+	@make -f Makefile.arch TARGET=linux-x86 
 
 linux-x86_64: clean
-	@make -f Makefile.linux-x86_64
+	@make -f Makefile.arch TARGET=linux-x86_64
 
 solaris-x86: clean
-	@make -f Makefile.solaris-x86
+	@make -f Makefile.arch TARGET=solaris-x86
 
 solaris-sparc: clean
-	@make -f Makefile.solaris-sparc
+	@make -f Makefile.arch TARGET=solaris-sparc
 
 mikrotik-x86: clean
-	@make -f Makefile.mikrotik-x86
+	@make -f Makefile.arch TARGET=mikrotik-x86
 
 mikrotik-mipsel: clean
-	@make -f Makefile.mikrotik-mipsel
+	@make -f Makefile.arch TARGET=mikrotik-mipsel
 
 mikrotik-mips: clean
-	@make -f Makefile.mikrotik-mips
+	@make -f Makefile.arch TARGET=mikrotik-mips
 
 mikrotik-ppc: clean
-	@make -f Makefile.mikrotik-ppc
+	@make -f Makefile.arch TARGET=mikrotik-ppc
 
 arm: clean
-	@make -f Makefile.arm
+	@make -f Makefile.arch TARGET=arm
 
 .PHONY: clean-objects
 clean-objects:
@@ -87,7 +86,6 @@ clean:
 	@echo
 	rm -f *.o 
 	rm -f *PATCHED
-#	rm -f $(SERVER_BASENAME)-*
 	rm -f init_strings.*
 	rm -f proj_strings*
 	rm -f init_crypto_strings.*
@@ -102,7 +100,8 @@ clean:
 	@echo " Done cleaning Hive server."
 	@echo
 
-svnclean: clean
+distclean: clean
+	rm -f $(SERVER_BASENAME)-*
 
 tarball: clean
 	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive.tar server

