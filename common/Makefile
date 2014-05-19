@@ -55,7 +55,7 @@ SERVER_BASENAME = hived
 
 SSL = polarssl
 BZIP2 = bzip2
-INCLUDES = -I$(SSL)/include -I$(BZIP2) -I../libs -I.
+INCLUDES = -I$(SSL)/include -I$(BZIP2) -I../.. -I.
 LIBSSL = $(SSL)/library/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = libcrypto.a
@@ -91,7 +91,8 @@ $(LIBSSL): crypto_strings
 bzip2:	$(LIBBZIP2)
 
 $(LIBBZIP2):
-	cd $(BZIP2) && $(MAKE) -f Makefile.$(TARGET) libbz2.a
+#	cd $(BZIP2) && $(MAKE) -f Makefile.$(TARGET) libbz2.a
+	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET) libbz2.a
 
 $(LIBCRYPTO): $(CRYPTO_OBJS)
 	@echo "  AR    $@"

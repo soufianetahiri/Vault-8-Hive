@@ -21,8 +21,45 @@ RANLIB=ranlib
 LDFLAGS=
 
 BIGFILES=-D_FILE_OFFSET_BITS=64
-CFLAGS=-Wall -Winline -O2 -g $(BIGFILES)
+#CFLAGS=-Wall -Winline -O2 -g $(BIGFILES)
+##########################################################################
+# Defaults
+CFLAGS  = -Wall -W -Wdeclaration-after-statement -Winline $(BIGFILES) -O2
+#OFLAGS  = -O2
 
+ifeq ("$(TARGET)", "linux-x86")
+        include ../Makefile-include.linux-x86
+endif
+ifeq ("$(TARGET)", "linux-x86_64")
+        include ../Makefile-include.linux-x86_64
+endif
+ifeq ("$(TARGET)", "mikrotik-mips")
+        include ../Makefile-include.mikrotik-mips
+endif
+ifeq ("$(TARGET)", "mikrotik-mipsel")
+        include ../Makefile-include.mikrotik-mipsel
+endif
+ifeq ("$(TARGET)", "mikrotik-x86")
+        include ../Makefile-include.mikrotik-x86
+endif
+ifeq ("$(TARGET)", "mikrotik-ppc")
+        include ../Makefile-include.mikrotik-ppc
+endif
+ifeq ("$(TARGET)", "arm")
+        include ../Makefile-include.arm
+endif
+ifeq ("$(TARGET)", "solaris-sparc")
+        include ../Makefile-include.solaris-sparc
+endif
+ifeq ("$(TARGET)", "solaris-x86")
+        include ../Makefile-include.solaris-x86
+endif
+
+ifdef DEBUG
+CFLAGS += -g3
+endif
+
+##########################################################################
 # Where you want it installed when you do 'make install'
 PREFIX=/usr/local
 

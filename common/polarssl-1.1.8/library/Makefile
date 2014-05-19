@@ -1,7 +1,7 @@
 
 # Also see "include/polarssl/config.h"
 LIBDIR = .
-CFLAGS	= -I../include -Wall -W -Wdeclaration-after-statement
+CFLAGS	= -I../.. -I../include -Wall -W -Wdeclaration-after-statement
 OFLAGS	= -O2
 
 ifeq ("$(TARGET)", "linux-x86")
