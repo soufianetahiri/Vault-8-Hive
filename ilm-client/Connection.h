@@ -8,8 +8,8 @@
 #include "ProcessCmdResponse.h"
 #include "LibraryModuleBase.h"
 
-#include "../client/ssl/crypto.h"
-#include "../client/ssl/polarssl/include/polarssl/ssl.h"
+#include "crypto.h"
+#include "ssl.h"
 #include "ilm-client.h"
 
 //*****************************************************************************************

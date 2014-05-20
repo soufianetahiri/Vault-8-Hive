@@ -1,19 +1,26 @@
 
-POLARSSL = ../client/ssl/polarssl
+SSL = ../common/polarssl
+LIBSSL_BUILD = $(SSL)/library
+LIBSSL = $(LIBSSL_BUILD)/libpolarssl.a
+LIBSSL_INCLUDES = $(SSL)/include/polarssl
+
+
+#POLARSSL = ../client/ssl/polarssl
 LIBHCLIENT = ../client/libhclient.a
 LIBCRYPTCAT = ../client/libcryptcat.a
-LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
+#LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
 HCLIENT = ./hclient-linux
 
 INCLUDES += -I.
+INCLUDES += -I../common
 INCLUDES += -I../client
 INCLUDES += -I../client/cryptcat
-INCLUDES += -I$(POLARSSL)/include
+INCLUDES += -I$(LIBSSL_INCLUDES)
 INCLUDES += -I../libs 
-INCLUDES += -I include
+INCLUDES += -Iinclude
 
 #LIBS=$(LIBCRYPTCAT) $(LIBHCLIENT) libILM_SDK.a $(LIBPOLARSSL)
-LIBS=$(LIBHCLIENT) libILM_SDK.a $(LIBPOLARSSL)
+LIBS=$(LIBHCLIENT) libILM_SDK.a $(LIBSSL)
 SRC += Command.cpp
 SRC += File.cpp
 SRC += Ilm.cpp
@@ -22,18 +29,25 @@ SRC += Utilities.cpp
 SRC += hive.cpp $(LIBS)
 OUTFILE=hive
 #CFLAGS=-fPIC -shared -Wall -lpthread
-CFLAGS=-fPIC -Wall -Werror -Wextra -lpthread -lc -ansi
+CFLAGS=-fPIC -Wall -Werror -Wextra -lpthread -lc -ansi $(INCLUDES)
 
+$(info )
+$(info =================================================)
+$(info TARGET: $(TARGET))
+$(info SRCDIR: $(PWD))
+$(info CFLAGS: $(CFLAGS))
+$(info =================================================)
+$(info )
 # building hclient will build the requisite PolarSSL libraries. This could be done directly
 .PHONY: all
-all: cryptcat $(LIBPOLARSSL) $(LIBHCLIENT) $(HCLIENT)
+all: cryptcat $(LIBSSL) $(LIBHCLIENT) $(HCLIENT)
 	+ g++ $(CFLAGS) -shared $(INCLUDES) $(SRC) -o $(OUTFILE)
 	md5sum $(OUTFILE) > $(OUTFILE).md5
 	rm -f cryptcat.h
 
-$(LIBPOLARSSL):
+$(LIBSSL):
 #	cd $(POLARSSL)/library && $(MAKE) -f Makefile.linux-x86
-        cd $(POLARSSL)/library && $(MAKE) TARGET=linux-x86
+        cd $(SSL)/library && $(MAKE) TARGET=linux-x86
 
 
 $(HCLIENT):
@@ -43,7 +57,7 @@ $(HCLIENT):
 libhclient: $(LIBHCLIENT)
 
 $(LIBHCLIENT):
-	cd ../client && $(MAKE) library
+	cd ../client && $(MAKE) TARGET=linux-x86 library
 
 libcryptcat: $(LIBCRYPTCAT)
 
@@ -71,6 +85,6 @@ clean:
 	rm -f $(LIBCRYPTCAT)
 	rm -f hclient-linux-dbg
 	rm -f $(OUTFILE).md5
-	make -C $(POLARSSL)/library clean
+	make -C $(SSL)/library clean
 	make -C ../client clean
 

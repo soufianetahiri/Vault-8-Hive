@@ -22,7 +22,7 @@
 extern "C"
 {
 	#include "proj_strings.h"
-	#include "ssl/crypto.h"
+	#include "crypto.h"
 	#include "trigger_protocols.h"
 	#include "trigger_network.h"
 	#include "trigger_utils.h"

@@ -13,10 +13,13 @@ all:
 	@echo
 
 linux-x86: clean
-	@make -f Makefile.arch TARGET=linux-x86 
+	@make -f Makefile.arch TARGET=linux-x86
 
 linux-x86_64: clean
 	@make -f Makefile.arch TARGET=linux-x86_64
+
+library: clean
+	@make -f Makefile.arch TARGET=$(TARGET) $@
 
 .PHONY: clean
 clean:
@@ -101,7 +104,7 @@ dist-clean:	clean
 #	rm -f *PATCHED *PATCHED.exe
 #	rm -f *UNpatched*
 #	rm -f crypto_strings_main.h
-#	rm -f init_crypto_strings.c
+#	rm -f init_crypto_strings.clibrary:
 #	rm -f crypto_proj_strings.h
 #	rm -f string_utils.h.gch
 #	rm -f mod_hexify.pyc

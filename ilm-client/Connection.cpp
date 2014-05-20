@@ -14,7 +14,7 @@
 #include "hive.h"
 
 extern "C" {
-#include "ssl/crypto.h"
+#include "crypto.h"
 #include "proj_strings.h"
 #include "crypto_proj_strings.h"
 #include "colors.h"
