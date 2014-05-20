@@ -19,6 +19,8 @@
 #include <signal.h>
 #include <errno.h>
 
+#include "trigger.h"
+#include "crypto.h"
 /* Preprocessor Macros */
 #define DEFAULT_DELAY     30								/* default trigger delay */
 #define YES               1
@@ -92,8 +94,7 @@ union aword {
    } w;
 };
 
-#include "trigger.h"
-#include "ssl/crypto.h"
+
 
 /* Function Prototypes */
 void Usage(char*);                                         /* definition: misc.c */

@@ -1,42 +1,53 @@
-
 # Also see "include/polarssl/config.h"
 LIBDIR = .
-CFLAGS	= -I../.. -I../include -Wall -W -Wdeclaration-after-statement
-OFLAGS	= -O2
+#CFLAGS	= -I../.. -I../include -Wall -W -Wdeclaration-after-statement
+#OFLAGS	= -O2
+.PHONY: ARCH_BUILD
+include ARCH_BUILD
+ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
+$(info Building $(TARGET)...)
+BUILD_OPTS=clean
+else
+BUILD_OPTS=
+$(info Target $(TARGET) already built.)
+endif
 
 ifeq ("$(TARGET)", "linux-x86")
-	include ../../Makefile-include.linux-x86
+include ../../Makefile-include.linux-x86
+else ifeq ("$(TARGET)", "linux-x86_64")
+include ../../Makefile-include.linux-x86_64
+else ifeq ("$(TARGET)", "mikrotik-mips")
+include ../../Makefile-include.mikrotik-mips
+else ifeq ("$(TARGET)", "mikrotik-mipsel")
+include ../../Makefile-include.mikrotik-mipsel
+else ifeq ("$(TARGET)", "mikrotik-x86")
+include ../../Makefile-include.mikrotik-x86
+else ifeq ("$(TARGET)", "mikrotik-ppc")
+include ../../Makefile-include.mikrotik-ppc
+else ifeq ("$(TARGET)", "arm")
+include ../../Makefile-include.arm
+else ifeq ("$(TARGET)", "solaris-sparc")
+include ../../Makefile-include.solaris-sparc
+else ifeq ("$(TARGET)", "solaris-x86")
+include ../../Makefile-include.solaris-x86
+else
+$(error Invalid target)
 endif
-ifeq ("$(TARGET)", "linux-x86_64")
-	include ../../Makefile-include.linux-x86_64
-endif
-ifeq ("$(TARGET)", "mikrotik-mips")
-	include ../../Makefile-include.mikrotik-mips
-endif
-ifeq ("$(TARGET)", "mikrotik-mipsel")
-	include ../../Makefile-include.mikrotik-mipsel
-endif
-ifeq ("$(TARGET)", "mikrotik-x86")
-	include ../../Makefile-include.mikrotik-x86
-endif
-ifeq ("$(TARGET)", "mikrotik-ppc")
-	include ../../Makefile-include.mikrotik-ppc
-endif
-ifeq ("$(TARGET)", "arm")
-	include ../../Makefile-include.arm
-endif
-ifeq ("$(TARGET)", "solaris-sparc")
-	include ../../Makefile-include.solaris-sparc
-endif
-ifeq ("$(TARGET)", "solaris-x86")
-	include ../../Makefile-include.solaris-x86
-endif
+
+CFLAGS += -I../.. -I../include
 
 ifdef DEBUG
 CFLAGS += -g3
 CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 endif
 
+$(info )
+$(info =================================================)
+$(info TARGET: $(TARGET))
+$(info SRCDIR: $(PWD))
+$(info CFLAGS: $(CFLAGS))
+$(info =================================================)
+$(info )
 
 # MicroBlaze specific options:
 # CFLAGS += -mno-xl-soft-mul -mxl-barrel-shift
@@ -72,6 +83,7 @@ OBJS=	aes.o		arc4.o		asn1parse.o		\
 	
 
 .SILENT:
+.PHONY: $(BUILD_OPTS)
 
 all: static
 
@@ -79,7 +91,7 @@ static: $(LIBDIR)/libpolarssl.a
 
 shared: $(LIBDIR)/libpolarssl.$(DLEXT)
 
-$(LIBDIR)/libpolarssl.a: $(OBJS)
+$(LIBDIR)/libpolarssl.a: $(BUILD_OPTS) $(OBJS)
 	echo "  AR    $@"
 	$(AR) r $@ $(OBJS)
 	echo "  RL    $@"

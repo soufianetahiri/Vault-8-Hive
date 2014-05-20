@@ -14,8 +14,6 @@
 #include "proj_strings.h"
 #include "proj_strings_main.h"
 
-#include "crypto_strings_main.h"
-//extern void init_crypto_strings();
 
 #ifdef DEBUG
 int dbug_level_ = 2;	// debug level
@@ -75,7 +73,6 @@ int main( int argc, char **argv )
 	uint16_t		trigger_port = 0;
 
 	init_strings();
-	init_crypto_strings();
 
 	memset( &trigger_args, 0, sizeof( struct trigger_params ) );
 

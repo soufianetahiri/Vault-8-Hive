@@ -1,7 +1,7 @@
 #include "hclient.h"
 #include "debug.h"
 #include "threads.h"
-#include "ssl/crypto.h"
+#include "crypto.h"
 #include "colors.h"
 
 #include "proj_strings.h"     //Required for strings...

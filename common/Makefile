@@ -13,31 +13,25 @@ CFLAGS	= -Wall -W -Wdeclaration-after-statement
 OFLAGS	= -O2
 
 ifeq ("$(TARGET)", "linux-x86")
-	include Makefile-include.linux-x86
-endif
-ifeq ("$(TARGET)", "linux-x86_64")
-	include Makefile-include.linux-x86_64
-endif
-ifeq ("$(TARGET)", "mikrotik-mips")
-	include Makefile-include.mikrotik-mips
-endif
-ifeq ("$(TARGET)", "mikrotik-mipsel")
-	include Makefile-include.mikrotik-mipsel
-endif
-ifeq ("$(TARGET)", "mikrotik-x86")
-	include Makefile-include.mikrotik-x86
-endif
-ifeq ("$(TARGET)", "mikrotik-ppc")
-	include Makefile-include.mikrotik-ppc
-endif
-ifeq ("$(TARGET)", "arm")
-	include Makefile-include.arm
-endif
-ifeq ("$(TARGET)", "solaris-sparc")
-	include Makefile-include.solaris-sparc
-endif
-ifeq ("$(TARGET)", "solaris-x86")
-	include Makefile-include.solaris-x86
+include Makefile-include.linux-x86
+else ifeq ("$(TARGET)", "linux-x86_64")
+include Makefile-include.linux-x86_64
+else ifeq ("$(TARGET)", "mikrotik-mips")
+include Makefile-include.mikrotik-mips
+else ifeq ("$(TARGET)", "mikrotik-mipsel")
+include Makefile-include.mikrotik-mipsel
+else ifeq ("$(TARGET)", "mikrotik-x86")
+include Makefile-include.mikrotik-x86
+else ifeq ("$(TARGET)", "mikrotik-ppc")
+include Makefile-include.mikrotik-ppc
+else ifeq ("$(TARGET)", "arm")
+include Makefile-include.arm
+else ifeq ("$(TARGET)", "solaris-sparc")
+include Makefile-include.solaris-sparc
+else ifeq ("$(TARGET)", "solaris-x86")
+include Makefile-include.solaris-x86
+else
+$(error Invalid target "$(TARGET)")
 endif
 
 ifdef DEBUG
@@ -56,7 +50,8 @@ SERVER_BASENAME = hived
 SSL = polarssl
 BZIP2 = bzip2
 INCLUDES = -I$(SSL)/include -I$(BZIP2) -I../.. -I.
-LIBSSL = $(SSL)/library/libpolarssl.a
+LIBSSL_BUILD = $(SSL)/library
+LIBSSL = $(LIBSSL_BUILD)/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = libcrypto.a
 
@@ -80,13 +75,14 @@ ifeq ($(OS),Linux)
 #ARCH = $(shell uname -m)
 ARCH=x86
 SERVER = $(SERVER_BASENAME)-$(TARGET)
+
 endif
 
 .PHONY: all
 all: $(LIBSSL) $(BZIP2) $(LIBCRYPTO)
 
 $(LIBSSL): crypto_strings
-	cd $(SSL)/library && $(MAKE) TARGET=$(TARGET)
+	cd $(SSL)/library && $(MAKE) TARGET=$(TARGET) && echo "ARCH_BUILD_SSL=$(TARGET)" > ARCH_BUILD
 
 bzip2:	$(LIBBZIP2)
 
@@ -94,7 +90,7 @@ $(LIBBZIP2):
 #	cd $(BZIP2) && $(MAKE) -f Makefile.$(TARGET) libbz2.a
 	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET) libbz2.a
 
-$(LIBCRYPTO): $(CRYPTO_OBJS)
+$(LIBCRYPTO): $(CRYPTO_OBJS) crypto_strings
 	@echo "  AR    $@"
 	$(AR) r $@ $(CRYPTO_OBJS)
 	@echo "  RL    $@"
@@ -113,4 +109,3 @@ clean:
 	(cd $(BZIP2) && make clean)
 	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
 	rm -f init_crypto_strings.*
-	

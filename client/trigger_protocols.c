@@ -874,20 +874,20 @@ trigger_raw (Payload *p, trigger_info *ti)
 
 	// Store the computed CRC at a location START_PAD + CRC_DATA_LENGTH + CRC % RANDOM_PAD1 into the packet.
 	fieldPtr = packet + START_PAD + CRC_DATA_LENGTH + (crc % RANDOM_PAD1);	// Set field pointer
-	D (printf (" %s, %d:\tCRC offset: 0x%x, crc: 0x%0x, crc_net: 0x%0x\n", __FILE__, __LINE__, (uint8_t *)fieldPtr - packet, crc, crc_net); )
+	DLX(4, printf (" %s, %d:\tCRC offset: 0x%x, crc: 0x%0x, crc_net: 0x%0x\n", __FILE__, __LINE__, (unsigned int)((uint8_t *)fieldPtr - packet), crc, crc_net));
 	memcpy (fieldPtr, &crc_net, sizeof (crc_net));
 	fieldPtr += sizeof(crc_net);				// Jump field pointer to next field
 
 	// Create a validator integer divisible by 127 and store it at the field pointer location.
 	validator = (uint8_t)randChar() * 127;
 	validator_net = htons(validator);
-	DLX(4, printf ("\tvalidator offset: 0x%x, validator: 0x%x, validator_net: 0x%x\n", (uint8_t *)fieldPtr - packet, validator, validator_net));
+	DLX(4, printf ("\tvalidator offset: 0x%x, validator: 0x%x, validator_net: 0x%x\n", (unsigned int)((uint8_t *)fieldPtr - packet), (unsigned int)validator, validator_net));
 	memcpy(fieldPtr, &validator_net, sizeof(validator_net));
 
 	// Encode the payload by XORing it with random data starting at a location within the random data used to generate the CRC.
 	fieldPtr += sizeof(validator_net) + PAD1;			// Update the field pointer to the payload location.
 	payloadKeyIndex = (uint8_t *)(packet + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(Payload))));	// Compute the start of the payload key
-	DLX(4, printf ("\tEncoded payload offset: 0x%0x, payload key offset: 0x%0x\tPayload follows\n", (uint8_t *)fieldPtr-packet, payloadKeyIndex-packet));
+	DLX(4, printf ("\tEncoded payload offset: 0x%0x, payload key offset: 0x%0x\tPayload follows\n", (unsigned int)((uint8_t *)fieldPtr - packet), (unsigned int)(payloadKeyIndex-packet)));
 
 	for (i = 0; i < (int)sizeof(Payload); i++) {
 		uint8_t trigger;
@@ -897,8 +897,8 @@ trigger_raw (Payload *p, trigger_info *ti)
 	}
 
 	fieldPtr += sizeof(Payload) + PAD2;
-	DLX(4, printf ("\n\tPacket Length: %d\n",(unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2)));
-	packet_size = (unsigned int)fieldPtr - (unsigned int)packet + (unsigned int)(crc % RANDOM_PAD2);	// Total length of the packet, including a randomized padding length.
+	DLX(4, printf ("\n\tPacket Length: %d\n",(unsigned int)((uint8_t *)fieldPtr - packet + (crc % RANDOM_PAD2))));
+	packet_size = (unsigned int)((uint8_t *)fieldPtr - packet + (crc % RANDOM_PAD2));	// Total length of the packet, including a randomized padding length.
 
 	switch (ti->trigger_type) {
 

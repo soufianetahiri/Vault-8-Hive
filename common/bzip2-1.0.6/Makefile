@@ -28,32 +28,27 @@ CFLAGS  = -Wall -W -Wdeclaration-after-statement -Winline $(BIGFILES) -O2
 #OFLAGS  = -O2
 
 ifeq ("$(TARGET)", "linux-x86")
-        include ../Makefile-include.linux-x86
+include ../Makefile-include.linux-x86
+else ifeq ("$(TARGET)", "linux-x86_64")
+include ../Makefile-include.linux-x86_64
+else ifeq ("$(TARGET)", "mikrotik-mips")
+include ../Makefile-include.mikrotik-mips
+else ifeq ("$(TARGET)", "mikrotik-mipsel")
+include ../Makefile-include.mikrotik-mipsel
+else ifeq ("$(TARGET)", "mikrotik-x86")
+include ../Makefile-include.mikrotik-x86
+else ifeq ("$(TARGET)", "mikrotik-ppc")
+include ../Makefile-include.mikrotik-ppc
+else ifeq ("$(TARGET)", "arm")
+include ../Makefile-include.arm
+else ifeq ("$(TARGET)", "solaris-sparc")
+include ../Makefile-include.solaris-sparc
+else ifeq ("$(TARGET)", "solaris-x86")
+include ../Makefile-include.solaris-x86
+else
+$(error Invalid target "$(TARGET)")
 endif
-ifeq ("$(TARGET)", "linux-x86_64")
-        include ../Makefile-include.linux-x86_64
-endif
-ifeq ("$(TARGET)", "mikrotik-mips")
-        include ../Makefile-include.mikrotik-mips
-endif
-ifeq ("$(TARGET)", "mikrotik-mipsel")
-        include ../Makefile-include.mikrotik-mipsel
-endif
-ifeq ("$(TARGET)", "mikrotik-x86")
-        include ../Makefile-include.mikrotik-x86
-endif
-ifeq ("$(TARGET)", "mikrotik-ppc")
-        include ../Makefile-include.mikrotik-ppc
-endif
-ifeq ("$(TARGET)", "arm")
-        include ../Makefile-include.arm
-endif
-ifeq ("$(TARGET)", "solaris-sparc")
-        include ../Makefile-include.solaris-sparc
-endif
-ifeq ("$(TARGET)", "solaris-x86")
-        include ../Makefile-include.solaris-x86
-endif
+
 
 ifdef DEBUG
 CFLAGS += -g3
