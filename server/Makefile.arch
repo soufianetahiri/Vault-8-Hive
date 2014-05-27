@@ -133,11 +133,8 @@ $(LIBSSL): $(SSL_REBUILD)
 $(LIBBZIP2): $(BZIP2_REBUILD)
 	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET)
 
-.PHONY: rebuild-crypto
 $(LIBCRYPTO): $(CRYPTO_REBUILD)
 	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
-rebuild-crypto:
-	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET) clean
 
 .PHONY: debug
 debug: $(SERVER)-dbg
