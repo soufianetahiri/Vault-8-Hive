@@ -30,23 +30,20 @@ CFLAGS  = -Wall -W -Wdeclaration-after-statement -Winline $(BIGFILES) -O2
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
 
+$(info )
+$(info )
+$(info =========================================================================)
 ifdef ARCH_BUILD_BZIP2
   ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
-    $(info .)
     $(info .  Rebuilding BZIP2 library for $(TARGET))
-    $(info .)
     BZIP2_BUILD_OPTS:=clean
   else
     BZIP2_BUILD_OPTS:=
-    $(info .)
     $(info .  BZIP2 library for $(TARGET) previously built.)
-    $(info .)
   endif
 else
   BZIP2_BUILD_OPTS:=clean
-  $(info .)
   $(info .  Building BZIP2 library for $(TARGET))
-  $(info .)
 endif
 
 ifeq ("$(TARGET)", "linux-x86")
@@ -90,8 +87,15 @@ OBJS= blocksort.o  \
       bzlib.o
 
 
-.SILENT:
+$(info =========================================================================)
+$(info TARGET: $(TARGET))
+$(info SRCDIR: $(PWD))
+$(info CFLAGS: $(CFLAGS))
+$(info =========================================================================)
+$(info )
 
+
+.SILENT:
 
 #all: libbz2.a bzip2 bzip2recover test
 
@@ -171,6 +175,7 @@ clean:
 	rm -f *.o libbz2.a bzip2 bzip2recover \
 	sample1.rb2 sample2.rb2 sample3.rb2 \
 	sample1.tst sample2.tst sample3.tst
+	>ARCH_BUILD
 
 blocksort.o: blocksort.c
 	@cat words0

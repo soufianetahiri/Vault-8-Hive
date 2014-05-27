@@ -21,7 +21,10 @@
 CLIENT_BASENAME = hive
 SERVER_BASENAME = hived
 
-POLARSSL = polarssl
+SSL = ../common/ssl
+CRYPTO = ../common/crypto
+BZIP2 = ../common/bzip2
+
 INCLUDES = -I$(POLARSSL)/include -I../libs
 LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
 
@@ -89,8 +92,9 @@ clean:
 		rm -f $$file; \
 	done
 
-	$(MAKE) -C $(POLARSSL)/library clean
-	$(MAKE) -C bzip/bzip2-1.0.6 clean
+#	$(MAKE) -C $(SSL) TARGET=clean clean
+#	$(MAKE) -C $(POLARSSL)/library clean
+#	$(MAKE) -C bzip/bzip2-1.0.6 clean
 
 distclean: clean
 	rm -f $(SERVER_BASENAME)-*

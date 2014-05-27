@@ -5,23 +5,20 @@ LIBDIR = .
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
 
+$(info )
+$(info )
+$(info =========================================================================)
 ifdef ARCH_BUILD_SSL
   ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
-    $(info .)
     $(info .  Rebuilding SSL library for $(TARGET))
-    $(info .)
     SSL_BUILD_OPTS:=clean
   else
     SSL_BUILD_OPTS:=
-    $(info .)
     $(info .  SSL library for $(TARGET) previously built.)
-    $(info .)
   endif
 else
   SSL_BUILD_OPTS:=clean
-  $(info .)
   $(info .  Building SSL library for $(TARGET))
-  $(info .)
 endif
 
 
@@ -40,10 +37,10 @@ else ifeq ("$(TARGET)", "mikrotik-ppc")
 else ifeq ("$(TARGET)", "arm")
   include ../../Makefile-include.arm
 else ifeq ("$(TARGET)", "solaris-sparc")
-  includtorm
- ../../Makefile-include.solaris-sparc
+  include ../../Makefile-include.solaris-sparc
 else ifeq ("$(TARGET)", "solaris-x86")
   include ../../Makefile-include.solaris-x86
+else ifeq ("$(TARGET)", "clean")
 else
   $(error Invalid target "$(TARGET)")
 endif
@@ -56,12 +53,11 @@ CFLAGS += -g3
 CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 endif
 
-$(info )
-$(info =================================================)
+$(info =========================================================================)
 $(info TARGET: $(TARGET))
 $(info SRCDIR: $(PWD))
 $(info CFLAGS: $(CFLAGS))
-$(info =================================================)
+$(info =========================================================================)
 $(info )
 
 # MicroBlaze specific options:
@@ -131,5 +127,6 @@ $(LIBDIR)/libpolarssl.dll: libpolarssl.a
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 
 clean:
+	echo "  CLEANING $(PWD)..."
 	rm -f *.o libpolarssl.*
 	>ARCH_BUILD

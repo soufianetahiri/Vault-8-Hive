@@ -1,5 +1,5 @@
 #include "loki_utils.h"
-#include "config.h"
+#include "polarssl/config.h"
 #include <string.h>
 #include <stdlib.h>
 

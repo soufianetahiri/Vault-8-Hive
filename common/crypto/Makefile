@@ -7,7 +7,7 @@ CFLAGS	= -Wall -W -Wdeclaration-after-statement
 OFLAGS	= -O2
 COMMON = ..
 SSL = $(COMMON)/ssl
-INCLUDES = -I.. -I$(SSL)/include/polarssl
+INCLUDES = -I.. -I$(SSL)/include
 
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
@@ -72,26 +72,28 @@ STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 .PHONY: $(CRYPTO_BUILD_OPTS)
 .PHONY: all
 
+$(info )
+$(info )
+$(info =========================================================================)
 ifdef ARCH_BUILD_CRYPTO
   ifneq ("$(ARCH_BUILD_CRYPTO)", "$(TARGET)")
-    $(info .)
     $(info .  Rebuilding libcrypto for $(TARGET))
-    $(info .)
     CRYPTO_BUILD_OPTS:=clean
   else
     CRYPTO_BUILD_OPTS:=
-    $(info .)
     $(info .  libcrypto for $(TARGET) previously built.)
-    $(info .)
   endif
 else
   CRYPTO_BUILD_OPTS:=clean
-  $(info .)
   $(info .  Building libcrypto for $(TARGET))
-  $(info .)
 endif
 
-#all: $(LIBCRYPTO)
+$(info =========================================================================)
+$(info TARGET: $(TARGET))
+$(info SRCDIR: $(PWD))
+$(info CFLAGS: $(CFLAGS))
+$(info =========================================================================)
+$(info )
 
 $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
 	@echo "   AR    $@"

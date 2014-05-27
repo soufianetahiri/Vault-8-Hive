@@ -8,7 +8,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include "crypto_strings_main.h"
-#include "x509.h"
+#include "polarssl/x509.h"
 
 entropy_context entropy;	// Entropy context
 ctr_drbg_context ctr_drbg;	// Counter mode deterministic random byte generator context
