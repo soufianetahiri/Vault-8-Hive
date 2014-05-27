@@ -48,6 +48,7 @@ LIBSSL = $(SSL)/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 
+.PHONY: $(BZIP2)/ARCH_BUILD $(CRYPTO)/ARCH_BUILD $(SSL)/ARCH_BUILD
 include $(BZIP2)/ARCH_BUILD
 include $(CRYPTO)/ARCH_BUILD
 include $(SSL)/ARCH_BUILD
