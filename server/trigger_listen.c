@@ -14,7 +14,7 @@
 #include <fcntl.h>  
 #include <string.h>
 #include <signal.h>
-#include "../common/crypto.h"
+#include "crypto.h"
 #include "polarssl/sha1.h"
 
 #if defined LINUX || defined SOLARIS

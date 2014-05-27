@@ -8,6 +8,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdlib.h>
 #include "crypto_strings_main.h"
+#include "x509.h"
 
 entropy_context entropy;	// Entropy context
 ctr_drbg_context ctr_drbg;	// Counter mode deterministic random byte generator context
@@ -186,8 +187,6 @@ int crypt_setup_client( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 // most of these functions only used by server
 //*******************************************************
 
-#include "polarssl/x509.h"
-
 /*
  * Computing a "safe" DH-1024 prime can take a very
  * long time, so a precomputed value is provided similar to that below
@@ -298,8 +297,7 @@ int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 	D( printf( " ok\n" ); )
 
 	ssl_set_endpoint( ssl, SSL_IS_SERVER );
-	ssl_set_authmode( ssl, SSL_VERIFY_NONE );int my_set_session( ssl_context *ssl );
-	int my_get_session( ssl_context *ssl );
+	ssl_set_authmode( ssl, SSL_VERIFY_NONE );
 
 	ssl_set_rng( ssl, ctr_drbg_random, ctr_drbg);
 	ssl_set_dbg( ssl, my_debug, stdout );

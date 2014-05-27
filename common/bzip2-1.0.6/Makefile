@@ -27,26 +27,48 @@ BIGFILES=-D_FILE_OFFSET_BITS=64
 CFLAGS  = -Wall -W -Wdeclaration-after-statement -Winline $(BIGFILES) -O2
 #OFLAGS  = -O2
 
-ifeq ("$(TARGET)", "linux-x86")
-include ../Makefile-include.linux-x86
-else ifeq ("$(TARGET)", "linux-x86_64")
-include ../Makefile-include.linux-x86_64
-else ifeq ("$(TARGET)", "mikrotik-mips")
-include ../Makefile-include.mikrotik-mips
-else ifeq ("$(TARGET)", "mikrotik-mipsel")
-include ../Makefile-include.mikrotik-mipsel
-else ifeq ("$(TARGET)", "mikrotik-x86")
-include ../Makefile-include.mikrotik-x86
-else ifeq ("$(TARGET)", "mikrotik-ppc")
-include ../Makefile-include.mikrotik-ppc
-else ifeq ("$(TARGET)", "arm")
-include ../Makefile-include.arm
-else ifeq ("$(TARGET)", "solaris-sparc")
-include ../Makefile-include.solaris-sparc
-else ifeq ("$(TARGET)", "solaris-x86")
-include ../Makefile-include.solaris-x86
+.PHONY: ARCH_BUILD
+include ARCH_BUILD
+
+ifdef ARCH_BUILD_BZIP2
+  ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
+    $(info .)
+    $(info .  Rebuilding BZIP2 library for $(TARGET))
+    $(info .)
+    BZIP2_BUILD_OPTS:=clean
+  else
+    BZIP2_BUILD_OPTS:=
+    $(info .)
+    $(info .  BZIP2 library for $(TARGET) previously built.)
+    $(info .)
+  endif
 else
-$(error Invalid target "$(TARGET)")
+  BZIP2_BUILD_OPTS:=clean
+  $(info .)
+  $(info .  Building BZIP2 library for $(TARGET))
+  $(info .)
+endif
+
+ifeq ("$(TARGET)", "linux-x86")
+  include ../Makefile-include.linux-x86
+else ifeq ("$(TARGET)", "linux-x86_64")
+  include ../Makefile-include.linux-x86_64
+else ifeq ("$(TARGET)", "mikrotik-mips")
+  include ../Makefile-include.mikrotik-mips
+else ifeq ("$(TARGET)", "mikrotik-mipsel")
+  include ../Makefile-include.mikrotik-mipsel
+else ifeq ("$(TARGET)", "mikrotik-x86")
+  include ../Makefile-include.mikrotik-x86
+else ifeq ("$(TARGET)", "mikrotik-ppc")
+  include ../Makefile-include.mikrotik-ppc
+else ifeq ("$(TARGET)", "arm")
+  include ../Makefile-include.arm
+else ifeq ("$(TARGET)", "solaris-sparc")
+  include ../Makefile-include.solaris-sparc
+else ifeq ("$(TARGET)", "solaris-x86")
+  include ../Makefile-include.solaris-x86
+else
+  $(error Invalid target "$(TARGET)")
 endif
 
 
@@ -67,10 +89,15 @@ OBJS= blocksort.o  \
       decompress.o \
       bzlib.o
 
-all: libbz2.a bzip2 bzip2recover test
 
-bzip2: libbz2.a bzip2.o
+.SILENT:
+
+
+#all: libbz2.a bzip2 bzip2recover test
+
+bzip2: $(BZIP2_BUILD_OPTS) libbz2.a bzip2.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2 bzip2.o -L. -lbz2
+	echo "ARCH_BUILD_BZIP2=$(TARGET)" > ARCH_BUILD
 
 bzip2recover: bzip2recover.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2recover bzip2recover.o

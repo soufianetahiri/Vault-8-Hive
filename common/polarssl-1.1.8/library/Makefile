@@ -4,39 +4,54 @@ LIBDIR = .
 #OFLAGS	= -O2
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
-ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
-$(info Building $(TARGET)...)
-BUILD_OPTS=clean
+
+ifdef ARCH_BUILD_SSL
+  ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
+    $(info .)
+    $(info .  Rebuilding SSL library for $(TARGET))
+    $(info .)
+    SSL_BUILD_OPTS:=clean
+  else
+    SSL_BUILD_OPTS:=
+    $(info .)
+    $(info .  SSL library for $(TARGET) previously built.)
+    $(info .)
+  endif
 else
-BUILD_OPTS=
-$(info Target $(TARGET) already built.)
+  SSL_BUILD_OPTS:=clean
+  $(info .)
+  $(info .  Building SSL library for $(TARGET))
+  $(info .)
 endif
+
 
 ifeq ("$(TARGET)", "linux-x86")
-include ../../Makefile-include.linux-x86
+  include ../../Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
-include ../../Makefile-include.linux-x86_64
+  include ../../Makefile-include.linux-x86_64
 else ifeq ("$(TARGET)", "mikrotik-mips")
-include ../../Makefile-include.mikrotik-mips
+  include ../../Makefile-include.mikrotik-mips
 else ifeq ("$(TARGET)", "mikrotik-mipsel")
-include ../../Makefile-include.mikrotik-mipsel
+  include ../../Makefile-include.mikrotik-mipsel
 else ifeq ("$(TARGET)", "mikrotik-x86")
-include ../../Makefile-include.mikrotik-x86
+  include ../../Makefile-include.mikrotik-x86
 else ifeq ("$(TARGET)", "mikrotik-ppc")
-include ../../Makefile-include.mikrotik-ppc
+  include ../../Makefile-include.mikrotik-ppc
 else ifeq ("$(TARGET)", "arm")
-include ../../Makefile-include.arm
+  include ../../Makefile-include.arm
 else ifeq ("$(TARGET)", "solaris-sparc")
-include ../../Makefile-include.solaris-sparc
+  includtorm
+ ../../Makefile-include.solaris-sparc
 else ifeq ("$(TARGET)", "solaris-x86")
-include ../../Makefile-include.solaris-x86
+  include ../../Makefile-include.solaris-x86
 else
-$(error Invalid target)
+  $(error Invalid target "$(TARGET)")
 endif
 
-CFLAGS += -I../.. -I../include
+CFLAGS += -I../../crypto -I../include -I../ssl/include
 
-ifdef DEBUG
+ifdef DEBUG@
+
 CFLAGS += -g3
 CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 endif
@@ -59,6 +74,7 @@ $(info )
 # CFLAGS += -fPIC
 
 SONAME=libpolarssl.so.0
+
 
 DLEXT=so
 # OSX shared library extension:
@@ -83,7 +99,7 @@ OBJS=	aes.o		arc4.o		asn1parse.o		\
 	
 
 .SILENT:
-.PHONY: $(BUILD_OPTS)
+.PHONY: $(SSL_BUILD_OPTS)
 
 all: static
 
@@ -91,11 +107,12 @@ static: $(LIBDIR)/libpolarssl.a
 
 shared: $(LIBDIR)/libpolarssl.$(DLEXT)
 
-$(LIBDIR)/libpolarssl.a: $(BUILD_OPTS) $(OBJS)
+$(LIBDIR)/libpolarssl.a: $(SSL_BUILD_OPTS) $(OBJS)
 	echo "  AR    $@"
 	$(AR) r $@ $(OBJS)
 	echo "  RL    $@"
 	$(AR) s $@
+	echo "ARCH_BUILD_SSL=$(TARGET)" > ARCH_BUILD
 
 $(LIBDIR)/libpolarssl.so: libpolarssl.a
 	echo "  LD    $@"
@@ -115,4 +132,4 @@ $(LIBDIR)/libpolarssl.dll: libpolarssl.a
 
 clean:
 	rm -f *.o libpolarssl.*
-
+	>ARCH_BUILD

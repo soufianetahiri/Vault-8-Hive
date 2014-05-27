@@ -9,7 +9,7 @@
 #include "run_command.h"
 #include "debug.h"
 #include "threads.h"
-#include "../common/crypto.h"
+#include "crypto.h"
 #include "proj_strings.h"
 #include "compat.h"
 #include "self_delete.h"

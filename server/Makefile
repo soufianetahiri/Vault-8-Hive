@@ -25,6 +25,8 @@ POLARSSL = polarssl
 INCLUDES = -I$(POLARSSL)/include -I../libs
 LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
 
+.SILENT:
+
 .PHONY: all
 all: 
 	@echo
@@ -75,30 +77,20 @@ mikrotik-ppc: clean
 arm: clean
 	@make -f Makefile.arch TARGET=arm
 
-.PHONY: clean-objects
-clean-objects:
-	@echo
-	rm -f *.o 
-	rm -f hive.tar
-
 .PHONY: clean
+CLEAN_LIST = *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
+CLEAN_LIST += crypto_proj_strings.h crypto_strings_main.h string_utils.h.gch
+CLEAN_LIST += mod_hexify.pyc hive.tar
+
 clean:
 	@echo
-	rm -f *.o 
-	rm -f *PATCHED
-	rm -f init_strings.*
-	rm -f proj_strings*
-	rm -f init_crypto_strings.*
-	rm -f crypto_proj_strings.h
-	rm -f crypto_strings_main.h
-	rm -f string_utils.h.gch
-	rm -f mod_hexify.pyc
-	rm -f hive.tar
-	make -C $(POLARSSL)/library clean
-	make -C bzip/bzip2-1.0.6 clean
-	@echo
-	@echo " Done cleaning Hive server."
-	@echo
+	for file in $(CLEAN_LIST); do \
+		echo "\tDeleting\t$$file"; \
+		rm -f $$file; \
+	done
+
+	$(MAKE) -C $(POLARSSL)/library clean
+	$(MAKE) -C bzip/bzip2-1.0.6 clean
 
 distclean: clean
 	rm -f $(SERVER_BASENAME)-*

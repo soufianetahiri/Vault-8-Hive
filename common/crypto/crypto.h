@@ -8,10 +8,10 @@ extern "C" {
 //*******************************************************
 // used by client and server
 #include "function_strings.h"
-#include "polarssl/include/polarssl/net.h"
-#include "polarssl/include/polarssl/ssl.h"
-#include "polarssl/include/polarssl/entropy.h"
-#include "polarssl/include/polarssl/ctr_drbg.h"
+#include "polarssl/net.h"
+#include "polarssl/ssl.h"
+#include "polarssl/entropy.h"
+#include "polarssl/ctr_drbg.h"
 #include "crypto_proj_strings.h"
 
 #include "debug.h"
