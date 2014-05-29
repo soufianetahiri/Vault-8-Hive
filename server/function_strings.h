@@ -5,7 +5,6 @@
 // ensure the resulting binary does contain these function names as strings
 
 #if defined SOLARIS || defined _MIPS
-#include "polarssl/include/polarssl/polar-string-defs.h"
 #ifndef __SOLARONLY_H
 #define __SOLARONLY_H
 

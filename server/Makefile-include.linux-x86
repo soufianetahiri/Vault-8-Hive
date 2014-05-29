@@ -1,6 +1,7 @@
 #------------------------------------------------
 #Makefile include for Linux x86
 #------------------------------------------------
+
+
 OFLAGS = -Os
-CFLAGS += -I../include -D_FILE_OFFSET_BITS=64 -m32
-CFLAGS += -DPOLARSSL_HAVEGE_C
+CFLAGS += -I../include -m32

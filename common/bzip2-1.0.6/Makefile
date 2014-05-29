@@ -20,52 +20,59 @@ AR=ar
 RANLIB=ranlib
 LDFLAGS=
 
-BIGFILES=-D_FILE_OFFSET_BITS=64
 #CFLAGS=-Wall -Winline -O2 -g $(BIGFILES)
 ##########################################################################
 # Defaults
-CFLAGS  = -Wall -W -Wdeclaration-after-statement -Winline $(BIGFILES) -O2
+#CFLAGS  = -Wall -W -Wdeclaration-after-statement -Winline -O2
+CFLAGS  = -Wall -W -Wdeclaration-after-statement -O2
 #OFLAGS  = -O2
 
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
 
 $(info )
-$(info )
 $(info =========================================================================)
-ifdef ARCH_BUILD_BZIP2
-  ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
-    $(info .  Rebuilding BZIP2 library for $(TARGET))
-    BZIP2_BUILD_OPTS:=clean
+ifdef TARGET
+  ifdef ARCH_BUILD_BZIP2
+    ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
+      $(info .  Rebuilding BZIP2 library for $(TARGET))
+      BZIP2_BUILD_OPTS:=clean
+    else
+      BZIP2_BUILD_OPTS:=
+      $(info .  BZIP2 library for $(TARGET) previously built.)
+    endif
   else
-    BZIP2_BUILD_OPTS:=
-    $(info .  BZIP2 library for $(TARGET) previously built.)
+    BZIP2_BUILD_OPTS:=clean
+    $(info .  Building BZIP2 library for $(TARGET))
   endif
-else
-  BZIP2_BUILD_OPTS:=clean
-  $(info .  Building BZIP2 library for $(TARGET))
-endif
-
-ifeq ("$(TARGET)", "linux-x86")
-  include ../Makefile-include.linux-x86
-else ifeq ("$(TARGET)", "linux-x86_64")
-  include ../Makefile-include.linux-x86_64
-else ifeq ("$(TARGET)", "mikrotik-mips")
-  include ../Makefile-include.mikrotik-mips
-else ifeq ("$(TARGET)", "mikrotik-mipsel")
-  include ../Makefile-include.mikrotik-mipsel
-else ifeq ("$(TARGET)", "mikrotik-x86")
-  include ../Makefile-include.mikrotik-x86
-else ifeq ("$(TARGET)", "mikrotik-ppc")
-  include ../Makefile-include.mikrotik-ppc
-else ifeq ("$(TARGET)", "arm")
-  include ../Makefile-include.arm
-else ifeq ("$(TARGET)", "solaris-sparc")
-  include ../Makefile-include.solaris-sparc
-else ifeq ("$(TARGET)", "solaris-x86")
-  include ../Makefile-include.solaris-x86
-else
-  $(error Invalid target "$(TARGET)")
+  
+  ifeq ("$(TARGET)", "linux-x86")
+    include ../Makefile-include.linux-x86
+  else ifeq ("$(TARGET)", "linux-x86_64")
+    include ../Makefile-include.linux-x86_64
+  else ifeq ("$(TARGET)", "mikrotik-mips")
+    include ../Makefile-include.mikrotik-mips
+  else ifeq ("$(TARGET)", "mikrotik-mipsel")
+    include ../Makefile-include.mikrotik-mipsel
+  else ifeq ("$(TARGET)", "mikrotik-x86")
+    include ../Makefile-include.mikrotik-x86
+  else ifeq ("$(TARGET)", "mikrotik-ppc")
+    include ../Makefile-include.mikrotik-ppc
+  else ifeq ("$(TARGET)", "arm")
+    include ../Makefile-include.arm
+  else ifeq ("$(TARGET)", "solaris-sparc")
+    include ../Makefile-include.solaris-sparc
+  else ifeq ("$(TARGET)", "solaris-x86")
+    include ../Makefile-include.solaris-x86
+  else
+    TARGET :=
+  endif
+  $(info =========================================================================)
+  $(info TARGET: $(TARGET))
+  $(info SRCDIR: $(PWD))
+  $(info CFLAGS: $(CFLAGS))
+  $(info =========================================================================)
+  $(info )
 endif
 
 
@@ -87,26 +94,19 @@ OBJS= blocksort.o  \
       bzlib.o
 
 
-$(info =========================================================================)
-$(info TARGET: $(TARGET))
-$(info SRCDIR: $(PWD))
-$(info CFLAGS: $(CFLAGS))
-$(info =========================================================================)
-$(info )
 
 
 .SILENT:
 
 #all: libbz2.a bzip2 bzip2recover test
 
-bzip2: $(BZIP2_BUILD_OPTS) libbz2.a bzip2.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2 bzip2.o -L. -lbz2
-	echo "ARCH_BUILD_BZIP2=$(TARGET)" > ARCH_BUILD
+#bzip2: $(BZIP2_BUILD_OPTS) libbz2.a bzip2.o
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2 bzip2.o -L. -lbz2
 
-bzip2recover: bzip2recover.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2recover bzip2recover.o
+#bzip2recover: $(BZIP2_BUILD_OPTS) bzip2recover.o
+#	$(CC) $(CFLAGS) $(LDFLAGS) -o bzip2recover bzip2recover.o
 
-libbz2.a: $(OBJS)
+libbz2.a: $(BZIP2_BUILD_OPTS) $(OBJS)
 	rm -f libbz2.a
 	$(AR) cq libbz2.a $(OBJS)
 	@if ( test -f $(RANLIB) -o -f /usr/bin/ranlib -o \
@@ -114,6 +114,8 @@ libbz2.a: $(OBJS)
 		echo $(RANLIB) libbz2.a ; \
 		$(RANLIB) libbz2.a ; \
 	fi
+	echo "ARCH_BUILD_BZIP2=$(TARGET)" > ARCH_BUILD
+	echo "========================================================================="
 
 check: test
 test: bzip2
@@ -172,6 +174,7 @@ install: bzip2 bzip2recover
 	echo ".so man1/bzdiff.1" > $(PREFIX)/man/man1/bzcmp.1
 
 clean: 
+	echo -e "\n  CLEANING $(CURDIR)..."
 	rm -f *.o libbz2.a bzip2 bzip2recover \
 	sample1.rb2 sample2.rb2 sample3.rb2 \
 	sample1.tst sample2.tst sample3.tst
@@ -197,8 +200,9 @@ bzip2.o: bzip2.c
 bzip2recover.o: bzip2recover.c
 	$(CC) $(CFLAGS) -c bzip2recover.c
 
-
+.PHONY: distclean
 distclean: clean
+	echo -e "\n  DIST CLEANING $(CURDIR)..."
 	rm -f manual.ps manual.html manual.pdf
 
 DISTNAME=bzip2-1.0.6

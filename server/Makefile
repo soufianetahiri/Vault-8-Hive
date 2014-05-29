@@ -21,16 +21,16 @@
 CLIENT_BASENAME = hive
 SERVER_BASENAME = hived
 
-SSL = ../common/ssl
+SSL = ../common/ssl/library
 CRYPTO = ../common/crypto
 BZIP2 = ../common/bzip2
 
-INCLUDES = -I$(POLARSSL)/include -I../libs
+#INCLUDES = -I$(POLARSSL)/include -I../libs
 LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
 
 .SILENT:
 
-.PHONY: all
+.PHONY: all linux-x86
 all: 
 	@echo
 	@echo
@@ -53,51 +53,60 @@ all:
 	@echo
 	@echo
 
-linux-x86: clean
+linux-x86: build_clean
 	@make -f Makefile.arch TARGET=linux-x86 
 
-linux-x86_64: clean
+linux-x86_64: build_clean
 	@make -f Makefile.arch TARGET=linux-x86_64
 
-solaris-x86: clean
+solaris-x86: build_clean
 	@make -f Makefile.arch TARGET=solaris-x86
 
-solaris-sparc: clean
+solaris-sparc: build_clean
 	@make -f Makefile.arch TARGET=solaris-sparc
 
-mikrotik-x86: clean
+mikrotik-x86: build_clean
 	@make -f Makefile.arch TARGET=mikrotik-x86
 
-mikrotik-mipsel: clean
+mikrotik-mipsel: build_clean
 	@make -f Makefile.arch TARGET=mikrotik-mipsel
 
-mikrotik-mips: clean
+mikrotik-mips: build_clean
 	@make -f Makefile.arch TARGET=mikrotik-mips
 
-mikrotik-ppc: clean
+mikrotik-ppc: build_clean
 	@make -f Makefile.arch TARGET=mikrotik-ppc
 
-arm: clean
+arm: build_clean
 	@make -f Makefile.arch TARGET=arm
 
-.PHONY: clean
-CLEAN_LIST = *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
+CLEAN_LIST := *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
 CLEAN_LIST += crypto_proj_strings.h crypto_strings_main.h string_utils.h.gch
 CLEAN_LIST += mod_hexify.pyc hive.tar
 
+.PHONY: build_clean
+build_clean:
+	rm -f *.o init_strings.* init_crypto_strings.* 
+
+.PHONY: clean
 clean:
 	@echo
+	echo -e "\n  CLEANING $(CURDIR)..."
 	for file in $(CLEAN_LIST); do \
-		echo "\tDeleting\t$$file"; \
+#		echo -e "\tDeleting\t$$file"; \
 		rm -f $$file; \
 	done
 
-#	$(MAKE) -C $(SSL) TARGET=clean clean
-#	$(MAKE) -C $(POLARSSL)/library clean
-#	$(MAKE) -C bzip/bzip2-1.0.6 clean
+	$(MAKE) -C $(SSL) clean
+	$(MAKE) -C $(CRYPTO) clean
+	$(MAKE) -C $(BZIP2) clean
 
-distclean: clean
+.PHONY: distclean
+distclean:
 	rm -f $(SERVER_BASENAME)-*
+	$(MAKE) -C $(SSL) $@
+	$(MAKE) -C $(CRYPTO) $@
+	$(MAKE) -C $(BZIP2) $@
 
 tarball: clean
 	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive.tar server

@@ -6,45 +6,44 @@ LIBDIR = .
 include ARCH_BUILD
 
 $(info )
-$(info )
 $(info =========================================================================)
-ifdef ARCH_BUILD_SSL
-  ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
-    $(info .  Rebuilding SSL library for $(TARGET))
-    SSL_BUILD_OPTS:=clean
+ifdef TARGET
+  ifdef ARCH_BUILD_SSL
+    ifneq ("$(ARCH_BUILD_SSL)", "$(TARGET)")
+      $(info .  Rebuilding SSL library for $(TARGET))
+      SSL_BUILD_OPTS:=clean
+    else
+      SSL_BUILD_OPTS:=
+      $(info .  SSL library for $(TARGET) previously built.)
+    endif
   else
-    SSL_BUILD_OPTS:=
-    $(info .  SSL library for $(TARGET) previously built.)
+    SSL_BUILD_OPTS:=clean
+    $(info .  Building SSL library for $(TARGET))
   endif
-else
-  SSL_BUILD_OPTS:=clean
-  $(info .  Building SSL library for $(TARGET))
-endif
-
-
-ifeq ("$(TARGET)", "linux-x86")
-  include ../../Makefile-include.linux-x86
-else ifeq ("$(TARGET)", "linux-x86_64")
-  include ../../Makefile-include.linux-x86_64
-else ifeq ("$(TARGET)", "mikrotik-mips")
-  include ../../Makefile-include.mikrotik-mips
-else ifeq ("$(TARGET)", "mikrotik-mipsel")
-  include ../../Makefile-include.mikrotik-mipsel
-else ifeq ("$(TARGET)", "mikrotik-x86")
-  include ../../Makefile-include.mikrotik-x86
-else ifeq ("$(TARGET)", "mikrotik-ppc")
-  include ../../Makefile-include.mikrotik-ppc
-else ifeq ("$(TARGET)", "arm")
-  include ../../Makefile-include.arm
-else ifeq ("$(TARGET)", "solaris-sparc")
-  include ../../Makefile-include.solaris-sparc
-else ifeq ("$(TARGET)", "solaris-x86")
-  include ../../Makefile-include.solaris-x86
-else ifeq ("$(TARGET)", "clean")
-else
-  $(error Invalid target "$(TARGET)")
-endif
-
+  
+  
+  ifeq ("$(TARGET)", "linux-x86")
+    include ../../Makefile-include.linux-x86
+  else ifeq ("$(TARGET)", "linux-x86_64")
+    include ../../Makefile-include.linux-x86_64
+  else ifeq ("$(TARGET)", "mikrotik-mips")
+    include ../../Makefile-include.mikrotik-mips
+  else ifeq ("$(TARGET)", "mikrotik-mipsel")
+    include ../../Makefile-include.mikrotik-mipsel
+  else ifeq ("$(TARGET)", "mikrotik-x86")
+    include ../../Makefile-include.mikrotik-x86
+  else ifeq ("$(TARGET)", "mikrotik-ppc")
+    include ../../Makefile-include.mikrotik-ppc
+  else ifeq ("$(TARGET)", "arm")
+    include ../../Makefile-include.arm
+  else ifeq ("$(TARGET)", "solaris-sparc")
+    include ../../Makefile-include.solaris-sparc
+  else ifeq ("$(TARGET)", "solaris-x86")
+    include ../../Makefile-include.solaris-x86
+  else
+    TARGET:=
+ endif
+endif 
 CFLAGS += -I../../crypto -I../include -I../ssl/include
 
 ifdef DEBUG@
@@ -53,12 +52,14 @@ CFLAGS += -g3
 CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 endif
 
-$(info =========================================================================)
-$(info TARGET: $(TARGET))
-$(info SRCDIR: $(PWD))
-$(info CFLAGS: $(CFLAGS))
-$(info =========================================================================)
-$(info )
+ifdef $(TARGET)
+  $(info =========================================================================)
+  $(info TARGET: $(TARGET))
+  $(info SRCDIR: $(PWD))
+  $(info CFLAGS: $(CFLAGS))
+  $(info =========================================================================)
+  $(info )
+endif
 
 # MicroBlaze specific options:
 # CFLAGS += -mno-xl-soft-mul -mxl-barrel-shift
@@ -127,6 +128,10 @@ $(LIBDIR)/libpolarssl.dll: libpolarssl.a
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 
 clean:
-	echo "  CLEANING $(PWD)..."
-	rm -f *.o libpolarssl.*
+	echo -e "\n  CLEANING $(CURDIR)..."
+	rm -f *.o
 	>ARCH_BUILD
+
+distclean: clean
+	echo -e "\n  DIST CLEANING $(CURDIR)..."
+	rm -f libpolarssl.*

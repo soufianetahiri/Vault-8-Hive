@@ -9,17 +9,10 @@ COMMON = ..
 SSL = $(COMMON)/ssl
 INCLUDES = -I.. -I$(SSL)/include
 
-.PHONY: ARCH_BUILD
+.PHONY: ARCH_BUILD linux-x86
 include ARCH_BUILD
 
-ifeq ("$(TARGET)", "")
-  $(info .)
-  $(info .  TARGET not specified)
-  $(info .  Use "make TARGET=<target O/S-architecture>".)
-  $(info .  For a list of valid targets, run "make" in the client or server directory.)
-  $(info .)
-  $(error .)
-else ifeq ("$(TARGET)", "linux-x86")
+ifeq ("$(TARGET)", "linux-x86")
   include ../Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
   include ../Makefile-include.linux-x86_64
@@ -38,11 +31,7 @@ else ifeq ("$(TARGET)", "solaris-sparc")
 else ifeq ("$(TARGET)", "solaris-x86")
   include ../Makefile-include.solaris-x86
 else
-  $(info .)
-  $(info .  Invalid target "$(TARGET)")
-  $(info .  Run "make" in client or server directory for a list of valid targets.)
-  $(info .)
-  $(error .)
+  TARGET :=
 endif
 
 ifdef DEBUG
@@ -73,27 +62,28 @@ STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 .PHONY: all
 
 $(info )
-$(info )
 $(info =========================================================================)
-ifdef ARCH_BUILD_CRYPTO
-  ifneq ("$(ARCH_BUILD_CRYPTO)", "$(TARGET)")
-    $(info .  Rebuilding libcrypto for $(TARGET))
-    CRYPTO_BUILD_OPTS:=clean
+ifdef TARGET
+  ifdef ARCH_BUILD_CRYPTO
+    ifneq ("$(ARCH_BUILD_CRYPTO)", "$(TARGET)")
+      $(info .  Rebuilding libcrypto for $(TARGET))
+      CRYPTO_BUILD_OPTS:=clean
+    else
+      CRYPTO_BUILD_OPTS:=
+      $(info .  libcrypto for $(TARGET) previously built.)
+    endif
   else
-    CRYPTO_BUILD_OPTS:=
-    $(info .  libcrypto for $(TARGET) previously built.)
+    CRYPTO_BUILD_OPTS:=clean
+    $(info .  Building libcrypto for $(TARGET))
   endif
-else
-  CRYPTO_BUILD_OPTS:=clean
-  $(info .  Building libcrypto for $(TARGET))
+  
+  $(info =========================================================================)
+  $(info TARGET: $(TARGET))
+  $(info SRCDIR: $(PWD))
+  $(info CFLAGS: $(CFLAGS))
+  $(info =========================================================================)
+  $(info )
 endif
-
-$(info =========================================================================)
-$(info TARGET: $(TARGET))
-$(info SRCDIR: $(PWD))
-$(info CFLAGS: $(CFLAGS))
-$(info =========================================================================)
-$(info )
 
 $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
 	@echo "   AR    $@"
@@ -111,8 +101,15 @@ init_crypto_strings.c: crypto_strings.txt
 
 .PHONY: clean
 clean:
+	echo -e "\n  CLEANING $(CURDIR)..."
 	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
 	rm -f init_crypto_strings.*
+	>ARCH_BUILD
+
+.PHONY: distclean
+distclean: clean
+	echo -e "\n  DIST CLEANING $(CURDIR)..."
+	rm -f $(LIBCRYPTO)
 
 .c.o:
 #	echo -en "\tCC\t$<"
