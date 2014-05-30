@@ -1,6 +1,6 @@
 #include "launchshell.h"
 #include "compat.h"
-#include "bzip/bzlib.h"
+#include "bzlib.h"
 #include "proj_strings.h"
 #include "debug.h"
 
