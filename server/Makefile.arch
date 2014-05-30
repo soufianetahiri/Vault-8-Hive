@@ -144,16 +144,16 @@ release: $(SERVER)
 
 $(SERVER): $(LIBSSL) $(LIBBZIP2) init_strings.o $(LIBCRYPTO)
 ifeq ($(OS),Linux)
-	echo -e "\tLD\t\t$@"
+	printf "\tLD\t\t$@\n"
 	$(CC) $(CFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)
-	echo -e "\tStripping\t$@"
+	printf "\tStripping\t$@\n"
 	echo "$(STRIP) $(BIN)/$(SERVER)"
 	md5sum $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
 endif
 
 $(SERVER)-dbg: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o
 ifeq ($(OS),Linux)
-	echo -e "\tLD\t\t$@"
+	printf "\tLD\t\t$@\n"
 	$(CC) $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)-dbg
 	md5sum $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
 endif
@@ -173,15 +173,15 @@ endif
 strings: init_strings.o
 
 init_strings.o: init_strings.c string_utils.o
-	echo -e "\tCC\t\t$<"
+	printf "\tCC\t\t$<\n"
 	$(CC) -c $(CFLAGS) init_strings.c
 
 init_strings.c: server_strings.txt string_utils.h
-	echo -e "\tGenerating\t$@"
+	printf "\tGenerating\t$@\n"
 	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
 
 string_utils.o: string_utils.h string_utils.c
-	echo -e "\tCC\t\t$<"
+	printf "\tCC\t\t$<\n"
 	$(CC) -c $(CFLAGS) string_utils.c 
 
 .PHONY: clean
@@ -201,5 +201,5 @@ tarball:
 	make -f ./Makefile tarball
 
 .c.o:
-	echo -e "   CC        $<"
+	printf "   CC        $<\n"
 	$(CC) $(CFLAGS) -c $<

@@ -128,10 +128,10 @@ $(LIBDIR)/libpolarssl.dll: libpolarssl.a
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 
 clean:
-	echo -e "\n  CLEANING $(CURDIR)..."
+	printf "\n  CLEANING $(CURDIR)...\n"
 	rm -f *.o
 	>ARCH_BUILD
 
 distclean: clean
-	echo -e "\n  DIST CLEANING $(CURDIR)..."
+	printf "\n  DIST CLEANING $(CURDIR)...\n"
 	rm -f libpolarssl.*

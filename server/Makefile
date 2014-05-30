@@ -91,9 +91,8 @@ build_clean:
 .PHONY: clean
 clean:
 	@echo
-	echo -e "\n  CLEANING $(CURDIR)..."
+	printf "\n  CLEANING $(CURDIR)...\n"
 	for file in $(CLEAN_LIST); do \
-#		echo -e "\tDeleting\t$$file"; \
 		rm -f $$file; \
 	done
 

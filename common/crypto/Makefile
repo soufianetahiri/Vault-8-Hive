@@ -86,9 +86,9 @@ ifdef TARGET
 endif
 
 $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
-	@echo "   AR    $@"
+	printf "   AR    $@\n"
 	$(AR) r $@ $(CRYPTO_OBJS)
-	@echo "   RL    $@"
+	printf "   RL    $@\n"
 	@$(AR) s $@
 	echo "ARCH_BUILD_CRYPTO=$(TARGET)" > ARCH_BUILD
 
@@ -101,17 +101,16 @@ init_crypto_strings.c: crypto_strings.txt
 
 .PHONY: clean
 clean:
-	echo -e "\n  CLEANING $(CURDIR)..."
+	printf "\n  CLEANING $(CURDIR)...\n"
 	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
 	rm -f init_crypto_strings.*
 	>ARCH_BUILD
 
 .PHONY: distclean
 distclean: clean
-	echo -e "\n  DIST CLEANING $(CURDIR)..."
+	printf "\n  DIST CLEANING $(CURDIR)...\n"
 	rm -f $(LIBCRYPTO)
 
 .c.o:
-#	echo -en "\tCC\t$<"
-	echo "   CC        $<"
+	printf "   CC        $<\n"
 	$(CC) $(CFLAGS) -c $<

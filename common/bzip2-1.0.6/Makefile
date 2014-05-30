@@ -174,7 +174,7 @@ install: bzip2 bzip2recover
 	echo ".so man1/bzdiff.1" > $(PREFIX)/man/man1/bzcmp.1
 
 clean: 
-	echo -e "\n  CLEANING $(CURDIR)..."
+	@printf "\n  CLEANING $(CURDIR)..."
 	rm -f *.o libbz2.a bzip2 bzip2recover \
 	sample1.rb2 sample2.rb2 sample3.rb2 \
 	sample1.tst sample2.tst sample3.tst
@@ -202,7 +202,7 @@ bzip2recover.o: bzip2recover.c
 
 .PHONY: distclean
 distclean: clean
-	echo -e "\n  DIST CLEANING $(CURDIR)..."
+	printf "\n  DIST CLEANING $(CURDIR)...\n"
 	rm -f manual.ps manual.html manual.pdf
 
 DISTNAME=bzip2-1.0.6

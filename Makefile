@@ -1,4 +1,4 @@
-
+.SILENT:
 all:
 	@echo
 	@echo " Options:"
@@ -12,18 +12,6 @@ clean:
 	make -C server clean
 	make -C client clean
 	make -C honeycomb clean
-	make -C server/bzip/bzip2-1.0.6 clean
-	rm -rf hive.tar Logs
-
-svnclean: clean
-	make -C client patcher
-	make -C libs/polarssl-0.14.0/library clean
-	make -C libs/polarssl-0.14.0/programs clean
-#	only difference between 'make clean' and commands below
-#	is 'make -C client' calls 'svnclean' rather than 'clean'
-	make -C client svnclean
-	make -C honeycomb clean
-	make -C server/bzip/bzip2-1.0.6 clean
 	rm -rf hive.tar Logs
 
 tarball:
