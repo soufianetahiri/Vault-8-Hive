@@ -1,6 +1,0 @@
-#------------------------------------------------
-# Makefile include for solaris-x86
-#------------------------------------------------
-CFLAGS += -D_FILE_OFFSET_BITS=64 -DSOLARIS -m32 
-
-OFLAGS	= -Os
