@@ -1,7 +1,9 @@
+# Makefile for PolarSSL
 # Also see "include/polarssl/config.h"
 LIBDIR = .
-#CFLAGS	= -I../.. -I../include -Wall -W -Wdeclaration-after-statement
-#OFLAGS	= -O2
+CC := $(shell which gcc)
+ARFLAGS = rs
+
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
 
@@ -46,16 +48,16 @@ ifdef TARGET
 endif 
 CFLAGS += -I../../crypto -I../include -I../ssl/include
 
-ifdef DEBUG@
-
-CFLAGS += -g3
-CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+ifdef DEBUG
+  CFLAGS += -g3
+  CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 endif
 
-ifdef $(TARGET)
+ifdef TARGET
   $(info =========================================================================)
   $(info TARGET: $(TARGET))
   $(info SRCDIR: $(PWD))
+  $(info .   CC: $(CC))
   $(info CFLAGS: $(CFLAGS))
   $(info =========================================================================)
   $(info )
@@ -105,33 +107,31 @@ static: $(LIBDIR)/libpolarssl.a
 shared: $(LIBDIR)/libpolarssl.$(DLEXT)
 
 $(LIBDIR)/libpolarssl.a: $(SSL_BUILD_OPTS) $(OBJS)
-	echo "  AR    $@"
-	$(AR) r $@ $(OBJS)
-	echo "  RL    $@"
-	$(AR) s $@
+	printf "\tAR\t$@\n"
+	$(AR) $(ARFLAGS) $@ $(OBJS)
 	echo "ARCH_BUILD_SSL=$(TARGET)" > ARCH_BUILD
 
 $(LIBDIR)/libpolarssl.so: libpolarssl.a
-	echo "  LD    $@"
+	printf "\tLD\t$@=\n"
 	$(CC) ${LDFLAGS} -shared -Wl,-soname,$(SONAME) -o $@ $(OBJS)
 
 $(LIBDIR)/libpolarssl.dylib: libpolarssl.a
-	echo "  LD    $@"
+	rintf "\tLD\t$@\n"
 	$(CC) ${LDFLAGS} -dynamiclib -o $@ $(OBJS)
 
 $(LIBDIR)/libpolarssl.dll: libpolarssl.a 
-	echo "  LD    $@" 
+	printf "\tLD\t$@\n" 
 	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJS) -lws2_32 -lwinmm -lgdi32 
 
 .c.o:
-	echo "  CC    $<"
+	printf "\tCC\t$<\n"
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 
 clean:
-	printf "\n  CLEANING $(CURDIR)...\n"
+	printf "\tCLEANING: $(CURDIR)...\n"
 	rm -f *.o
 	>ARCH_BUILD
 
 distclean: clean
-	printf "\n  DIST CLEANING $(CURDIR)...\n"
+	printf "\tDIST CLEANING: $(CURDIR)...\n"
 	rm -f libpolarssl.*

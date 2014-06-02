@@ -32,9 +32,8 @@ SERVER_SRCS = beacon.c persistence.c launchshell.c \
 CFLAGS = -Wall -Wextra
 CFLAGS += -Os -D_X86 -D_FILE_OFFSET_BITS=64 -m32 -lpthread
 CFLAGS += $(INCLUDES) -D__BYTE_ORDER=LITTLE_ENDIAN
-
+ARFLAGS = -r
 DBGFLAGS += -DDEBUG -D_DEBUG -g
-
 STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 
 OS = $(shell uname)

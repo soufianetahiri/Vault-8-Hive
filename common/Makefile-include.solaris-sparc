@@ -1,8 +1,10 @@
 #------------------------------------------------
 # Makefile include for solaris-sparc
 #------------------------------------------------
-CFLAGS += -D_FILE_OFFSET_BITS=64 -DSOLARIS -D_BIG_ENDIAN -m32
-
+MD5SUM = md5
+CFLAGS += -D_FILE_OFFSET_BITS=64 -DSOLARIS -m32 
+LDFLAGS += -lsocket -lnsl
+ARFLAGS = r
 OFLAGS	= -Os
 
 ifdef DEBUG

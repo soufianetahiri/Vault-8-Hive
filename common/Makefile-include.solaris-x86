@@ -1,6 +1,8 @@
 #------------------------------------------------
 # Makefile include for solaris-x86
 #------------------------------------------------
+MD5SUM = md5
 CFLAGS += -D_FILE_OFFSET_BITS=64 -DSOLARIS -m32 
-
+LDFLAGS += -lsocket -lnsl
+ARFLAGS = r
 OFLAGS	= -Os

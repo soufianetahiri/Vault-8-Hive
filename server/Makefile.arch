@@ -4,14 +4,17 @@
 
 SERVER_BASENAME = hived
 
+CC := $(shell which gcc)
+MD5SUM := $(shell which md5sum)
+STRIP := $(shell which strip)
+
 #Default FLAGS
 
 CFLAGS := -Wall -Wextra -ansi -std=gnu99
-CFLAGS += -D_X86 -lpthread -lutil
+CFLAGS += -D_X86
 CFLAGS += -I. -I../common -I../common/crypto -I../common/ssl/include -I../common/bzip2
 CFLAGS += -D_USE_BASH
-CFLAGS += -DLINUX
-LDFLAGS = -lpthread -lutil #-llibpolarssl -llibbz2
+LDFLAGS = -lpthread
 
 # TARGET Configuration
 ifeq ("$(TARGET)", "linux-x86")
@@ -118,11 +121,12 @@ $(info .       BUILDING $(SERVER))
 $(info =========================================================================)
 $(info TARGET: $(TARGET))
 $(info SRCDIR: $(PWD))
+$(info .   CC: $(CC))
 $(info CFLAGS: $(CFLAGS))
 $(info =========================================================================)
 $(info )
 
-#.SILENT:
+.SILENT:
 
 .PHONY: all
 all: $(SERVER) $(SERVER)-dbg
@@ -143,31 +147,25 @@ debug: $(SERVER)-dbg
 release: $(SERVER)
 
 $(SERVER): $(LIBSSL) $(LIBBZIP2) init_strings.o $(LIBCRYPTO)
-ifeq ($(OS),Linux)
 	printf "\tLD\t\t$@\n"
 	$(CC) $(CFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)
 	printf "\tStripping\t$@\n"
-	echo "$(STRIP) $(BIN)/$(SERVER)"
-	md5sum $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
-endif
+	$(STRIP) $(BIN)/$(SERVER)
+	$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
+
 
 $(SERVER)-dbg: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o
-ifeq ($(OS),Linux)
 	printf "\tLD\t\t$@\n"
 	$(CC) $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)-dbg
-	md5sum $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
-endif
+	$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
+
 
 valgrind: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
-ifeq ($(OS),Linux)
 	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
-endif
 
 .PHONY: efence
 efence: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
-ifeq ($(OS),Linux)
 	$(CC) -lefence -D__EFENCE__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
-endif
 
 .PHONY: strings
 strings: init_strings.o
@@ -186,19 +184,19 @@ string_utils.o: string_utils.h string_utils.c
 
 .PHONY: clean
 clean:	$(SERVER)
-	make -f ./Makefile clean
+	$(MAKE) -f ./Makefile clean
 
-.PHONY: svnclean
+.PHONY: svncle$(MAKE)
 svnclean: clean
 
 .PHONY: md5
 md5: all
-	md5sum $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
-	md5sum $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
+	$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
+	$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
 
 .PHONY: tarball	
 tarball:
-	make -f ./Makefile tarball
+	$(MAKE) -f ./Makefile tarball
 
 .c.o:
 	printf "   CC        $<\n"

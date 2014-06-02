@@ -1,7 +1,7 @@
 ####################################################
 # Architecture-agnostic Makefile for Hive crypto
 ####################################################
-
+ CC := $(shell which gcc)
 # Defaults
 CFLAGS	= -Wall -W -Wdeclaration-after-statement
 OFLAGS	= -O2
@@ -80,16 +80,15 @@ ifdef TARGET
   $(info =========================================================================)
   $(info TARGET: $(TARGET))
   $(info SRCDIR: $(PWD))
+  $(info .   CC: $(CC))
   $(info CFLAGS: $(CFLAGS))
   $(info =========================================================================)
   $(info )
 endif
 
 $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
-	printf "   AR    $@\n"
-	$(AR) r $@ $(CRYPTO_OBJS)
-	printf "   RL    $@\n"
-	@$(AR) s $@
+	printf "\tAR\t$@\n"
+	$(AR) $(ARFLAGS) $@ $(CRYPTO_OBJS)
 	echo "ARCH_BUILD_CRYPTO=$(TARGET)" > ARCH_BUILD
 
 .PHONY: crypto_strings
@@ -101,16 +100,16 @@ init_crypto_strings.c: crypto_strings.txt
 
 .PHONY: clean
 clean:
-	printf "\n  CLEANING $(CURDIR)...\n"
+	printf "\n\tCLEANING: $(CURDIR)...\n"
 	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
 	rm -f init_crypto_strings.*
 	>ARCH_BUILD
 
 .PHONY: distclean
 distclean: clean
-	printf "\n  DIST CLEANING $(CURDIR)...\n"
+	printf "\n\tDIST CLEANING: $(CURDIR)...\n"
 	rm -f $(LIBCRYPTO)
 
 .c.o:
-	printf "   CC        $<\n"
+	printf "\tCC\t$<\n"
 	$(CC) $(CFLAGS) -c $<

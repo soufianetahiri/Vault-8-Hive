@@ -15,7 +15,7 @@ clean:
 	rm -rf hive.tar Logs
 
 tarball:
-	@tar --exclude .svn --exclude HiveServer.sdf --exclude *.gz --exclude *.tar --exclude *.tgz -cvf hive.tar * >/dev/null
+	tar --exclude=.svn --exclude=HiveServer.sdf --exclude=*.gz --exclude=*.tar --exclude=*.tgz --exclude=documentation/html/* -cvf hive.tar * >/dev/null
 
 ilm-tar:
 	tar --exclude .svn --exclude HiveServer.sdf --exclude *.gz --exclude *.tar --exclude *.tgz -czvf hive-ilm-1.1.tgz client/ libs/ ilm-client/
