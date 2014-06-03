@@ -56,7 +56,7 @@ ifeq "$(GCCVERSION_GT_4.6)" "1"
 	CFLAGS += -Wno-unused-result
 endif
 
-CFLAGS += $(INCLUDES) $(LDFLAGS) 
+CFLAGS += $(INCLUDES)
 
 DFLAGS = $(CFLAGS) -DDEBUG -D_DEBUG
 
