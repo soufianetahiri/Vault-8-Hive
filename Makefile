@@ -21,17 +21,19 @@ ilm-tar:
 	tar --exclude .svn --exclude HiveServer.sdf --exclude *.gz --exclude *.tar --exclude *.tgz -czvf hive-ilm-1.1.tgz client/ libs/ ilm-client/
 
 patcher:
-	cd server && make clean && make linux-x86
-	cd server && make clean && make mikrotik-x86
-	cd server && make clean && make mikrotik-ppc
-	cd server && make clean && make mikrotik-mipsbe
-	cd server && make clean && make mikrotik-mipsle
-	cp server/hived-linux-i686 client/hived-linux-i386-unpatched
-	cp server/hived-mikrotik-i386 client/hived-mikrotik-i386-unpatched
-	cp server/hived-mikrotik-ppc client/hived-mikrotik-ppc-unpatched
-	cp server/hived-mikrotik-mipsbe client/hived-mikrotik-mipsbe-unpatched
-	cp server/hived-mikrotik-mipsle client/hived-mikrotik-mipsle-unpatched
-	cd client && make clean && make patcher
+	printf "\n\nRun the Hive patcher only on hive-builder\n\n"
+	sleep 2
+	cd server && make linux-x86
+	cd server && make mikrotik-x86
+	cd server && make mikrotik-ppc
+	cd server && make mikrotik-mipsbe
+	cd server && make mikrotik-mipsle
+#	cp server/hived-linux-i686 client/hived-linux-i386-unpatched
+#	cp server/hived-mikrotik-i386 client/hived-mikrotik-i386-unpatched
+#	cp server/hived-mikrotik-ppc client/hived-mikrotik-ppc-unpatched
+#	cp server/hived-mikrotik-mipsbe client/hived-mikrotik-mipsbe-unpatched
+#	cp server/hived-mikrotik-mipsle client/hived-mikrotik-mipsle-unpatched
+#	cd client && make clean && make patcher:w
 
 linux-x86:
 	@make -C server $@

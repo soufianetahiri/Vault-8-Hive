@@ -65,25 +65,24 @@ CRYPTCAT = -DLINUX cryptcat/netcat.c
 LIBFILES = trigger_utils.c trigger_network.c trigger_protocols.c
 #LIBFILES += string_utils.o init_strings.o init_crypto_strings.o $(LIBPOLARSSL)-I../.. -I../include -Wall -W -Wdeclaration-after-statement
 
-CFILES = main.c functions.c misc.c modes.c parser.c \
-		trigger.c trigger_network.c \
-		trigger_protocols.c b64.c trigger_utils.c threads.c \
-		string_utils.o init_strings.o
+OBJS =	main.o functions.o misc.o modes.o parser.o \
+	trigger.o trigger_network.o \
+	trigger_protocols.o b64.o trigger_utils.o threads.o \
+	string_utils.o init_strings.o
 
 LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
 UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
-UNPATCHED_SOLARIS_I386 = hived-solaris-i386-unpatched
-#UNPATCHED_WINDOWS_I386 = hived-windows-i386-unpatched.exe
-UNPATCHED_LINUX_I386 = hived-linux-i386-unpatchedpolarssl-1.1.8/library/Makefile
-UNPATCHED_MIKROTIK_I386 = hived-mikrotik-i386-unpatched
-UNPATCHED_MIKROTIK_MIPSBE = hived-mikrotik-mipsbe-unpatched
-UNPATCHED_MIKROTIK_MIPSLE = hived-mikrotik-mipsle-unpatched
+UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
+UNPATCHED_LINUX_X86 = hived-linux-x86-unpatched
+UNPATCHED_MIKROTIK_X86 = hived-mikrotik-x86-unpatched
+UNPATCHED_MIKROTIK_MIPSBE = hived-mikrotik-mips-unpatched
+UNPATCHED_MIKROTIK_MIPSLE = hived-mikrotik-mipsel-unpatched
 UNPATCHED_MIKROTIK_PPC = hived-mikrotik-ppc-unpatched
 
-UNPATCHED_BINS = $(UNPATCHED_SOLARIS_SPARC) $(UNPATCHED_LINUX_I386)
-UNPATCHED_BINS += $(UNPATCHED_SOLARIS_I386) $(UNPATCHED_MIKROTIK_I386) $(UNPATCHED_MIKROTIK_MIPSBE)
-UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSLE)
+UNPATCHED_BINS = $(UNPATCHED_SOLARIS_SPARC) $(UNPATCHED_LINUX_X86)
+UNPATCHED_BINS += $(UNPATCHED_SOLARIS_X86) $(UNPATCHED_MIKROTIK_X86) $(UNPATCHED_MIKROTIK_MIPS)
+UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSEL)
 
 $(info )
 $(info )
@@ -100,20 +99,20 @@ $(info )
 .SILENT:
 
 .PHONY: all
-all: $(LIBSSL) hclient debug patcher
+all: $(LIBSSL) hclient debug
 
 .PHONY: release
 release: hclient
 
 .PHONY: hclient
-hclient: $(LIBSSL) $(LIBCRYPTO) strings
-	${CC} ${CFLAGS} -o ${BINARY} ${CFILES} $(LIBS) ${LDFLAGS} 
+hclient: $(LIBSSL) $(LIBCRYPTO) $(OBJS) strings
+	${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS} 
 	strip ${BINARY}
 	md5sum ${BINARY} > ${BINARY}.md5
 	echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD
 
 $(LIBSSL): $(SSL_REBUILD)
-	cd $(SSL) && $(MAKE) TARGET="$(TARGET)"
+	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
 
 $(LIBCRYPTO): $(CRYPTO_REBUILD)
 	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
@@ -121,7 +120,7 @@ $(LIBCRYPTO): $(CRYPTO_REBUILD)
 
 .PHONY: debug
 debug: strings $(LIBSSL) $(LIBCRYPTO) 
-	${CC} ${DFLAGS} -o ${BINARY}-dbg ${CFILES} $(LIBS) ${LDFLAGS} 
+	${CC} ${DFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
 	md5sum ${BINARY}-dbg > ${BINARY}-dbg.md5
 
 #library: $(LIBPOLARSSL) strings
@@ -164,26 +163,22 @@ string_utils.o: string_utils.c string_utils.h
 
 .PHONY: patcher
 patcher: $(UNPATCHED_BINS) $(LIBSSL) 
-	@echo
-	@echo "  Latest, unpatched builds of binaries must be"
-	@echo "  present with the following naming conventions:"
-#	@echo "  . hived-windows-i386-unpatched.exe"
-	@echo "  . hived-solaris-sparc-unpatched"
-	@echo "  . hived-solaris-i386-unpatched"
-	@echo "  . hived-linux-i386-unpatched"
-	@echo "  . hived-mikrotik-i386-unpatched"
-	@echo "  . hived-mikrotik-mipsbe-unpatched"
-	@echo "  . hived-mikrotik-mipsle-unpatched"
-	@echo "  . hived-mikrotik-ppc-unpatched"
-	@echo
-#	xxd -i $(UNPATCHED_WINDOWS_I386) _unpatched_windows_i386.h
-	xxd -i $(UNPATCHED_SOLARIS_SPARC) _unpatched_solaris_sparc.h
-	xxd -i $(UNPATCHED_SOLARIS_I386) _unpatched_solaris_i386.h
-	xxd -i $(UNPATCHED_LINUX_I386) _unpatched_linux_i386.h
-	xxd -i $(UNPATCHED_MIKROTIK_I386) _unpatched_mikrotik_i386.h
-	xxd -i $(UNPATCHED_MIKROTIK_MIPSBE) _unpatched_mikrotik_mipsbe.h
-	xxd -i $(UNPATCHED_MIKROTIK_MIPSLE) _unpatched_mikrotik_mipsle.h
+	printf "\n Latest, unpatched builds of binaries must be\n"
+	printf "  present with the following naming conventions:\n"
+	printf "  . hived-solaris-sparc-unpatched\n"
+	printf "  . hived-solaris-i386-unpatched\n"
+	printf "  . hived-linux-i386-unpatched\n"
+	printf "  . hived-mikrotik-i386-unpatched\n"
+	printf "  . hived-mikrotik-mipsbe-unpatched\n"
+	printf "  . hived-mikrotik-mipsle-unpatched\n"
+	printf "  . hived-mikrotik-ppc-unpatched\n\n"
+	xxd -i $(UNPATCHED_LINUX_X86) _unpatched_linux_x86.h
+	xxd -i $(UNPATCHED_MIKROTIK_X86) _unpatched_mikrotik_x86.h
+	xxd -i $(UNPATCHED_MIKROTIK_MIPS) _unpatched_mikrotik_mips.h
+	xxd -i $(UNPATCHED_MIKROTIK_MIPSEL) _unpatched_mikrotik_mipsel.h
 	xxd -i $(UNPATCHED_MIKROTIK_PPC) _unpatched_mikrotik_ppc.h
+	xxd -i $(UNPATCHED_SOLARIS_X86) _unpatched_solaris_x86.h
+	xxd -i $(UNPATCHED_SOLARIS_SPARC) _unpatched_solaris_sparc.h
 	gcc -m32 -Os -W -Wall -I. -I$(SSL)/include string_utils.c patcher.c -o hive-patcher $(LIBSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5
@@ -206,22 +201,7 @@ clean:
 	rm -f proj_strings.h
 	make -C $(SSL) clean
 
-.PHONY: svnclean
-svnclean:
-	rm -f *.o init_strings.c core
-	rm -f _unpatched_*.h
-#	rm -f _unpatched_solaris_sparc.h _unpatched_windows_i386.h _unpatched_linux_i386.h
-#	rm -f _unpatched_solaris_i386.h _unpatched_mikrotik_i386.h
-	rm -f *PATCHED *PATCHED.exe
-	rm -f *UNpatched*
-	rm -f crypto_strings_main.h
-	rm -f init_crypto_strings.c
-	rm -f crypto_proj_strings.h
-	rm -f string_utils.h.gch
-	rm -f mod_hexify.pyc
-
-
 .c.o:
-	echo "  CC    $<"
+	printf "\tCC\t$<\n"
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 

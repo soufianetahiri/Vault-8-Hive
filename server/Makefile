@@ -54,7 +54,7 @@ all:
 	@echo
 
 linux-x86: build_clean
-	@make -f Makefile.arch TARGET=linux-x86 
+	@make -f Makefile.arch TARGET=linux-x86
 
 linux-x86_64: build_clean
 	@make -f Makefile.arch TARGET=linux-x86_64
@@ -90,7 +90,6 @@ build_clean:
 
 .PHONY: clean
 clean:
-	@echo
 	printf "\n\tCLEANING: $(CURDIR)...\n"
 	for file in $(CLEAN_LIST); do \
 		rm -f $$file; \

