@@ -7,9 +7,9 @@ LDFLAGS = -lpthread -lc
 OFLAGS	= -O2
 
 ifeq ("$(TARGET)", "linux-x86")
-include Makefile-include.linux-x86
+include ../common/Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
-include Makefile-include.linux-x86_64
+include ../common/Makefile-include.linux-x86_64
 else 
 $(error Invalid target "$(TARGET)")
 endif

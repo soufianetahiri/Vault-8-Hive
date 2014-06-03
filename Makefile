@@ -26,14 +26,14 @@ patcher:
 	cd server && make linux-x86
 	cd server && make mikrotik-x86
 	cd server && make mikrotik-ppc
-	cd server && make mikrotik-mipsbe
-	cd server && make mikrotik-mipsle
+	cd server && make mikrotik-mips
+	cd server && make mikrotik-mipsel
 #	cp server/hived-linux-i686 client/hived-linux-i386-unpatched
 #	cp server/hived-mikrotik-i386 client/hived-mikrotik-i386-unpatched
 #	cp server/hived-mikrotik-ppc client/hived-mikrotik-ppc-unpatched
 #	cp server/hived-mikrotik-mipsbe client/hived-mikrotik-mipsbe-unpatched
 #	cp server/hived-mikrotik-mipsle client/hived-mikrotik-mipsle-unpatched
-#	cd client && make clean && make patcher:w
+	cd client && make clean && make patcher
 
 linux-x86:
 	@make -C server $@
