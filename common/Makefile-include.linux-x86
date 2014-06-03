@@ -4,4 +4,4 @@
 OFLAGS = -Os
 CFLAGS += -I ../.. -I../include -D_FILE_OFFSET_BITS=64 -m32
 CFLAGS += -DLINUX
-LFLAGS += -lutil
+LDFLAGS += -lutil

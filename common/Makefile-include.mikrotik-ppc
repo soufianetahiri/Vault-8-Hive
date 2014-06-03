@@ -12,6 +12,6 @@ RANLIB=${BUILDTOOLS}/$(ARCH)-linux-ranlib
 
 CFLAGS += -I$(UCLIBC_HDRS) -L$(UCLIBC_LIBS) -Os
 CFLAGS += -DLINUX -DMIKROTIK
-LFLAGS += -lutil
+LDFLAGS += -lutil
 
 OFLAGS	= -Os

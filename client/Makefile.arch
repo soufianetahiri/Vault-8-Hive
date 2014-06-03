@@ -110,6 +110,7 @@ hclient: $(LIBSSL) $(LIBCRYPTO) strings
 	${CC} ${CFLAGS} -o ${BINARY} ${CFILES} $(LIBS) ${LDFLAGS} 
 	strip ${BINARY}
 	md5sum ${BINARY} > ${BINARY}.md5
+	echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD
 
 $(LIBSSL): $(SSL_REBUILD)
 	cd $(SSL) && $(MAKE) TARGET="$(TARGET)"
@@ -128,6 +129,10 @@ library: strings
 	gcc $(CFLAGS) -c $(LIBFILES)
 	ar rv libhclient.a *.o
 	ranlib libhclient.a
+	echo "ARCH_BUILD_CLIENTLIB=$(TARGET)" > ARCH_BUILD
+	printf "=========================================================================\n"
+	printf "\tBUILDING CLIENT COMPLETE\n"
+	printf "=========================================================================\n"
 
 libcryptcat: cryptcat/farm9crypt.o cryptcat/twofish2.o
 	gcc -c $(CRYPTCAT) 
