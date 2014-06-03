@@ -90,6 +90,9 @@ $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
 	printf "\tAR\t$@\n"
 	$(AR) $(ARFLAGS) $@ $(CRYPTO_OBJS)
 	echo "ARCH_BUILD_CRYPTO=$(TARGET)" > ARCH_BUILD
+	printf "=========================================================================\n"
+	printf "\t$@ COMPLETE\n"
+	printf "=========================================================================\n"
 
 .PHONY: crypto_strings
 

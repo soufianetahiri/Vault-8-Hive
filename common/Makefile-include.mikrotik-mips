@@ -1,5 +1,5 @@
 #------------------------------------------------
-# Makefile include for mikrotik-mipsbe
+# Makefile include for mikrotik-mips
 #------------------------------------------------
 BUILDROOT=/opt/buildroot/buildroot-2010.11-mipsbe/output/staging/usr
 ARCH=mips
@@ -9,6 +9,7 @@ UCLIBC_LIBS=$(BUILDROOT)/lib
 CC=${BUILDTOOLS}/$(ARCH)-linux-gcc
 AR=${BUILDTOOLS}/$(ARCH)-linux-ar
 RANLIB=${BUILDTOOLS}/$(ARCH)-linux-ranlib
+STRIP=${BUILDTOOLS}/$(ARCH)-linux-sstrip
 
 CFLAGS += -I$(UCLIBC_HDRS) -L$(UCLIBC_LIBS) -Os
 CFLAGS += -D_MIPS_SZPTR=32 -D_BIG_ENDIAN -DLINUX -DMIKROTIK -D_MIPS
@@ -16,4 +17,5 @@ CFLAGS += -DPOLARSSL_HAVEGE_C
 CFLAGS += -DLINUX
 LDFLAGS += -lutil
 
-OFLAGS	= -Os
+OFLAGS	= -Osa
+STRIPFLAGS :=

@@ -110,6 +110,9 @@ $(LIBDIR)/libpolarssl.a: $(SSL_BUILD_OPTS) $(OBJS)
 	printf "\tAR\t$@\n"
 	$(AR) $(ARFLAGS) $@ $(OBJS)
 	echo "ARCH_BUILD_SSL=$(TARGET)" > ARCH_BUILD
+	printf "=========================================================================\n"
+	printf "\t$@ COMPLETE\n"
+	printf "=========================================================================\n"
 
 $(LIBDIR)/libpolarssl.so: libpolarssl.a
 	printf "\tLD\t$@=\n"
