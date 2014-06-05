@@ -75,9 +75,8 @@ ifdef TARGET
   $(info )
 endif
 
-
 ifdef DEBUG
-CFLAGS += -g3
+  CFLAGS += -g -DDEBUG
 endif
 
 ##########################################################################
@@ -176,7 +175,7 @@ install: bzip2 bzip2recover
 	echo ".so man1/bzdiff.1" > $(PREFIX)/man/man1/bzcmp.1
 
 clean: 
-	printf "\n\tCLEANING: $(CURDIR)...\n"
+	printf "\tCLEANING:\t$(CURDIR)\n"
 	rm -f *.o libbz2.a bzip2 bzip2recover \
 	sample1.rb2 sample2.rb2 sample3.rb2 \
 	sample1.tst sample2.tst sample3.tst
@@ -204,7 +203,7 @@ bzip2recover.o: bzip2recover.c
 
 .PHONY: distclean
 distclean: clean
-	printf "\n\tDIST CLEANING: $(CURDIR)...\n"
+	printf "\tDIST CLEANING:\t$(CURDIR)\n"
 	rm -f manual.ps manual.html manual.pdf
 
 DISTNAME=bzip2-1.0.6

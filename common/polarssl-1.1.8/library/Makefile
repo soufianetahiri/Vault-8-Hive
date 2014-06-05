@@ -23,7 +23,6 @@ ifdef TARGET
     $(info .  Building SSL library for $(TARGET))
   endif
   
-  
   ifeq ("$(TARGET)", "linux-x86")
     include ../../Makefile-include.linux-x86
   else ifeq ("$(TARGET)", "linux-x86_64")
@@ -49,8 +48,8 @@ endif
 CFLAGS += -I../../crypto -I../include -I../ssl/include
 
 ifdef DEBUG
-  CFLAGS += -g3
-  CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+  CFLAGS += -g
+  CFLAGS += -DDBUG -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 endif
 
 ifdef TARGET
@@ -82,20 +81,19 @@ DLEXT=so
 # Windows shared library extension:
 # DLEXT=dll
 
-OBJS=	aes.o		arc4.o		asn1parse.o		\
-		base64.o	bignum.o	camellia.o		\
-		certs.o		cipher.o	cipher_wrap.o	\
-		ctr_drbg.o	debug.o		des.o			\
-		dhm.o		entropy.o	entropy_poll.o	\
-		error.o		havege.o					\
-		md.o		md_wrap.o	md2.o			\
-		md4.o		md5.o		net.o			\
-		padlock.o	pem.o		pkcs11.o		\
-		rsa.o		sha1.o		sha2.o			\
-		sha4.o		ssl_cli.o	ssl_srv.o		\
-		ssl_tls.o	timing.o	version.o		\
-		x509parse.o	xtea.o
-	
+OBJS=	aes.o		arc4.o		asn1parse.o	\
+	base64.o	bignum.o	camellia.o	\
+	certs.o		cipher.o	cipher_wrap.o	\
+	ctr_drbg.o	debug.o		des.o		\
+	dhm.o		entropy.o	entropy_poll.o	\
+	error.o		havege.o			\
+	md.o		md_wrap.o	md2.o		\
+	md4.o		md5.o		net.o		\
+	padlock.o	pem.o		pkcs11.o	\
+	rsa.o		sha1.o		sha2.o		\
+	sha4.o		ssl_cli.o	ssl_srv.o	\
+	ssl_tls.o	timing.o	version.o	\
+	x509parse.o	xtea.o
 
 .SILENT:
 .PHONY: $(SSL_BUILD_OPTS)
@@ -131,10 +129,10 @@ $(LIBDIR)/libpolarssl.dll: libpolarssl.a
 	$(CC) $(CFLAGS) $(OFLAGS) -c $<
 
 clean:
-	printf "\tCLEANING: $(CURDIR)...\n"
+	printf "\tCLEANING:\t$(CURDIR)\n"
 	rm -f *.o
 	>ARCH_BUILD
 
 distclean: clean
-	printf "\tDIST CLEANING: $(CURDIR)...\n"
+	printf "\tDIST CLEANING:\t$(CURDIR)\n"
 	rm -f libpolarssl.*

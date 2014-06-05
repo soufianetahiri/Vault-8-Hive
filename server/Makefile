@@ -25,9 +25,6 @@ SSL = ../common/ssl/library
 CRYPTO = ../common/crypto
 BZIP2 = ../common/bzip2
 
-#INCLUDES = -I$(POLARSSL)/include -I../libs
-LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
-
 .SILENT:
 
 .PHONY: all linux-x86
@@ -86,11 +83,12 @@ CLEAN_LIST += mod_hexify.pyc hive.tar
 
 .PHONY: build_clean
 build_clean:
+	printf "\n\tCLEANING:\t$(CURDIR)\n"
 	rm -f *.o init_strings.* init_crypto_strings.* 
 
 .PHONY: clean
 clean:
-	printf "\n\tCLEANING: $(CURDIR)...\n"
+	printf "\tCLEANING:\t$(CURDIR)\n"
 	for file in $(CLEAN_LIST); do \
 		rm -f $$file; \
 	done
@@ -100,7 +98,8 @@ clean:
 	$(MAKE) -C $(BZIP2) clean
 
 .PHONY: distclean
-distclean:
+distclean: build_clean
+	printf "\tDIST CLEANING:\t$(CURDIR)\n"
 	rm -f $(SERVER_BASENAME)-*
 	$(MAKE) -C $(SSL) $@
 	$(MAKE) -C $(CRYPTO) $@

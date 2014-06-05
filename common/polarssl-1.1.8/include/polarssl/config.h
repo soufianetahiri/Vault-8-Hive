@@ -135,8 +135,9 @@
  * Requires: POLARSSL_DEBUG_C
  *
  * Enable all SSL/TLS debugging messages.
- */
 #define POLARSSL_DEBUG_MSG
+*/
+
 
 /**
  * \def POLARSSL_ERROR_STRERROR_DUMMY
@@ -385,8 +386,9 @@
  *          library/ssl_tls.c
  *
  * This module provides debugging functions.
+ #define POLARSSL_DEBUG_C
  */
-#define POLARSSL_DEBUG_C
+
 
 /**
  * \def POLARSSL_DES_C

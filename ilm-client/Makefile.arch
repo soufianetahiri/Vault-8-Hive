@@ -15,9 +15,10 @@ $(error Invalid target "$(TARGET)")
 endif
 
 ifdef DEBUG
-CXXFLAGS += -g3
-CXXFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+  CXXFLAGS += -g
+  CXXFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG
 endif
+
 CC = gcc
 GCCVERSION_GT_4.6 = $(shell expr `gcc -dumpversion | cut -f1,2 -d.` \>= 4.6)
 
@@ -53,7 +54,6 @@ else
   SSL_REBUILD:=force-rebuild
 endif
 
-
 ifdef ARCH_BUILD_CLIENTLIB
   ifneq ("$(ARCH_BUILD_CLIENTLIB)", "$(TARGET)")
     CLIENTLIB_REBUILD:=force-rebuild
@@ -88,7 +88,6 @@ INCLUDES = -I. -I$(CRYPTO) -I../client -I$(LIBSSL_INCLUDES) -Iinclude
 #INCLUDES += -I../libs 
 
 CXXFLAGS += $(INCLUDES)
-DFLAGS = $(CXXFLAGS) -DDEBUG -D_DEBUG
 
 #LIBS=$(LIBCRYPTCAT) $(LIBHCLIENT) libILM_SDK.a $(LIBPOLARSSL)
 LIBS=$(LIBHCLIENT) libILM_SDK.a $(LIBSSL)

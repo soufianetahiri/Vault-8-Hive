@@ -3,6 +3,7 @@ SSL = ../common/ssl/library
 LIBSSL = common/ssl/library/libpolarssl.a
 LIBSSL_INCLUDES = common/ssl/include
 
+.SILENT:
 .PHONY: all
 all: 
 	@echo
@@ -15,25 +16,29 @@ all:
 	@echo "  make clean"
 	@echo
 
-linux-x86: clean
-	@make -f Makefile.arch TARGET=linux-x86
+linux-x86: build
+	$(MAKE) -f Makefile.arch TARGET=linux-x86
 
-linux-x86_64: clean
-	@make -f Makefile.arch TARGET=linux-x86_64
+linux-x86_64: build
+	$(MAKE) -f Makefile.arch TARGET=linux-x86_64
 
 library: clean
-	@make -f Makefile.arch TARGET=$(TARGET) $@
+	$(MAKE) -f Makefile.arch TARGET=$(TARGET) $@
 
 $(LIBSSL):
 	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
 
+.PHONY: build
+build:
+	printf "\n=========================================================================\n"
+	printf "        BUILDING CLIENT\n"
+
 .PHONY: clean
 clean:
-	@echo
-	rm -f *.o 
+	$(MAKE) -f Makefile.arch clean
 
 .PHONY: dist-clean
-dist-clean:	clean
+distclean:	clean
 	@echo
 	rm -f $(CLIENT)*
 #	rm -f *PATCHED

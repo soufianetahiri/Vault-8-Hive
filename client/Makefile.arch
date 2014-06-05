@@ -1,19 +1,14 @@
 # Defaults
 CFLAGS	= -Wall -W -Wdeclaration-after-statement
+#CFLAGS += -Wall -Wextra -Os -ansi -std=gnu99
 OFLAGS	= -O2
 
 ifeq ("$(TARGET)", "linux-x86")
-include Makefile-include.linux-x86
+  include Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
-include Makefile-include.linux-x86_64
-else 
-$(error Invalid target "$(TARGET)")
+  include Makefile-include.linux-x86_64
 endif
 
-ifdef DEBUG
-CFLAGS += -g3
-CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
-endif
 CC = gcc
 GCCVERSION_GT_4.6 = $(shell expr `gcc -dumpversion | cut -f1,2 -d.` \>= 4.6)
 
@@ -49,8 +44,6 @@ endif
 
 LDFLAGS = -lpthread
 
-#CFLAGS += -Wall -Os -D_FILE_OFFSET_BITS=64 -m32
-CFLAGS += -Wall -Wextra -Os -ansi -std=gnu99
 
 ifeq "$(GCCVERSION_GT_4.6)" "1"
 	CFLAGS += -Wno-unused-result
@@ -58,7 +51,10 @@ endif
 
 CFLAGS += $(INCLUDES)
 
-DFLAGS = $(CFLAGS) -DDEBUG -D_DEBUG
+ifdef DEBUG
+  CFLAGS += -g
+  CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG -D_DEBUG
+endif
 
 CRYPTCAT = -DLINUX cryptcat/netcat.c
 #CRYPTCAT = -DLINUX -lstdc++ cryptcat/farm9crypt.cc cryptcat/twofish.cc cryptcat/netcat.c
@@ -84,10 +80,6 @@ UNPATCHED_BINS = $(UNPATCHED_SOLARIS_SPARC) $(UNPATCHED_LINUX_X86)
 UNPATCHED_BINS += $(UNPATCHED_SOLARIS_X86) $(UNPATCHED_MIKROTIK_X86) $(UNPATCHED_MIKROTIK_MIPS)
 UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSEL)
 
-$(info )
-$(info )
-$(info =========================================================================)
-$(info .       BUILDING CLIENT)
 $(info =========================================================================)
 $(info TARGET: $(TARGET))
 $(info SRCDIR: $(PWD))
@@ -105,7 +97,7 @@ all: $(LIBSSL) hclient debug
 release: hclient
 
 .PHONY: hclient
-hclient: $(LIBSSL) $(LIBCRYPTO) $(OBJS) strings
+hclient: init_strings.o $(LIBSSL) $(LIBCRYPTO) $(OBJS)
 	${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS} 
 	strip ${BINARY}
 	md5sum ${BINARY} > ${BINARY}.md5
@@ -120,7 +112,7 @@ $(LIBCRYPTO): $(CRYPTO_REBUILD)
 
 .PHONY: debug
 debug: strings $(LIBSSL) $(LIBCRYPTO) 
-	${CC} ${DFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
+	${CC} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
 	md5sum ${BINARY}-dbg > ${BINARY}-dbg.md5
 
 #library: $(LIBPOLARSSL) strings
@@ -183,12 +175,19 @@ patcher: $(UNPATCHED_BINS) $(LIBSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5
 
+.PHONY: distclean
+distclean: clean
+	printf "\tDIST CLEANING:\t$(CURDIR)\n"
+	rm -f ${BINARY}*
+	rm -f hive-patcher hive-patcher.md5 *PATCHED
+
 .PHONY: clean
 clean:
-	rm -f ${BINARY}* *.o *.a init_strings.c core cryptcat/*.o cryptcat/cryptcat
+	printf "\tCLEANING:\t$(CURDIR)\n"
+	rm -f $(OBJS)
+	rm -f *.a init_strings.c core cryptcat/*.o cryptcat/cryptcat
 #	rm -f _unpatched_solaris_sparc.h _unpatched_windows_i386.h _unpatched_linux_i386.h
 	rm -f _unpatched_*.h
-	rm -f hive-patcher hive-patcher.md5 *PATCHED *PATCHED.exe
 	rm -f *UNpatched*
 	rm -f init_strings.*
 	rm -f init_crypto_strings.*

@@ -18,25 +18,29 @@ LDFLAGS = -lpthread
 
 # TARGET Configuration
 ifeq ("$(TARGET)", "linux-x86")
-include ../common/Makefile-include.linux-x86
+  include ../common/Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
-include ../common/Makefile-include.linux-x86_64
+  include ../common/Makefile-include.linux-x86_64
 else ifeq ("$(TARGET)", "mikrotik-mips")
-include ../common/Makefile-include.mikrotik-mips
+  include ../common/Makefile-include.mikrotik-mips
 else ifeq ("$(TARGET)", "mikrotik-mipsel")
-include ../common/Makefile-include.mikrotik-mipsel
+  include ../common/Makefile-include.mikrotik-mipsel
 else ifeq ("$(TARGET)", "mikrotik-x86")
-include ../common/Makefile-include.mikrotik-x86
+  include ../common/Makefile-include.mikrotik-x86
 else ifeq ("$(TARGET)", "mikrotik-ppc")
-include ../common/Makefile-include.mikrotik-ppc
+  include ../common/Makefile-include.mikrotik-ppc
 else ifeq ("$(TARGET)", "arm")
-include ../common/Makefile-include.arm
+  include ../common/Makefile-include.arm
 else ifeq ("$(TARGET)", "solaris-sparc")
-include ../common/Makefile-include.solaris-sparc
+  include ../common/Makefile-include.solaris-sparc
 else ifeq ("$(TARGET)", "solaris-x86")
-include ../common/Makefile-include.solaris-x86
+  include ../common/Makefile-include.solaris-x86
 else
-$(error Invalid target "$(TARGET)")hived-mikrotik-mips
+  $(error Invalid target "$(TARGET)")hived-mikrotik-mips
+endif
+
+ifdef DEBUG
+  CFLAGS += -DDEBUG -D_DEBUG -g
 endif
 
 BIN = .
@@ -71,7 +75,6 @@ LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 PS = process_list.c
 NETSTAT = netstat_an.c netstat_rn.c
 IFC = ifconfig.c
-DBGFLAGS += -DDEBUG -D_DEBUG -g
 
 #STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 
@@ -112,7 +115,7 @@ else
   SSL_REBUILD:=force-rebuild
 endif
 
-SERVER = $(SERVER_BASENAME)-$(TARGET)
+SERVER := $(SERVER_BASENAME)-$(TARGET)
 
 $(info )
 $(info )
@@ -130,7 +133,7 @@ $(info )
 .SILENT:
 
 .PHONY: all
-all: $(SERVER) $(SERVER)-dbg
+all: $(SERVER)
 
 $(LIBSSL): $(SSL_REBUILD)
 	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
@@ -148,18 +151,18 @@ debug: $(SERVER)-dbg
 release: $(SERVER)
 
 $(SERVER): strings $(OBJS) $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o 
-	printf "\tLD\t\t$@\n"
-	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)
-	printf "\tStripping\t$@\n"
-	$(STRIP) $(BIN)/$(SERVER)
-	$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
-
-
-$(SERVER)-dbg: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o
-	printf "\tLD\t\t$@\n"
-	$(CC) $(CFLAGS) $(DBGFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $(BIN)/$(SERVER)-dbg
-	$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
-
+	if ! test $(DEBUG); then \
+		printf "\tLD\t\t$@\n"; \
+		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $@; \
+		printf "\tStripping\t$@\n"; \
+		$(STRIP) $(BIN)/$(SERVER); \
+		$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5; \
+	else \
+		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
+		printf "\tLD\t\t$@-dbg\n"; \
+		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $@-dbg; \
+		$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5; \
+	fi
 
 valgrind: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
 	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
@@ -184,11 +187,8 @@ string_utils.o: string_utils.h string_utils.c
 	$(CC) -c $(CFLAGS) string_utils.c 
 
 .PHONY: clean
-clean:	$(SERVER)
+clean:
 	$(MAKE) -f ./Makefile clean
-
-.PHONY: svncle$(MAKE)
-svnclean: clean
 
 .PHONY: md5
 md5: all

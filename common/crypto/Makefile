@@ -35,7 +35,7 @@ else
 endif
 
 ifdef DEBUG
-CFLAGS += -g3
+  CFLAGS += -g -DDEBUG
 endif
 
 ##########################################################################
@@ -103,14 +103,14 @@ init_crypto_strings.c: crypto_strings.txt
 
 .PHONY: clean
 clean:
-	printf "\n\tCLEANING: $(CURDIR)...\n"
+	printf "\tCLEANING:\t$(CURDIR)\n"
 	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
 	rm -f init_crypto_strings.*
 	>ARCH_BUILD
 
 .PHONY: distclean
 distclean: clean
-	printf "\n\tDIST CLEANING: $(CURDIR)...\n"
+	printf "\tDIST CLEANING:\t$(CURDIR)\n"
 	rm -f $(LIBCRYPTO)
 
 .c.o:
