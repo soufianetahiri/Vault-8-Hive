@@ -3,7 +3,6 @@ all:
 	@echo
 	@echo " Options:"
 	@echo "  .  make clean"
-	@echo "  .  make svnclean"
 	@echo "  .  make tarball"
 	@echo "  .  make patcher"
 	@echo
@@ -11,7 +10,6 @@ all:
 clean:
 	make -C server clean
 	make -C client clean
-	make -C honeycomb clean
 	rm -rf hive.tar Logs
 
 tarball:

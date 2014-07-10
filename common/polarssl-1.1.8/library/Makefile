@@ -124,15 +124,17 @@ $(LIBDIR)/libpolarssl.dll: libpolarssl.a
 	printf "\tLD\t$@\n" 
 	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJS) -lws2_32 -lwinmm -lgdi32 
 
-.c.o:
-	printf "\tCC\t$<\n"
-	$(CC) $(CFLAGS) $(OFLAGS) -c $<
-
+.PHONY:	clean
 clean:
 	printf "\tCLEANING:\t$(CURDIR)\n"
 	rm -f *.o
 	>ARCH_BUILD
 
-distclean: clean
+.PHONY:	distclean
+distclean:	clean
 	printf "\tDIST CLEANING:\t$(CURDIR)\n"
 	rm -f libpolarssl.*
+
+.c.o:
+	printf "\tCC\t$<\n"
+	$(CC) $(CFLAGS) $(OFLAGS) -c $<
