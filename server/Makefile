@@ -79,7 +79,7 @@ arm: build_clean
 
 CLEAN_LIST := *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
 CLEAN_LIST += crypto_proj_strings.h crypto_strings_main.h string_utils.h.gch
-CLEAN_LIST += mod_hexify.pyc hive.tar
+CLEAN_LIST += mod_hexify.pyc ../hive-server.tar
 
 .PHONY: build_clean
 build_clean:
@@ -106,4 +106,4 @@ distclean: build_clean
 	$(MAKE) -C $(BZIP2) $@
 
 tarball: clean
-	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive.tar server
+	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive-server.tar server

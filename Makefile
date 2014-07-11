@@ -10,7 +10,7 @@ all:
 clean:
 	make -C server clean
 	make -C client clean
-	rm -rf hive.tar Logs
+	rm -rf *.tar Logs
 
 tarball:
 	tar --exclude=.svn --exclude=HiveServer.sdf --exclude=*.gz --exclude=*.tar --exclude=*.tgz --exclude=documentation/html/* -cvf hive.tar * >/dev/null

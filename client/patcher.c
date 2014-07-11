@@ -24,8 +24,8 @@
 #include "colors.h"
 
 //PolarSSL Files
-#include "./ssl/polarssl/include/polarssl/config.h"
-#include "./ssl/polarssl/include/polarssl/sha1.h"
+#include "polarssl/config.h"
+#include "polarssl/sha1.h"
 
 #define HIVE_SOLARIS_SPARC_FILE "hived-solaris-sparc-PATCHED"
 #define HIVE_SOLARIS_X86_FILE "hived-solaris-x86-PATCHED"

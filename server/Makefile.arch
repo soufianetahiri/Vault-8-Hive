@@ -4,6 +4,7 @@
 
 SERVER_BASENAME = hived
 
+SHELL := $(shell which bash)
 CC := $(shell which gcc)
 MD5SUM := $(shell which md5sum)
 STRIP := $(shell which strip)
@@ -43,7 +44,7 @@ ifdef DEBUG
   CFLAGS += -DDEBUG -D_DEBUG -g
 endif
 
-BIN = .
+BINARY = .
 LIB = .
 
 COMMON = ../common
@@ -155,21 +156,21 @@ $(SERVER): strings $(OBJS) $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o
 		printf "\tLD\t\t$@\n"; \
 		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $@; \
 		printf "\tStripping\t$@\n"; \
-		$(STRIP) $(BIN)/$(SERVER); \
-		$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5; \
+		$(STRIP) $(BINARY)/$(SERVER); \
+		$(MD5SUM) $(BINARY)/$(SERVER) > $(BINARY)/$(SERVER).md5; \
 	else \
 		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
 		printf "\tLD\t\t$@-dbg\n"; \
 		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $@-dbg; \
-		$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5; \
+		$(MD5SUM) $(BINARY)/$(SERVER)-dbg > $(BINARY)/$(SERVER)-dbg.md5; \
 	fi
 
 valgrind: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
-	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
+	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BINARY)/$(SERVER)-$@
 
 .PHONY: efence
 efence: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
-	$(CC) -lefence -D__EFENCE__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BIN)/$(SERVER)-$@
+	$(CC) -lefence -D__EFENCE__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BINARY)/$(SERVER)-$@
 
 .PHONY: strings
 strings: init_strings.o
@@ -192,8 +193,8 @@ clean:
 
 .PHONY: md5
 md5: all
-	$(MD5SUM) $(BIN)/$(SERVER)-dbg > $(BIN)/$(SERVER)-dbg.md5
-	$(MD5SUM) $(BIN)/$(SERVER) > $(BIN)/$(SERVER).md5
+	$(MD5SUM) $(BINARY)/$(SERVER)-dbg > $(BINARY)/$(SERVER)-dbg.md5
+	$(MD5SUM) $(BINARY)/$(SERVER) > $(BINARY)/$(SERVER).md5
 
 .PHONY: tarball	
 tarball:
