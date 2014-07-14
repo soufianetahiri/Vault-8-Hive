@@ -106,4 +106,11 @@ distclean: build_clean
 	$(MAKE) -C $(BZIP2) $@
 
 tarball: clean
-	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive-server.tar server
+	cd .. && tar \
+		--exclude .svn \
+		--exclude *.gz \
+		--exclude *.tar \
+		--exclude *.tgz \
+		--exclude documentation/html \
+		--exclude hived-* \
+		-cvf hive-server.tar server common

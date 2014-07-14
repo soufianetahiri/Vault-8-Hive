@@ -2,15 +2,16 @@
 # Makefile for arm
 #------------------------------------------------
 ARCH=arm
-TOOLCHAIN=/opt/arm-devel
-BIN=$(TOOLCHAIN)/usr/bin
+#TOOLCHAIN=/opt/arm-devel/usr/arm-unknown-linux-gnueabi
+TOOLCHAIN=/opt/arm-devel/usr
+BIN=$(TOOLCHAIN)/bin
 HEADERS=$(TOOLCHAIN)/include
-LIBS=$(TOLLCHAIN)/lib
+LIBS=$(TOOLCHAIN)/lib
 CC=$(BIN)/gcc
-AR=${BIN}ar
-RANLIB=${BIN}ranlib
+AR=${BIN}/ar
+RANLIB=${BIN}/ranlib
 
 CFLAGS  += -I$(HEADERS) -L$(LIBS)
-CFLAGS  += -D_MIPS_SZPTR=32 -DLINUX -DMIPS_LE
+CFLAGS += -DARM
 
 OFLAGS	= -Os
