@@ -18,15 +18,15 @@ UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSEL)
 .SILENT:
 .PHONY: all
 all: 
-	@echo
-	@echo " Please specify a supported target:"
-	@echo 
-	@echo "  make linux-x86"
-	@echo "  make linux-x86_64"
-	@echo
-	@echo " Administrative tasks, ..."
-	@echo "  make clean"
-	@echo
+	printf "\n\tPlease specify a supported target:\n"
+	printf "\n\t\tmake linux-x86\n"
+	printf "\t\tmake linux-x86_64\n"
+	printf "\n\tTo make the patcher use:\n"
+	printf "\n\t\tmake linux-x86 patcher\n"
+	printf "\n\t\tNOTE: make will produce an error if all binaries are not present.\n"
+	printf "\n\tAdministrative tasks, ...\n"
+	printf "\t\tmake clean\n"
+	printf "\t\tmake distclean\n"
 
 linux-x86: build
 	$(MAKE) -f Makefile.arch TARGET=linux-x86
@@ -59,10 +59,6 @@ tarball: clean
 	printf "\n\tCreating tarball of $(CURDIR)\n"
 	cd .. && \
 	tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive-client.tar client 1>/dev/null
-
-.PHONY: patcher
-patcher:
-	$(MAKE) -f Makefile.arch TARGET=$(TARGET) $@
 
 .PHONY: clean
 clean:

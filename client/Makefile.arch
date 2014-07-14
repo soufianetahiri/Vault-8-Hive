@@ -1,8 +1,7 @@
 SHELL := $(shell which bash)
 
 # Defaults
-CFLAGS	= -Wall -W -Wdeclaration-after-statement
-#CFLAGS += -Wall -Wextra -Os -ansi -std=gnu99
+CFLAGS	:= -Wall -W -Wdeclaration-after-statement
 OFLAGS	= -O2
 
 ifeq ("$(TARGET)", "linux-x86")
@@ -61,7 +60,6 @@ endif
 CRYPTCAT = -DLINUX cryptcat/netcat.c
 #CRYPTCAT = -DLINUX -lstdc++ cryptcat/farm9crypt.cc cryptcat/twofish.cc cryptcat/netcat.c
 LIBFILES = trigger_utils.c trigger_network.c trigger_protocols.c
-#LIBFILES += string_utils.o init_strings.o init_crypto_strings.o $(LIBPOLARSSL)-I../.. -I../include -Wall -W -Wdeclaration-after-statement
 
 OBJS =	main.o functions.o misc.o modes.o parser.o \
 	trigger.o trigger_network.o \
@@ -94,7 +92,7 @@ $(info )
 .SILENT:
 
 .PHONY: all
-all: $(LIBSSL) hclient debug
+all: $(LIBSSL) hclient debug patcher
 
 .PHONY: release
 release: hclient
@@ -115,10 +113,9 @@ $(LIBCRYPTO): $(CRYPTO_REBUILD)
 
 .PHONY: debug
 debug: strings $(LIBSSL) $(LIBCRYPTO) 
-	${CC} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
+	${CC} ${CFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
 	md5sum ${BINARY}-dbg > ${BINARY}-dbg.md5
 
-#library: $(LIBPOLARSSL) strings
 library: strings
 	gcc $(CFLAGS) -c $(LIBFILES)
 	ar rv libhclient.a *.o
@@ -151,16 +148,13 @@ init_strings.c: client_strings.txt string_utils.h
 string_utils.o: string_utils.c string_utils.h
 	${CC} ${CFLAGS} -c string_utils.c string_utils.h
 
-#init_crypto_strings.o: init_crypto_strings.c string_utils.o 
-
-#init_crypto_strings.c: crypto_strings.txt string_utils.o
-#	python mod_gen_cryptostring_header.py crypto_strings.txt CRYPTO_STRINGS
 .PHONY: patcher
 patcher: $(UNPATCHED_BINS) $(LIBSSL)
 	printf "\nThe latest binaries must be present in the server directory.\n"
 	printf "The following binaries were found:\n\n"
 	@ls -l ../server/hived-* | grep -v dbg | grep -v md5
 	printf "\n"
+
 	xxd -i $(UNPATCHED_LINUX_X86) _unpatched_linux_x86.h
 	xxd -i $(UNPATCHED_MIKROTIK_X86) _unpatched_mikrotik_x86.h
 	xxd -i $(UNPATCHED_MIKROTIK_MIPS) _unpatched_mikrotik_mips.h
@@ -168,7 +162,8 @@ patcher: $(UNPATCHED_BINS) $(LIBSSL)
 	xxd -i $(UNPATCHED_MIKROTIK_PPC) _unpatched_mikrotik_ppc.h
 	xxd -i $(UNPATCHED_SOLARIS_X86) _unpatched_solaris_x86.h
 	xxd -i $(UNPATCHED_SOLARIS_SPARC) _unpatched_solaris_sparc.h
-	gcc -m32 -Os -W -Wall -I. -I$(SSL)/../include string_utils.c patcher.c -o hive-patcher $(LIBSSL)
+
+	$(CC) $(CFLAGS) -I. string_utils.c patcher.c -o hive-patcher $(LIBSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5
 
