@@ -2,6 +2,6 @@
 #Makefile include for Linux x86
 #------------------------------------------------
 OFLAGS = -Os
-CFLAGS += -I ../.. -I../include -D_FILE_OFFSET_BITS=64 -m32
+CFLAGS += -I../include -D_FILE_OFFSET_BITS=64 -m32
 CFLAGS += -DLINUX
 LDFLAGS += -lutil

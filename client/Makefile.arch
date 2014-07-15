@@ -103,6 +103,7 @@ hclient: init_strings.o $(LIBSSL) $(LIBCRYPTO) $(OBJS)
 	strip ${BINARY}
 	md5sum ${BINARY} > ${BINARY}.md5
 	echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD
+	printf "\n\tCLIENT BUILD COMPLETE\n\n"
 
 $(LIBSSL): $(SSL_REBUILD)
 	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
@@ -121,9 +122,6 @@ library: strings
 	ar rv libhclient.a *.o
 	ranlib libhclient.a
 	echo "ARCH_BUILD_CLIENTLIB=$(TARGET)" > ARCH_BUILD
-	printf "=========================================================================\n"
-	printf "\tBUILDING CLIENT COMPLETE\n"
-	printf "=========================================================================\n"
 
 libcryptcat: cryptcat/farm9crypt.o cryptcat/twofish2.o
 	gcc -c $(CRYPTCAT) 
@@ -150,6 +148,9 @@ string_utils.o: string_utils.c string_utils.h
 
 .PHONY: patcher
 patcher: $(UNPATCHED_BINS) $(LIBSSL)
+	printf "=========================================================================\n"
+	printf "\tBUILDING PATCHER\n"
+	printf "=========================================================================\n"
 	printf "\nThe latest binaries must be present in the server directory.\n"
 	printf "The following binaries were found:\n\n"
 	@ls -l ../server/hived-* | grep -v dbg | grep -v md5

@@ -80,6 +80,9 @@ void Usage(char* progname) {
 
    //fprintf(stdout, "    [-h ]          - print this usage\n\n");
    fprintf(stdout, "%s", usageOption12String);
+#ifdef DEBUG
+   fprintf(stdout, "    [-D <debug level>]      - debug level\n");
+#endif
 }
 
 /* ******************************************************************************************************************************

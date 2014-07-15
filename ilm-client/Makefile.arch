@@ -79,13 +79,13 @@ CFILES = main.c functions.c misc.c modes.c parser.c \
 
 LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
-LIBHCLIENT = ../client/libhclient.a
-LIBCRYPTCAT = ../client/libcryptcat.a
-HCLIENT = ./hclient-linux
+LIBHCLIENT = $(CLIENT)/libhclient.a
+LIBCRYPTCAT = $(CLIENT)/libcryptcat.a
+HCLIENT = $(CLIENT)/hclient-$(TARGET)
 
-INCLUDES = -I. -I$(CRYPTO) -I../client -I$(LIBSSL_INCLUDES) -Iinclude
-#INCLUDES += -I../client/cryptcat
-#INCLUDES += -I../libs 
+INCLUDES = -I. -I$(CRYPTO) -I$(CLIENT) -I$(LIBSSL_INCLUDES) -Iinclude
+INCLUDES += -I$(CLIENT)/cryptcat
+INCLUDES += -I../libs 
 
 CXXFLAGS += $(INCLUDES)
 
@@ -113,13 +113,13 @@ $(info )
 
 .SILENT:
 .PHONY: all
-all: cryptcat $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) $(OBJS)
+all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) -o $(OUTFILE)
 	md5sum $(OUTFILE) > $(OUTFILE).md5
-	printf "=========================================================================\n"
+	printf "\n=========================================================================\n"
 	printf "\tBUILDING ILM CLIENT COMPLETE\n"
 	printf "=========================================================================\n"
-	rm -f cryptcat.h
+#	rm -f cryptcat.h
 
 $(LIBSSL):
 	cd $(SSL)/library && $(MAKE) TARGET=linux-x86
@@ -127,7 +127,7 @@ $(LIBSSL):
 
 $(HCLIENT)-$(TARGET):
 	cd $(CLIENT) && $(MAKE) TARGET=$(TARGET)
-#	cp ../client/$(HCLIENT) .
+	cp $(CLIENT)/HCLIENT) .
 
 libhclient: $(LIBHCLIENT)
 
@@ -137,12 +137,16 @@ $(LIBHCLIENT): $(CLIENTLIB_REBUILD)
 libcryptcat: $(LIBCRYPTCAT)
 
 $(LIBCRYPTCAT):
-	cd ../client && $(MAKE) libcryptcat
+	cd $(CLIENT)/ $(MAKE) libcryptcat
 
 .PHONY: cryptcat
 cryptcat:
-	cd ../client/cryptcat && make linux
-	xxd -i ../client/cryptcat/cryptcat cryptcat.h
+	printf "\n=========================================================================\n"
+	printf "\tBUILDING $@\n"
+	printf "=========================================================================\n"
+	cd $(CLIENT)/cryptcat && $(MAKE) linux
+	xxd -i $(CLIENT)/cryptcat/cryptcat cryptcat.h
+	printf "\n\n"
 
 .PHONY: test
 test:
@@ -155,13 +159,13 @@ test:
 
 .PHONY: clean
 clean:
-	rm -f *.o $(OUTFILE) ../client/cryptcat/cryptcat cryptcat.h
+	rm -f *.o $(OUTFILE) $(CLIENT)/cryptcat/cryptcat cryptcat.h
 	rm -f $(LIBHCLIENT)
 	rm -f $(LIBCRYPTCAT)
 	rm -f hclient-linux-dbg
 	rm -f $(OUTFILE).md5
 	make -C $(SSL)/library clean
-	make -C ../client clean
+	make -C $(CLIENT) clean
 
 .cpp.o:
 	printf "\tC++\t$<\n"
