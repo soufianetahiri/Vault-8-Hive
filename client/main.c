@@ -101,7 +101,11 @@ int main( int argc, char **argv )
         initSrandFlag = 1;
     }
 
+#ifdef DEBUG
+	while ( ( optval = getopt(argc, argv, ":a:D:d:k:m:p:P:r:t:")) != -1 )
+#else
 	while ( ( optval = getopt(argc, argv, ":a:d:k:m:p:P:r:t:")) != -1 )
+#endif
 	{
 		switch( optval )
 		{
@@ -119,7 +123,11 @@ int main( int argc, char **argv )
 					return -1;
 				}
 				break;
-
+#ifdef DEBUG
+			case 'D':
+				dbug_level_ = atoi(optarg);
+				break;
+#endif
 				// trigger callback delay
 			case 'd':
 				if ( !mode_set ) pvars.trigger = YES;
