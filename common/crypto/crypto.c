@@ -294,7 +294,7 @@ int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 		return ret;
 	}
 
-	D( printf( " ok\n" ); )
+	DLX(4, printf( " ok\n" ));
 
 	ssl_set_endpoint( ssl, SSL_IS_SERVER );
 	ssl_set_authmode( ssl, SSL_VERIFY_NONE );
