@@ -64,7 +64,7 @@ LIBFILES = trigger_utils.c trigger_network.c trigger_protocols.c
 OBJS =	main.o functions.o misc.o modes.o parser.o \
 	trigger.o trigger_network.o \
 	trigger_protocols.o b64.o trigger_utils.o threads.o \
-	string_utils.o init_strings.o
+	$(COMMON)/string_utils.o init_strings.o
 
 LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
@@ -113,7 +113,7 @@ $(LIBCRYPTO): $(CRYPTO_REBUILD)
 
 
 .PHONY: debug
-debug: strings $(LIBSSL) $(LIBCRYPTO) 
+debug: strings $(LIBSSL) $(LIBCRYPTO) $(OBJS)
 	${CC} ${CFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
 	md5sum ${BINARY}-dbg > ${BINARY}-dbg.md5
 
@@ -135,16 +135,16 @@ cryptcat/twofish2.o: cryptcat/twofish2.cc cryptcat/twofish2.h
 	gcc -c cryptcat/twofish2.cc
 
 .PHONY: strings
-strings: init_strings.o string_utils.o 
+strings: init_strings.o $(COMMON)/string_utils.o 
 
-init_strings.o: init_strings.c string_utils.o
+init_strings.o: init_strings.c $(COMMON)/string_utils.o
 	${CC} ${CFLAGS} -c init_strings.c
 
-init_strings.c: client_strings.txt string_utils.h
+init_strings.c: client_strings.txt $(COMMON)/string_utils.h
 	python mod_gen_string_header.py client_strings.txt CLIENT_STRINGS
 
-string_utils.o: string_utils.c string_utils.h
-	${CC} ${CFLAGS} -c string_utils.c string_utils.h
+$(COMMON)/string_utils.o: $(COMMON)/string_utils.c $(COMMON)/string_utils.h
+	cd $(COMMON) && ${CC} ${CFLAGS} -c string_utils.c string_utils.h
 
 .PHONY: patcher
 patcher: $(UNPATCHED_BINS) $(LIBSSL)
@@ -164,7 +164,7 @@ patcher: $(UNPATCHED_BINS) $(LIBSSL)
 	xxd -i $(UNPATCHED_SOLARIS_X86) _unpatched_solaris_x86.h
 	xxd -i $(UNPATCHED_SOLARIS_SPARC) _unpatched_solaris_sparc.h
 
-	$(CC) $(CFLAGS) -I. string_utils.c patcher.c -o hive-patcher $(LIBSSL)
+	$(CC) $(CFLAGS) -I. $(COMMON)/string_utils.c patcher.c -o hive-patcher $(LIBSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5
 

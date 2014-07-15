@@ -8,9 +8,7 @@
 
 #include <string.h>
 #include <fcntl.h>  // open, O_RDWR, file stuff
-
 #include <sys/types.h>
-
 #include <errno.h>
 
 #include "string_utils.h"

@@ -10,6 +10,7 @@
 #include "colors.h"
 
 #include "trigger_protocols.h"
+#include "crypto_strings_main.h"
 
 #include "proj_strings.h"
 #include "proj_strings_main.h"

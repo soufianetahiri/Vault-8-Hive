@@ -72,32 +72,26 @@ endif
 
 CRYPTCAT = -DLINUX cryptcat/netcat.c
 
-CFILES = main.c functions.c misc.c modes.c parser.c \
-		trigger.c trigger_network.c \
-		trigger_protocols.c b64.c trigger_utils.c threads.c \
-		string_utils.o init_strings.o
-
-LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
-
 LIBHCLIENT = $(CLIENT)/libhclient.a
 LIBCRYPTCAT = $(CLIENT)/libcryptcat.a
 HCLIENT = $(CLIENT)/hclient-$(TARGET)
 
 INCLUDES = -I. -I$(CRYPTO) -I$(CLIENT) -I$(LIBSSL_INCLUDES) -Iinclude
 INCLUDES += -I$(CLIENT)/cryptcat
-INCLUDES += -I../libs 
 
 CXXFLAGS += $(INCLUDES)
 
 #LIBS=$(LIBCRYPTCAT) $(LIBHCLIENT) libILM_SDK.a $(LIBPOLARSSL)
-LIBS=$(LIBHCLIENT) libILM_SDK.a $(LIBSSL)
+#LIBS = $(LIBHCLIENT) libILM_SDK.a  $(LIBSSL) $(LIBCRYPTO)
+LIBS = libILM_SDK.a $(LIBCRYPTO) $(LIBSSL)
+
 OBJS += Command.o
 OBJS += File.o
 OBJS += Ilm.o
 OBJS += Connection.o
 OBJS += Utilities.o
 OBJS += hive.o
-OUTFILE=hive
+OUTFILE = hive
 
 $(info )
 $(info )
@@ -108,13 +102,13 @@ $(info .   TARGET: $(TARGET))
 $(info .   SRCDIR: $(PWD))
 $(info . CXXFLAGS: $(CXXFLAGS))
 $(info .  LDFLAGS: $(LDFLAGS))
-$(info =================================================)
+$(info =========================================================================)
 $(info )
 
 .SILENT:
 .PHONY: all
-all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(OBJS)
-	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) -o $(OUTFILE)
+all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS) $(COMMON)/string_utils.o
+	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) $(COMMON)/string_utils.o -o $(OUTFILE)
 	md5sum $(OUTFILE) > $(OUTFILE).md5
 	printf "\n=========================================================================\n"
 	printf "\tBUILDING ILM CLIENT COMPLETE\n"
@@ -138,6 +132,12 @@ libcryptcat: $(LIBCRYPTCAT)
 
 $(LIBCRYPTCAT):
 	cd $(CLIENT)/ $(MAKE) libcryptcat
+
+$(LIBCRYPTO): $(CRYPTO_REBUILD)
+	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
+
+$(COMMON)/string_utils.o: $(COMMON)/string_utils.c $(COMMON)/string_utils.h
+	cd $(COMMON) && ${CC} ${CFLAGS} -c string_utils.c string_utils.h
 
 .PHONY: cryptcat
 cryptcat:

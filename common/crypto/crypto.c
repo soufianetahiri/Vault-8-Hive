@@ -7,7 +7,7 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "crypto_strings_main.h"
+#include "crypto_proj_strings.h"
 #include "polarssl/x509.h"
 
 entropy_context entropy;	// Entropy context
@@ -37,18 +37,18 @@ int crypt_handshake( ssl_context *ssl )
     /*
      * 5. Handshake
      */
-    DLX(4, printf("\tPerforming the TLS handshake... "));
+    DLX(4, printf("\tPerforming the TLS handshake... \n"));
 
     while( ( ret = ssl_handshake( ssl ) ) != 0 )
     {
         if (ret != POLARSSL_ERR_NET_WANT_WRITE)
         {
-            DLX(4, printf("failed, returned: %0x\n", ret));
+            DLX(4, printf("TLS handshake failed, returned: %0x\n", ret));
             return -1;
         }
     }
 
-    DLX(4, printf("ok\n"));
+    DLX(4, printf("\tTLS handshake complete\n"));
 
 	return 0;
 }
@@ -280,7 +280,7 @@ int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 		return -1;
 	}
 
-	DLX(4, printf( "  . Initializing TLS structure and RNG...." ));
+	DLX(4, printf( " . Initializing TLS structure and RNG....\n" ));
 	entropy_init( &entropy );
 	if ( (ret = ctr_drbg_init(ctr_drbg, entropy_func, &entropy,(const unsigned char *) pers, strlen(pers)) ) != 0 ) {
 	    DLX(4, printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret));
@@ -294,7 +294,7 @@ int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 		return ret;
 	}
 
-	DLX(4, printf( " ok\n" ));
+
 
 	ssl_set_endpoint( ssl, SSL_IS_SERVER );
 	ssl_set_authmode( ssl, SSL_VERIFY_NONE );
@@ -312,7 +312,7 @@ int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 	ssl_set_ca_chain( ssl, &ca_chain, NULL, NULL );
 	ssl_set_own_cert( ssl, &srvcert, &rsa );
 	ssl_set_dh_param( ssl, my_dhm_P, my_dhm_G );
-
+	DLX(4, printf( " . SSL Server setup complete\n" ));
 	return 0;
 
 }

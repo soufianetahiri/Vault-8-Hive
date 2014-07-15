@@ -1,7 +1,8 @@
+COMMON = ../common
 CLIENT = hclient-$(TARGET)
-SSL = ../common/ssl/library
-LIBSSL = common/ssl/library/libpolarssl.a
-LIBSSL_INCLUDES = common/ssl/include
+SSL = $(COMMON)/ssl/library
+LIBSSL = $(SSL)/libpolarssl.a
+LIBSSL_INCLUDES = $(COMMON)/ssl/include
 
 UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
 UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
@@ -76,4 +77,6 @@ clean:
 	rm -f mod_hexify.pyc
 	rm -f proj_strings_main.h
 	rm -f proj_strings.h
+	rm -f $(COMMON)/*.o
 	$(MAKE) -C $(SSL) clean
+	

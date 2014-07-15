@@ -1,5 +1,9 @@
 CLIENT = hclient-$(TARGET)
 
+COMMON = ../common
+CRYPTO = $(COMMON)/crypto
+SSL = $(COMMON)/ssl
+
 .PHONY: all
 all: 
 	@echo
@@ -23,8 +27,9 @@ library: clean
 
 .PHONY: clean
 clean:
-	@echo
-	rm -f *.o 
+	rm -f *.o
+	cd $(CRYPTO) && $(MAKE) clean
+	cd $(SSL) && $(MAKE) clean
 
 .PHONY: dist-clean
 dist-clean:	clean
