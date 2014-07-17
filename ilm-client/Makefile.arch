@@ -1,4 +1,3 @@
-
 # Defaults
 CXX = g++
 #CXXFLAGS = -Wall -W -Wdeclaration-after-statement
@@ -69,7 +68,6 @@ ifeq "$(GCCVERSION_GT_4.6)" "1"
 	CXXFLAGS += -Wno-unused-result
 endif
 
-
 CRYPTCAT = -DLINUX cryptcat/netcat.c
 
 LIBHCLIENT = $(CLIENT)/libhclient.a
@@ -81,9 +79,8 @@ INCLUDES += -I$(CLIENT)/cryptcat
 
 CXXFLAGS += $(INCLUDES)
 
-#LIBS=$(LIBCRYPTCAT) $(LIBHCLIENT) libILM_SDK.a $(LIBPOLARSSL)
-#LIBS = $(LIBHCLIENT) libILM_SDK.a  $(LIBSSL) $(LIBCRYPTO)
-LIBS = libILM_SDK.a $(LIBCRYPTO) $(LIBSSL)
+# Library order here necessary to resolve circular dependencies
+LIBS = libILM_SDK.a $(LIBHCLIENT) $(LIBSSL) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
 OBJS += Command.o
 OBJS += File.o
@@ -91,6 +88,7 @@ OBJS += Ilm.o
 OBJS += Connection.o
 OBJS += Utilities.o
 OBJS += hive.o
+OBJS += $(COMMON)/string_utils.o
 OUTFILE = hive
 
 $(info )
@@ -107,8 +105,8 @@ $(info )
 
 .SILENT:
 .PHONY: all
-all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS) $(COMMON)/string_utils.o
-	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) $(COMMON)/string_utils.o -o $(OUTFILE)
+all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
 	md5sum $(OUTFILE) > $(OUTFILE).md5
 	printf "\n=========================================================================\n"
 	printf "\tBUILDING ILM CLIENT COMPLETE\n"

@@ -16,10 +16,10 @@ all:
 	@echo "  make clean"
 	@echo
 
-linux-x86: clean
+linux-x86:
 	@make -f Makefile.arch TARGET=linux-x86
 
-linux-x86_64: clean
+linux-x86_64:
 	@make -f Makefile.arch TARGET=linux-x86_64
 
 library: clean
