@@ -178,6 +178,8 @@ clean:
 	rm -f $(OUTFILE).md5
 	$(MAKE) -C $(SSL)/library clean
 	$(MAKE) -C $(CLIENT) clean
+	$(MAKE) -C $(CRYPTO) clean
+	$(MAKE) -C $(STRINGS) clean
 	>ARCH_BUILD
 
 .cpp.o:

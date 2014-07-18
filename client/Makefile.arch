@@ -25,7 +25,8 @@ LIBCRYPTO = $(CRYPTO)/libcrypto.a
 STRINGS = $(COMMON)/strings
 
 .PHONY: force-rebuild
-
+$(info )
+$(info =========================================================================)
 ifdef ARCH_BUILD_CLIENT
   ifneq ("$(ARCH_BUILD_CLIENT)", "$(TARGET)")
     CLIENT_REBUILD:=clean

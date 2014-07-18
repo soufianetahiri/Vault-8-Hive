@@ -31,10 +31,10 @@ all:
 	printf "\t\tmake clean\n"
 	printf "\t\tmake distclean\n"
 
-linux-x86: build
+linux-x86:
 	$(MAKE) -f Makefile.arch TARGET=linux-x86
 
-linux-x86_64: build
+linux-x86_64:
 	$(MAKE) -f Makefile.arch TARGET=linux-x86_64
 
 library: clean
@@ -42,15 +42,6 @@ library: clean
 
 $(LIBSSL):
 	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
-
-.PHONY: build
-build:
-	printf "\n=========================================================================\n"
-	printf "        BUILDING CLIENT\n"
-
-#.PHONY: clean
-#clean:
-#	$(MAKE) -f Makefile.arch clean
 
 .PHONY: distclean
 distclean:	clean
