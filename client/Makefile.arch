@@ -114,7 +114,7 @@ all: $(LIBSSL) hclient debug patcher library
 release: hclient
 
 .PHONY: hclient
-hclient: $(CLIENT_REBUILD) $(LIBSSL) $(LIBCRYPTO) $(OBJS)
+hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBSSL) $(LIBCRYPTO) $(OBJS)
 	${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS} 
 	strip ${BINARY}
 	md5sum ${BINARY} > ${BINARY}.md5
@@ -154,7 +154,7 @@ strings: init_strings.o $(STRINGS)/string_utils.o
 
 proj_strings.h:
 	printf "\tGenerating\t$@\n"
-	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
+	python mod_gen_string_header.py client_strings.txt SERVER_STRINGS
 
 init_strings.o: init_strings.c $(STRINGS)/string_utils.o
 	${CC} ${CFLAGS} -c init_strings.c
