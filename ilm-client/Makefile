@@ -4,34 +4,34 @@ COMMON = ../common
 CRYPTO = $(COMMON)/crypto
 SSL = $(COMMON)/ssl
 
+.SILENT:
 .PHONY: all
 all: 
-	@echo
-	@echo " Please specify a supported target:"
-	@echo 
-	@echo "  make linux-x86"
-	@echo "  make linux-x86_64"
-	@echo
-	@echo " Administrative tasks, ..."
-	@echo "  make clean"
-	@echo
+	printf "\n\nPlease specify a supported target:\n\n"
+	printf "\tmake linux-x86\n"
+#	printf "\tmake linux-x86_64\n"
+	printf "\nFor a debug version use:\n"
+	printf "\n\tmake DEBUG=1 linux-x86\n"
+	printf "\n\tAdministrative tasks, ...\n"
+	printf "\tmake clean\n"
 
 linux-x86:
-	@make -f Makefile.arch TARGET=linux-x86
+	make -f Makefile.arch TARGET=linux-x86
 
 linux-x86_64:
-	@make -f Makefile.arch TARGET=linux-x86_64
+	make -f Makefile.arch TARGET=linux-x86_64
 
 library: clean
-	@make -f Makefile.arch TARGET=$(TARGET) $@
+	make -f Makefile.arch TARGET=$(TARGET) $@
 
 .PHONY: clean
 clean:
-	rm -f *.o
-	cd $(CRYPTO) && $(MAKE) clean
-	cd $(SSL) && $(MAKE) clean
+	make -f Makefile.arch $@
+#	rm -f *.o
+#	cd $(CRYPTO) && $(MAKE) clean
+#	cd $(SSL) && $(MAKE) clean
 
 .PHONY: dist-clean
 dist-clean:	clean
-	@echo
+	echo
 	rm -f $(CLIENT)*

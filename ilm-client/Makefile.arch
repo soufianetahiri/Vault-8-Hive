@@ -5,12 +5,12 @@ CXXFLAGS := -Wall -Wextra -Os -ansi -fPIC
 LDFLAGS = -lpthread -lc
 OFLAGS	= -O2
 
+include ARCH_BUILD
+
 ifeq ("$(TARGET)", "linux-x86")
 include ../common/Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
 include ../common/Makefile-include.linux-x86_64
-else 
-$(error Invalid target "$(TARGET)")
 endif
 
 ifdef DEBUG
@@ -31,8 +31,25 @@ SSL = $(COMMON)/ssl
 LIBSSL_INCLUDES = $(SSL)/include
 LIBSSL = $(SSL)/library/libpolarssl.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
+STRINGS = $(COMMON)/strings
 #===============================================================================
 .PHONY: force-rebuild
+$(info )
+$(info )
+$(info =========================================================================)
+ifdef ARCH_BUILD_CLIENT
+  ifneq ("$(ARCH_BUILD_ILMCLIENT)", "$(TARGET)")
+    ILMCLIENT_REBUILD:=clean
+    $(info .       Rebuilding ILMCLIENT))
+  else
+    ILMCLIENT_REBUILD:=
+    $(info .       ILMCLIENT for $(TARGET) previously built.)
+  endif
+else
+  ILMCLIENT_REBUILD:=clean
+    $(info .       Building ILMCLIENT)
+endif
+
 ifdef ARCH_BUILD_CRYPTO
   ifneq ("$(ARCH_BUILD_CRYPTO)", "$(TARGET)")
     CRYPTO_REBUILD:=force-rebuild
@@ -88,13 +105,9 @@ OBJS += Ilm.o
 OBJS += Connection.o
 OBJS += Utilities.o
 OBJS += hive.o
-OBJS += $(COMMON)/string_utils.o
+OBJS += $(STRINGS)/string_utils.o
 OUTFILE = hive
 
-$(info )
-$(info )
-$(info =========================================================================)
-$(info .       BUILDING ILM CLIENT)
 $(info =========================================================================)
 $(info .   TARGET: $(TARGET))
 $(info .   SRCDIR: $(PWD))
@@ -108,12 +121,13 @@ $(info )
 all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
 	md5sum $(OUTFILE) > $(OUTFILE).md5
+	echo "ARCH_BUILD_ILMCLIENT=$(TARGET)" > ARCH_BUILD
 	printf "\n=========================================================================\n"
 	printf "\tBUILDING ILM CLIENT COMPLETE\n"
 	printf "=========================================================================\n"
 #	rm -f cryptcat.h
 
-$(LIBSSL):
+$(LIBSSL): $(SSL_REBUILD)
 	cd $(SSL)/library && $(MAKE) TARGET=linux-x86
 
 
@@ -134,8 +148,8 @@ $(LIBCRYPTCAT):
 $(LIBCRYPTO): $(CRYPTO_REBUILD)
 	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
 
-$(COMMON)/string_utils.o: $(COMMON)/string_utils.c $(COMMON)/string_utils.h
-	cd $(COMMON) && ${CC} ${CFLAGS} -c string_utils.c string_utils.h
+$(STRINGS)/string_utils.o: $(STRINGS)/string_utils.c $(STRINGS)/string_utils.h
+	cd $(STRINGS) && ${CC} ${CFLAGS} -c string_utils.c string_utils.h
 
 .PHONY: cryptcat
 cryptcat:
@@ -153,7 +167,7 @@ test:
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c TxCommand.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c ListenHandler.cpp
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) *.o $(LIBS) -o $(OUTFILE)
-#	$(CXX) $(CXXFLAGS) -I $(INCLUDES) -L $(LPATH) -l $(LIB) $(SRC) -o $(OUTFILE)
+
 
 .PHONY: clean
 clean:
@@ -162,8 +176,9 @@ clean:
 	rm -f $(LIBCRYPTCAT)
 	rm -f hclient-linux-dbg
 	rm -f $(OUTFILE).md5
-	make -C $(SSL)/library clean
-	make -C $(CLIENT) clean
+	$(MAKE) -C $(SSL)/library clean
+	$(MAKE) -C $(CLIENT) clean
+	>ARCH_BUILD
 
 .cpp.o:
 	printf "\tC++\t$<\n"

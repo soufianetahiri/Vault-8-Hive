@@ -3,6 +3,8 @@
 ####################################################
 
 SERVER_BASENAME = hived
+SERVER := $(SERVER_BASENAME)-$(TARGET)
+
 
 SHELL := $(shell which bash)
 CC := $(shell which gcc)
@@ -50,22 +52,26 @@ COMMON = ../common
 CRYPTO = $(COMMON)/crypto
 SSL = $(COMMON)/ssl/library
 BZIP2 = $(COMMON)/bzip2
+STRINGS = $(COMMON)/strings
 INCLUDES = -I$(SSL)/include -I$(BZIP2) -I../common -I.
 LIBSSL = $(SSL)/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 
 .PHONY: $(BZIP2)/ARCH_BUILD $(CRYPTO)/ARCH_BUILD $(SSL)/ARCH_BUILD
+include ARCH_BUILD
 include $(BZIP2)/ARCH_BUILD
 include $(CRYPTO)/ARCH_BUILD
 include $(SSL)/ARCH_BUILD
+include $(STRINGS)/ARCH_BUILD
 OBJS =	beacon.o persistence.o launchshell.o \
 	shuffle.o twofish.o farm9crypt.o jshell.o \
 	survey_mac.o survey_uptime.o trigger_listen.o daemonize.o \
 	main.o tiny_crc16.o \
 	self_delete.o trigger_b64.o trigger_payload.o trigger_sniff.o \
 	threads.o trigger_callback_session.o client_session.o run_command.o \
-	get_data.o process_list.o netstat_an.o netstat_rn.o ifconfig.o compression.o
+	get_data.o process_list.o netstat_an.o netstat_rn.o ifconfig.o compression.o \
+	init_strings.o
 
 LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
@@ -78,7 +84,22 @@ IFC = ifconfig.c
 
 OS = $(shell uname)
 
-.PHONY: force-rebuild
+$(info )
+$(info )
+$(info =========================================================================)
+ifdef ARCH_BUILD_SERVER
+  ifneq ("$(ARCH_BUILD_SERVER)", "$(TARGET)")
+    SERVER_REBUILD:=clean
+    $(info .       Rebuilding $(SERVER))
+  else
+    SERVER_REBUILD:=
+    $(info .       $(SERVER) for $(TARGET) previously built.)
+  endif
+else
+  SERVER_REBUILD:=clean
+    $(info .       Building $(SERVER))
+endif
+
 ifdef ARCH_BUILD_BZIP2
   ifneq ("$(ARCH_BUILD_BZIP2)", "$(TARGET)")
     BZIP2_REBUILD:=force-rebuild
@@ -109,12 +130,16 @@ else
   SSL_REBUILD:=force-rebuild
 endif
 
-SERVER := $(SERVER_BASENAME)-$(TARGET)
+ifdef ARCH_BUILD_STRINGS
+  ifneq ("$(ARCH_BUILD_STRINGS)", "$(TARGET)")
+    STRINGS_REBUILD:=force-rebuild
+  else
+    STRINGS_REBUILD:=
+  endif
+else
+  STRINGS_REBUILD:=force-rebuild
+endif
 
-$(info )
-$(info )
-$(info =========================================================================)
-$(info .       BUILDING $(SERVER))
 $(info =========================================================================)
 $(info .  TARGET: $(TARGET))
 $(info .  SRCDIR: $(PWD))
@@ -144,19 +169,20 @@ debug: $(SERVER)-dbg
 .PHONY: release
 release: $(SERVER)
 
-$(SERVER): strings $(OBJS) $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) init_strings.o 
+$(SERVER): $(SERVER_REBUILD) proj_strings.h $(OBJS) $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO) $(STRINGS)/string_utils.o
 	if ! test $(DEBUG); then \
 		printf "\tLD\t\t$@\n"; \
-		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o $(COMMON)/string_utils.o $(LIBS) -o $@; \
+		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(STRINGS)/string_utils.o $(LIBS) -o $@; \
 		printf "\tStripping\t$@\n"; \
 		$(STRIP) $(BINARY)/$(SERVER); \
 		$(MD5SUM) $(BINARY)/$(SERVER) > $(BINARY)/$(SERVER).md5; \
 	else \
 		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
 		printf "\tLD\t\t$@-dbg\n"; \
-		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) init_strings.o $(COMMON)/string_utils.o $(LIBS) -o $@-dbg; \
+		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(STRINGS)/string_utils.o $(LIBS) -o $@-dbg; \
 		$(MD5SUM) $(BINARY)/$(SERVER)-dbg > $(BINARY)/$(SERVER)-dbg.md5; \
 	fi
+	echo "ARCH_BUILD_SERVER=$(TARGET)" > ARCH_BUILD
 
 valgrind: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
 	$(CC) -D__VALGRIND__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BINARY)/$(SERVER)-$@
@@ -165,24 +191,27 @@ valgrind: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
 efence: $(LIBSSL) $(LIBBZIP2) $(LIBCRYPTO)
 	$(CC) -lefence -D__EFENCE__ -D_IFCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF $(CFLAGS) $(DBGFLAGS) $(OBJS) $(PS) $(IFC) $(NETSTAT) -L$(LIB) -o $(BINARY)/$(SERVER)-$@
 
-.PHONY: strings
-strings: init_strings.o
 
-init_strings.o: init_strings.c $(COMMON)/string_utils.o
-	printf "\tCC\t\t$<\n"
-	$(CC) -c $(CFLAGS) init_strings.c
-
-init_strings.c: server_strings.txt $(COMMON)/string_utils.h
+proj_strings.h:
 	printf "\tGenerating\t$@\n"
 	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
 
-$(COMMON)/string_utils.o: $(COMMON)/string_utils.h $(COMMON)/string_utils.c
+init_strings.o: init_strings.c $(STRINGS)/string_utils.o
 	printf "\tCC\t\t$<\n"
-	$(CC) -c $(CFLAGS) $(COMMON)/string_utils.c 
+	$(CC) -c $(CFLAGS) init_strings.c
+
+init_strings.c: proj_strings.h server_strings.txt
+	printf "\tGenerating\t$@\n"
+	python mod_gen_string_header.py server_strings.txt SERVER_STRINGS
+
+$(STRINGS)/string_utils.o:  $(STRINGS_REBUILD) $(STRINGS)/string_utils.h
+	printf "\tCC\t\t$<\n"
+	cd $(STRINGS) && $(MAKE) TARGET=$(TARGET)
 
 .PHONY: clean
 clean:
-	$(MAKE) -f ./Makefile clean
+	rm -f $(OBJS)
+	>ARCH_BUILD
 
 .PHONY: md5
 md5: all
@@ -196,3 +225,6 @@ tarball:
 .c.o:
 	printf "\tCC\t\t$<\n"
 	$(CC) $(CFLAGS) -c $<
+
+.PHONY: force-rebuild
+force-rebuild: ;

