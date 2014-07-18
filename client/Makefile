@@ -3,6 +3,8 @@ CLIENT = hclient-$(TARGET)
 SSL = $(COMMON)/ssl/library
 LIBSSL = $(SSL)/libpolarssl.a
 LIBSSL_INCLUDES = $(COMMON)/ssl/include
+CRYPTO = $(COMMON)/crypto
+STRINGS = $(COMMON)/strings
 
 UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
 UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
@@ -60,16 +62,13 @@ clean:
 	rm -f *.o *.a init_strings.c core cryptcat/*.o cryptcat/cryptcat
 	rm -f _unpatched_*.h
 	rm -f hive-patcher hive-patcher.md5 *PATCHED *PATCHED.exe
-	rm -f *UNpatched*
 	rm -f init_strings.*
 	rm -f init_crypto_strings.*
-	rm -f string_utils.o
 	rm -f crypto_strings_main.h
-	rm -f string_utils.h.*
 	rm -f crypto_proj_strings.h
 	rm -f mod_hexify.pyc
 	rm -f proj_strings_main.h
 	rm -f proj_strings.h
-	rm -f $(COMMON)/*.o
 	$(MAKE) -C $(SSL) clean
-	
+	$(MAKE) -C $(CRYPTO) clean
+	$(MAKE) -C $(STRINGS) clean

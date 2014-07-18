@@ -4,6 +4,7 @@ SHELL := $(shell which bash)
 CFLAGS	:= -Wall -W -Wdeclaration-after-statement
 OFLAGS	= -O2
 
+.PHONY: ARCH_BUILD
 include ARCH_BUILD
 ifeq ("$(TARGET)", "linux-x86")
   include Makefile-include.linux-x86

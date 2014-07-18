@@ -37,8 +37,6 @@ else ifeq ("$(TARGET)", "solaris-sparc")
   include ../common/Makefile-include.solaris-sparc
 else ifeq ("$(TARGET)", "solaris-x86")
   include ../common/Makefile-include.solaris-x86
-else
-  $(error Invalid target "$(TARGET)")hived-mikrotik-mips
 endif
 
 ifdef DEBUG
@@ -58,7 +56,7 @@ LIBSSL = $(SSL)/libpolarssl.a
 LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 
-.PHONY: $(BZIP2)/ARCH_BUILD $(CRYPTO)/ARCH_BUILD $(SSL)/ARCH_BUILD
+.PHONY: ARCH_BUILD $(BZIP2)/ARCH_BUILD $(CRYPTO)/ARCH_BUILD $(SSL)/ARCH_BUILD
 include ARCH_BUILD
 include $(BZIP2)/ARCH_BUILD
 include $(CRYPTO)/ARCH_BUILD

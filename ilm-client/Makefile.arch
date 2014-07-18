@@ -5,6 +5,7 @@ CXXFLAGS := -Wall -Wextra -Os -ansi -fPIC
 LDFLAGS = -lpthread -lc
 OFLAGS	= -O2
 
+.PHONY: ARCH_BUILD
 include ARCH_BUILD
 
 ifeq ("$(TARGET)", "linux-x86")
