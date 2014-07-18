@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 			printSha1Hash(implantIDFile, "\t", triggerKey);				// Record the trigger key
 
 			sha1(triggerKey, ID_KEY_HASH_SIZE, implantKey);				// Compute implant key
-			D(printSha1Hash("Implant Key", implantKey));
+			D(printSha1Hash(stdout, "Implant Key", implantKey));
 			D(printf("\n\n\n"));
 			printSha1Hash(implantIDFile, "\t", implantKey);				// Record the implant key
 
