@@ -87,7 +87,7 @@ ifdef TARGET
   $(info )
 endif
 
-$(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
+$(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) crypto_strings $(CRYPTO_OBJS)
 	printf "\tAR\t$@\n"
 	$(AR) $(ARFLAGS) $@ $(CRYPTO_OBJS)
 	echo "ARCH_BUILD_CRYPTO=$(TARGET)" > ARCH_BUILD
@@ -96,8 +96,8 @@ $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) $(CRYPTO_OBJS) crypto_strings
 	printf "=========================================================================\n"
 
 .PHONY: crypto_strings
-
-crypto_strings: init_crypto_strings.o 
+crypto_strings: init_crypto_strings.o crypto_proj_strings.h
+crypto_proj_strings.h: init_crypto_strings.c
 init_crypto_strings.o: init_crypto_strings.c 
 init_crypto_strings.c: crypto_strings.txt 
 	python mod_gen_cryptostring_header.py crypto_strings.txt CRYPTO_STRINGS
@@ -107,6 +107,8 @@ clean:
 	printf "\tCLEANING:\t$(CURDIR)\n"
 	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
 	rm -f init_crypto_strings.*
+	rm -f crypto_strings_main.h
+	rm -f crypto_proj_strings.h
 	>ARCH_BUILD
 
 .PHONY: distclean

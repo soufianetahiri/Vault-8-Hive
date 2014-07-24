@@ -74,6 +74,7 @@ int main( int argc, char **argv )
 	uint16_t		trigger_port = 0;
 
 	init_strings();
+	init_crypto_strings();
 
 	memset( &trigger_args, 0, sizeof( struct trigger_params ) );
 

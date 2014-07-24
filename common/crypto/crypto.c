@@ -316,7 +316,10 @@ int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
 
 	ssl_set_ca_chain( ssl, &ca_chain, NULL, NULL );
 	ssl_set_own_cert( ssl, &srvcert, &rsa );
-	ssl_set_dh_param( ssl, my_dhm_P, my_dhm_G );
+	if ( ssl_set_dh_param( ssl, my_dhm_P, my_dhm_G ) !=0 ) {
+		DLX(1, printf("INTERNAL ERROR: Unable to set DH parameters, check if init_crypto_strings() was called.\n"));
+		return -1;
+	}
 	DLX(4, printf( " . SSL Server setup complete\n" ));
 	return 0;
 
