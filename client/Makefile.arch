@@ -2,7 +2,6 @@ SHELL := $(shell which bash)
 
 # Defaults
 CFLAGS	:= -Wall -W -Wdeclaration-after-statement
-OFLAGS	= -O2
 
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
@@ -72,7 +71,9 @@ CFLAGS += $(INCLUDES)
 
 ifdef DEBUG
   CFLAGS += -g
-  CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG -D_DEBUG
+  CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG -D_DEBUG -O0
+else
+  CFLAGS += -O2
 endif
 
 CRYPTCAT = -DLINUX cryptcat/netcat.c
@@ -84,7 +85,7 @@ OBJS =	main.o functions.o misc.o modes.o parser.o \
 	trigger_protocols.o b64.o trigger_utils.o threads.o \
 	$(STRINGS)/string_utils.o init_strings.o
 
-LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
+LIBS = $(LIBSSL) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
 UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
 UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
@@ -192,7 +193,7 @@ patcher: $(UNPATCHED_BINS) $(LIBSSL)
 
 .c.o:
 	printf "\tCC\t$<\n"
-	$(CC) $(CFLAGS) $(OFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 
 .PHONY: clean
 clean:

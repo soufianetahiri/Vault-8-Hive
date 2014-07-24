@@ -20,11 +20,9 @@ AR=ar
 RANLIB=ranlib
 LDFLAGS=
 
-#CFLAGS=-Wall -Winline -O2 -g $(BIGFILES)
 ##########################################################################
 # Defaults
-CFLAGS  = -Wall -W -Wdeclaration-after-statement -O2
-#OFLAGS  = -O2
+CFLAGS  = -Wall -W -Wdeclaration-after-statement
 
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
@@ -76,7 +74,9 @@ ifdef TARGET
 endif
 
 ifdef DEBUG
-  CFLAGS += -g -DDEBUG
+  CFLAGS += -g -DDEBUG -O0
+else
+  CFLAGS += -O2
 endif
 
 ##########################################################################

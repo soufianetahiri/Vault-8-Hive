@@ -1,9 +1,8 @@
 # Defaults
 CXX = g++
 #CXXFLAGS = -Wall -W -Wdeclaration-after-statement
-CXXFLAGS := -Wall -Wextra -Os -ansi -fPIC
+CXXFLAGS := -Wall -Wextra -ansi -fPIC
 LDFLAGS = -lpthread -lc
-OFLAGS	= -O2
 
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
@@ -17,6 +16,9 @@ endif
 ifdef DEBUG
   CXXFLAGS += -g
   CXXFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG
+  CXXFLAGS += -O0
+else
+  CXXFLAGS += -O2
 endif
 
 CC = gcc

@@ -40,7 +40,9 @@ else ifeq ("$(TARGET)", "solaris-x86")
 endif
 
 ifdef DEBUG
-  CFLAGS += -DDEBUG -D_DEBUG -g
+  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+else
+  CFLAGS += -O2
 endif
 
 BINARY = .

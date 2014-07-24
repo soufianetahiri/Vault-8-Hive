@@ -18,12 +18,17 @@ static int my_set_session( ssl_context *ssl );
 static int my_get_session( ssl_context *ssl );
 
 //*******************************************************
-#define DEBUG_LEVEL 0
-
+#ifndef DEBUG
+	#define DEBUG_LEVEL 0
+#endif
 //*******************************************************
 void my_debug( void *ctx, int level, const char *str )
 {
+#ifdef DEBUG
+    if( level < dbug_level_ )
+#else
     if( level < DEBUG_LEVEL )
+#endif
     {
         fprintf( (FILE *) ctx, "%s", str );
         fflush(  (FILE *) ctx  );

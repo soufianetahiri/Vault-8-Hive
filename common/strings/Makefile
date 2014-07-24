@@ -8,7 +8,7 @@ LDFLAGS=
 
 ##########################################################################
 # Defaults
-CFLAGS  = -Wall -W -Wdeclaration-after-statement -O2
+CFLAGS  = -Wall -W -Wdeclaration-after-statement
 
 .PHONY: ARCH_BUILD
 include ARCH_BUILD
@@ -50,6 +50,12 @@ ifdef TARGET
   else
     TARGET :=
   endif
+
+  ifdef DEBUG
+    CFLAGS += -g -DDEBUG -O0
+  else
+    CFLAGS += -O2
+  endif
   $(info =========================================================================)
   $(info TARGET: $(TARGET))
   $(info SRCDIR: $(PWD))
@@ -57,10 +63,6 @@ ifdef TARGET
   $(info CFLAGS: $(CFLAGS))
   $(info =========================================================================)
   $(info )
-endif
-
-ifdef DEBUG
-  CFLAGS += -g -DDEBUG
 endif
 
 ##########################################################################
@@ -71,7 +73,7 @@ OBJS= string_utils.o
 
 string_utils.o: string_utils.c $(STRINGS_BUILD_OPTS)
 	printf "\tCC\t\t$<\n"
-	$(CC) $(CFLAGS) $(OFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 	echo "ARCH_BUILD_STRINGS=$(TARGET)" > ARCH_BUILD
 
 clean: 

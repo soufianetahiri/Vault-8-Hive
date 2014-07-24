@@ -45,11 +45,13 @@ ifdef TARGET
     TARGET:=
  endif
 endif 
-CFLAGS += -I../../crypto -I../include -I../ssl/include
+CFLAGS += -I../.. -I../../crypto -I../include -I../ssl/include
 
 ifdef DEBUG
-  CFLAGS += -g
-  CFLAGS += -DDBUG -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+  CFLAGS += -g -O0
+  CFLAGS += -DDBUG -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DPOLARSSL_SSL_DEBUG_ALL
+else
+  CFLAGS += -O2
 endif
 
 ifdef TARGET
@@ -129,4 +131,4 @@ distclean:	clean
 
 .c.o:
 	printf "\tCC\t$<\n"
-	$(CC) $(CFLAGS) $(OFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<

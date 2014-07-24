@@ -4,7 +4,6 @@
  CC := $(shell which gcc)
 # Defaults
 CFLAGS	= -Wall -W -Wdeclaration-after-statement
-OFLAGS	= -O2
 COMMON = ..
 SSL = $(COMMON)/ssl
 INCLUDES = -I.. -I$(SSL)/include
@@ -35,7 +34,9 @@ else
 endif
 
 ifdef DEBUG
-  CFLAGS += -g -DDEBUG
+  CFLAGS += -g -DDEBUG -O0
+else
+  CFLAGS += -O2
 endif
 
 ##########################################################################
