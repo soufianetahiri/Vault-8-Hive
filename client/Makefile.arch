@@ -85,7 +85,7 @@ OBJS =	main.o functions.o misc.o modes.o parser.o \
 	trigger_protocols.o b64.o trigger_utils.o threads.o \
 	$(STRINGS)/string_utils.o init_strings.o
 
-LIBS = $(LIBSSL) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
+LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
 UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
 UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
@@ -139,7 +139,7 @@ library: strings
 	gcc $(CFLAGS) -c $(LIBFILES)
 	ar rv libhclient.a *.o
 	ranlib libhclient.a
-	echo "ARCH_BUILD_CLIENTLIB=$(TARGET)" > ARCH_BUILD
+	echo "ARCH_BUILD_CLIENTLIB=$(TARGET)" >> ARCH_BUILD
 
 libcryptcat: cryptcat/farm9crypt.o cryptcat/twofish2.o
 	gcc -c $(CRYPTCAT) 

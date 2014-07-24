@@ -4,9 +4,6 @@ CXX = g++
 CXXFLAGS := -Wall -Wextra -ansi -fPIC
 LDFLAGS = -lpthread -lc
 
-.PHONY: ARCH_BUILD
-include ARCH_BUILD
-
 ifeq ("$(TARGET)", "linux-x86")
 include ../common/Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
@@ -40,7 +37,13 @@ STRINGS = $(COMMON)/strings
 $(info )
 $(info )
 $(info =========================================================================)
-ifdef ARCH_BUILD_CLIENT
+.PHONY: ARCH_BUILD  $(CLIENT)/ARCH_BUILD $(SSL)/library/ARCH_BUILD $(CRYPTO)/ARCH_BUILD
+include ARCH_BUILD
+include $(CLIENT)/ARCH_BUILD
+include $(SSL)/library/ARCH_BUILD
+include $(CRYPTO)/ARCH_BUILD
+
+ifdef $(ARCH_BUILD_ILMCLIENT)
   ifneq ("$(ARCH_BUILD_ILMCLIENT)", "$(TARGET)")
     ILMCLIENT_REBUILD:=clean
     $(info .       Rebuilding ILMCLIENT))
@@ -121,7 +124,7 @@ $(info )
 
 .SILENT:
 .PHONY: all
-all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS)
+all: $(ILMCLIENT_REBUILD) $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS)
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
 	md5sum $(OUTFILE) > $(OUTFILE).md5
 	echo "ARCH_BUILD_ILMCLIENT=$(TARGET)" > ARCH_BUILD
@@ -131,7 +134,7 @@ all: $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS)
 #	rm -f cryptcat.h
 
 $(LIBSSL): $(SSL_REBUILD)
-	cd $(SSL)/library && $(MAKE) TARGET=linux-x86
+	cd $(SSL)/library && $(MAKE) TARGET=$(TARGET)
 
 
 $(HCLIENT)-$(TARGET):
