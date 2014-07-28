@@ -169,7 +169,7 @@ debug: $(SERVER)-dbg
 .PHONY: release
 release: $(SERVER)
 
-$(SERVER): $(SERVER_REBUILD) $(LIBCRYPTO) proj_strings.h $(OBJS) $(LIBSSL) $(LIBBZIP2)  $(STRINGS)/string_utils.o
+$(SERVER): $(SERVER_REBUILD) $(LIBCRYPTO) proj_strings.h $(OBJS) $(LIBSSL) $(LIBBZIP2) $(STRINGS)/string_utils.o
 	if ! test $(DEBUG); then \
 		printf "\tLD\t\t$@\n"; \
 		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(STRINGS)/string_utils.o $(LIBS) -o $@; \
