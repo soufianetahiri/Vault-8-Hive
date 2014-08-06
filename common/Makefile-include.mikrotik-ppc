@@ -1,5 +1,5 @@
 #------------------------------------------------
-# Makefile include for mikrotik-mipsbe
+# Makefile include for mikrotik-ppc
 #------------------------------------------------
 BUILDROOT=/opt/buildroot/buildroot-2010.11-ppc/output/staging/usr
 ARCH=powerpc
@@ -12,8 +12,9 @@ RANLIB=${BUILDTOOLS}/$(ARCH)-linux-ranlib
 STRIP=${BUILDTOOLS}/$(ARCH)-linux-sstrip
 
 CFLAGS += -I$(UCLIBC_HDRS) -L$(UCLIBC_LIBS)
-CFLAGS += -DLINUX -DMIKROTIK
-CFLAGS += -D_IPCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF -DLINUX -DUCLIBC -D_USE_ASH -D_PPC -D_GNU_SOURCE
+CFLAGS += -DLINUX -DMIKROTIK -D_PPC
+CFLAGS += -D_IPCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF -DUCLIBC -D_USE_ASH -D_GNU_SOURCE
+
 LDFLAGS += -lutil
 
 STRIPFLAGS :=

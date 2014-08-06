@@ -5,7 +5,6 @@
 SERVER_BASENAME = hived
 SERVER := $(SERVER_BASENAME)-$(TARGET)
 
-
 SHELL := $(shell which bash)
 CC := $(shell which gcc)
 MD5SUM := $(shell which md5sum)
@@ -13,9 +12,11 @@ STRIP := $(shell which strip)
 
 #Default FLAGS
 CFLAGS := -Wall -Wextra -ansi -std=gnu99
-CFLAGS += -D_X86
-CFLAGS += -I. -I../common -I../common/crypto -I../common/ssl/include -I../common/bzip2
+CFLAGS += -I. -I .. -I../common -I../common/crypto -I../crypto -I../../crypto -I../../common/crypto -I../../common/ssl/include -I../common/ssl/include -I../include -I../common/bzip2
+#CFLAGS += -I. -I../common -I../common/crypto -I../common/ssl/include -I../common/bzip2
 CFLAGS += -D_USE_BASH
+CFLAGS += -DPOLARSSL_HAVEGE_C
+
 LDFLAGS = -lpthread
 
 # TARGET Configuration
@@ -40,9 +41,9 @@ else ifeq ("$(TARGET)", "solaris-x86")
 endif
 
 ifdef DEBUG
-  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  CFLAGS += -DDEBUG -D_DEBUG -g -O0 -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
 else
-  CFLAGS += -O2
+  CFLAGS += -Os
 endif
 
 BINARY = .
@@ -155,13 +156,13 @@ $(info )
 all: $(SERVER)
 
 $(LIBSSL): $(SSL_REBUILD)
-	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
+	cd $(SSL) && $(MAKE) CFLAGS="$(CFLAGS)" TARGET=$(TARGET)
 
 $(LIBBZIP2): $(BZIP2_REBUILD)
-	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET)
+	cd $(BZIP2) && $(MAKE) CFLAGS="$(CFLAGS)" TARGET=$(TARGET)
 
 $(LIBCRYPTO): $(CRYPTO_REBUILD)
-	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
+	cd $(CRYPTO) && $(MAKE) CFLAGS="$(CFLAGS)" TARGET=$(TARGET)
 
 .PHONY: debug
 debug: $(SERVER)-dbg

@@ -1,5 +1,5 @@
 #------------------------------------------------
-# Makefile include for mikrotik-mipsle
+# Makefile include for mikrotik-mipsel
 #------------------------------------------------
 BUILDROOT=/opt/buildroot/buildroot-2010.11-mipsle/output/staging/usr
 ARCH=mipsel
@@ -12,13 +12,12 @@ RANLIB=${BUILDTOOLS}/$(ARCH)-linux-ranlib
 STRIP=${BUILDTOOLS}/$(ARCH)-linux-sstrip
 
 CFLAGS += -I$(UCLIBC_HDRS) -L$(UCLIBC_LIBS)
-CFLAGS += -D_MIPS_SZPTR=32 -DLINUX -DMIKROTIK -D_MIPS -D__BYTE_ORDER=LITTLE_ENDIAN
+CFLAGS += -DLINUX -DMIKROTIK -D_MIPSEL
+CFLAGS += -D_MIPS_SZPTR=32
+CFLAGS += -D__BYTE_ORDER=LITTLE_ENDIAN
 CFLAGS += -D_IPCONFIG -D_NETSTAT_AN -D_NETSTAT_RN -D_PS_EF -DUCLIBC -D_USE_ASH
 CFLAGS += -D_USE_UNLINK
 CFLAGS += -D_GNU_SOURCE
-CFLAGS += -DLINUX
 LDFLAGS += -lutil
-
-OFLAGS	= -Os
 
 STRIPFLAGS :=

