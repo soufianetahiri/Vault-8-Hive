@@ -106,10 +106,10 @@ distclean: build_clean
 
 tarball: clean
 	cd .. && tar \
-		--exclude .svn \
-		--exclude *.gz \
-		--exclude *.tar \
-		--exclude *.tgz \
-		--exclude documentation/html \
-		--exclude hived-* \
+		--exclude=.svn \
+		--exclude=*.gz \
+		--exclude=*.tar \
+		--exclude=*.tgz \
+		--exclude=documentation/html \
+		--exclude=hived-* \
 		-cvf hive-server.tar server common

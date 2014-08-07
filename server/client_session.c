@@ -2,6 +2,7 @@
 #include "debug.h"
 
 #include "compat.h"
+#include "polarssl/net.h"
 
 #if defined LINUX || defined SOLARIS
 #include <time.h>
@@ -454,6 +455,7 @@ unsigned long StartClientSession( int sock )
 		{
 			COMMAND cmd;
 			REPLY ret;
+			int r;
 
 			// Fill reply buffer with random bytes
 			GenRandomBytes((unsigned char *)&ret, sizeof(REPLY));
@@ -466,8 +468,11 @@ unsigned long StartClientSession( int sock )
 
 			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
 			//TODO: Fix this. There's nothing in this loop after removing the WIN32 code.
-			if( 0 > crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ) ) )
+			if ( (r = crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ))) < 0 )
 			{
+				DLX(4, printf("\tERROR: crypt_read(): ret = %d\n", r));
+				if (r == POLARSSL_ERR_NET_WANT_READ)
+					continue;
 			}
 			alarm( 0 );
 
