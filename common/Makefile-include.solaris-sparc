@@ -3,8 +3,9 @@
 #------------------------------------------------
 MD5SUM = md5
 
-CFLAGS += -DSOLARIS -m32 
+CFLAGS += -DSOLARIS -D_SPARC -D__BYTE_ORDER -D__BIG_ENDIAN -m32 
 CFLAGS += -D_FILE_OFFSET_BITS=64
 
-LDFLAGS += -lsocket -lnsl
+LDFLAGS += -lsocket -lnsl -lresolv
 ARFLAGS = r
+STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
