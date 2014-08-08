@@ -156,8 +156,16 @@ int crypt_setup_client( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
      */
     entropy_init( &entropy );
     if ( (ret = ctr_drbg_init(ctr_drbg, entropy_func, &entropy,(const unsigned char *) pers, strlen(pers)) ) != 0 ) {
-	    DLX(4, printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret));
-	    return -1;
+	DLX(4,
+	switch (ret) {
+	    case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
+	    case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:		printf("Too many random requested in single call."); break;
+	    case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:		printf("Input too large (Entropy + additional).\n"); break;
+	    case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:		printf("Read/write error in file\n"); break;
+	    default: 						printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret);
+	}
+	);
+	return -1;
     }
 
     memset( ssn, 0, sizeof( ssl_session ) );

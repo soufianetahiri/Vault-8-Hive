@@ -466,8 +466,6 @@ unsigned long StartClientSession( int sock )
 			// this timeout is reset each time a command is received.
 			alarm( SESSION_TIMEOUT );
 
-			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
-			//TODO: Fix this. There's nothing in this loop after removing the WIN32 code.
 			if ( (r = crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ))) < 0 )
 			{
 				DLX(4, printf("\tERROR: crypt_read(): ret = %d\n", r));
