@@ -101,11 +101,10 @@ void TriggerDelay(int trigger_delay)
 	unsigned int delay = 0;
 
 	CalcVariance( &variance, 30);
-	DLX(4, printf("Calculated trigger delay variance: %d seconds\n", variance * 1000));
+	DLX(4, printf("Calculated trigger delay variance: %d seconds\n", variance / 1000));
 
 	calc_delay += trigger_delay + ( variance * 1000 );
 	delay = MAX( 1000, calc_delay ); 					// this creates a minimum value of 1 second
-	DLX(4, printf( "Calculated trigger delay is %d.  Using %d.\n", calc_delay, delay));
 	DLX(4, printf( "Preparing to sleep %d seconds.\n", delay / 1000));
 	Sleep( delay );
 //	Sleep( MAX(trigger_delay,(30 * 1000)) + (variance * 1000));
