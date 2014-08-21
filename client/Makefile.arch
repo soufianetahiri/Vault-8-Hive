@@ -30,7 +30,7 @@ $(info =========================================================================
 ifdef ARCH_BUILD_CLIENT
   ifneq ("$(ARCH_BUILD_CLIENT)", "$(TARGET)")
     CLIENT_REBUILD:=clean
-    $(info .       Rebuilding CLIENT))
+    $(info .       Rebuilding CLIENT)
   else
     CLIENT_REBUILD:=
     $(info .       CLIENT for $(TARGET) previously built.)
