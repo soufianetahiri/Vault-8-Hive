@@ -154,6 +154,7 @@ int crypt_setup_client( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_sessio
     /*
      * 0. Initialize the RNG and the session data
      */
+    DLX(6, printf( "\tInitializing RNG entropy..."));
     entropy_init( &entropy );
     if ( (ret = ctr_drbg_init(ctr_drbg, entropy_func, &entropy,(const unsigned char *) pers, strlen(pers)) ) != 0 ) {
 	DLX(4,
