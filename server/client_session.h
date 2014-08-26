@@ -2,7 +2,7 @@
 #define _CLIENT_SESSION_H
 
 #include "polarssl/ssl.h"
-#include "polarssl/havege.h"
+#include "crypto.h"
 
 #include "compat.h"
 #include "function_strings.h"

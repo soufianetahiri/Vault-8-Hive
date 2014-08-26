@@ -22,7 +22,7 @@
 extern "C"
 {
 	#include "proj_strings.h"
-	#include "ssl/crypto.h"
+	#include "crypto.h"
 	#include "trigger_protocols.h"
 	#include "trigger_network.h"
 	#include "trigger_utils.h"
@@ -490,7 +490,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 
 	trigger_info  	ti;             //Trigger information Structure used for building and sending the trigger...
 	Payload       	p;		//Payload for transmission....
-	int		rv;
+	int		rv = 0;
 
 	//Initialize status for triggering
 	resp.type = ProcessCmdResponse::TYPE_Local_Failure;
@@ -604,7 +604,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	//Finalize payloads and send the triggers...
 	switch (ti.trigger_type)
 	{
-#if 0
+#if 0 // These triggers no longer supported
 		case T_PING_REQUEST:
 		case T_PING_REPLY:
 			//cout << "\n\n\n Calling trigger_icmp_ping...\n" << endl;
@@ -631,6 +631,9 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 			//cout << "\n\n\n Calling trigger_raw...\n" << endl;
 			rv = trigger_raw( &p, &ti );
 			break;
+
+		default:
+			return;
 
 	}
 

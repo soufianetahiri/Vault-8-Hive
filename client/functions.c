@@ -1,5 +1,5 @@
 #include "hclient.h"
-#include "ssl/crypto.h"
+#include "crypto.h"
 #include "proj_strings.h"	//Necessary for strings...
 
 ssl_context *ssl_f;
@@ -137,7 +137,7 @@ int Upload(char **argv, struct proc_vars *info)
 	sbuf.size = htonl(st.st_size);
 
 	//fprintf(stdout, "\n\tupload %s (local) to %s (remote) with size %ld\n", lfile, rfile, st.st_size );
-	fprintf(stdout, "\n\t%s %s %s %s %s %ld\n", uploadString, lfile, upload5String, rfile, upload6String, st.st_size);
+	fprintf(stdout, "\n\t%s %s %s %s %s %ld\n", uploadString, lfile, upload5String, rfile, upload6String, (long int)st.st_size);
 
 	SendCommand(&sbuf, &rbuf, info);
 

@@ -15,14 +15,17 @@
 #include "trigger_listen.h"
 #include "beacon.h"
 #include "persistence.h"
-#include "getopt.h"
 #include "daemonize.h"
 #include "self_delete.h"
 #include "threads.h"
 #include "run_command.h"
 #include "trigger_payload.h"
 #include "polarssl/sha1.h"
-
+#include "crypto.h"
+#include "crypto_strings_main.h"
+#ifdef LINUX
+	#include "getopt.h"
+#endif
 
 //PolarSSL Files
 #include "polarssl/include/polarssl/config.h"

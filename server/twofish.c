@@ -1,4 +1,4 @@
-#include "../../proj_strings.h"
+#include "proj_strings.h"
 #include <string.h>
 #include <unistd.h>
 

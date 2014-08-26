@@ -2,7 +2,7 @@
 #include <Windows.h>
 #endif
 
-#include "bzip/bzlib.h"
+#include "bzlib.h"
 #include "function_strings.h"
 
 extern void bz_internal_error(int errcode);

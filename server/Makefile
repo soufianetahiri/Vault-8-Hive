@@ -21,88 +21,95 @@
 CLIENT_BASENAME = hive
 SERVER_BASENAME = hived
 
-POLARSSL = polarssl
-INCLUDES = -I$(POLARSSL)/include -I../libs
-LIBPOLARSSL = $(POLARSSL)/library/libpolarssl.a
+COMMON = ../common
+SSL = $(COMMON)/ssl/library
+CRYPTO = $(COMMON)/crypto
+BZIP2 = $(COMMON)/bzip2
+STRINGS = $(COMMON)/strings
 
-.PHONY: all
+.SILENT:
+
+.PHONY: all linux-x86
 all: 
-	@echo
-	@echo
-	@echo " Please specify a supported target:"
-	@echo 
-	@echo "  make linux-x86"
-	@echo "  make linux-x86_64"
-	@echo "  make solaris-x86"
-	@echo "  make solaris-sparc"
-	@echo "  make mikrotik-x86"
-	@echo "  make mikrotik-mipsbe"
-	@echo "  make mikrotik-mipsle"
-	@echo "  make mikrotik-ppc"
-	@echo "  make arm"
-	@echo
-	@echo
-	@echo " Administrative tasks, ..."
-	@echo "  make clean"
-	@echo "  make svnclean"
-	@echo "  make tarball    ( on Linux machines only)"
-	@echo
-	@echo
+	printf "\n\nPlease specify a supported target:\n\n"
+	printf "\tmake linux-x86\n"
+	printf "\tmake linux-x86_64\n"
+	printf "\tmake solaris-x86\n"
+	printf "\tmake solaris-sparc\n"
+	printf "\tmake mikrotik-x86\n"
+	printf "\tmake mikrotik-mips\n"
+	printf "\tmake mikrotik-mipsel\n"
+	printf "\tmake mikrotik-ppc\n"
+	printf "\tmake arm\n\n"
+	printf "To build a debug version use:\n"
+	printf "\t make DEBUG=1 <target>\n\n"
+	printf "Administrative tasks, ...\n"
+	printf "\tmake clean\n"
+	printf "\tmake tarball    ( on Linux machines only)\n\n"
 
-linux-x86: clean
-	@make -f Makefile.linux-x86
+linux-x86:
+	@make -f Makefile.arch TARGET=linux-x86
 
-linux-x86_64: clean
-	@make -f Makefile.linux-x86_64
+linux-x86_64:
+	@make -f Makefile.arch TARGET=linux-x86_64
 
-solaris-x86: clean
-	@make -f Makefile.solaris-x86
+solaris-x86:
+	@make -f Makefile.arch TARGET=solaris-x86
 
-solaris-sparc: clean
-	@make -f Makefile.solaris-sparc
+solaris-sparc:
+	@make -f Makefile.arch TARGET=solaris-sparc
 
-mikrotik-x86: clean
-	@make -f Makefile.mikrotik-x86
+mikrotik-x86:
+	@make -f Makefile.arch TARGET=mikrotik-x86
 
-mikrotik-mipsle: clean
-	@make -f Makefile.mikrotik-mipsle
+mikrotik-mipsel:
+	@make -f Makefile.arch TARGET=mikrotik-mipsel
 
-mikrotik-mipsbe: clean
-	@make -f Makefile.mikrotik-mipsbe
+mikrotik-mips:
+	@make -f Makefile.arch TARGET=mikrotik-mips
 
-mikrotik-ppc: clean
-	@make -f Makefile.mikrotik-ppc
+mikrotik-ppc:
+	@make -f Makefile.arch TARGET=mikrotik-ppc
 
-arm: clean
-	@make -f Makefile.arm
+arm:
+	@make -f Makefile.arch TARGET=arm
 
-.PHONY: clean-objects
-clean-objects:
-	@echo
-	rm -f *.o 
-	rm -f hive.tar
+CLEAN_LIST := *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
+CLEAN_LIST += crypto_proj_strings.h crypto_strings_main.h string_utils.h.gch
+CLEAN_LIST += mod_hexify.pyc ../hive-server.tar
+
+.PHONY: build_clean
+build_clean:
+	printf "\n\tCLEANING:\t$(CURDIR)\n"
+	rm -f *.o init_strings.* init_crypto_strings.* 
 
 .PHONY: clean
 clean:
-	@echo
-	rm -f *.o 
-	rm -f *PATCHED
-#	rm -f $(SERVER_BASENAME)-*
-	rm -f init_strings.*
-	rm -f proj_strings*
-	rm -f init_crypto_strings.*
-	rm -f crypto_proj_strings.h
-	rm -f crypto_strings_main.h
-	rm -f string_utils.h.gch
-	rm -f mod_hexify.pyc
-	rm -f hive.tar
-	make -C $(POLARSSL) clean
-	make -C bzip/bzip2-1.0.6 clean
-	@echo
-	@echo " Done cleaning Hive server."
-	@echo
+	printf "\tCLEANING:\t$(CURDIR)\n"
+	for file in $(CLEAN_LIST); do \
+		rm -f $$file; \
+	done
+	>ARCH_BUILD
 
-svnclean: clean
+	$(MAKE) -C $(STRINGS) clean
+	$(MAKE) -C $(SSL) clean
+	$(MAKE) -C $(CRYPTO) clean
+	$(MAKE) -C $(BZIP2) clean
+
+.PHONY: distclean
+distclean: build_clean
+	printf "\tDIST CLEANING:\t$(CURDIR)\n"
+	rm -f $(SERVER_BASENAME)-*
+	$(MAKE) -C $(SSL) $@
+	$(MAKE) -C $(CRYPTO) $@
+	$(MAKE) -C $(BZIP2) $@
 
 tarball: clean
-	cd .. && tar --exclude .svn --exclude *.gz --exclude *.tar --exclude *.tgz --exclude documentation/html -cvf hive.tar server
+	cd .. && tar \
+		--exclude=.svn \
+		--exclude=*.gz \
+		--exclude=*.tar \
+		--exclude=*.tgz \
+		--exclude=documentation/html \
+		--exclude=hived-* \
+		-cvf hive-server.tar server common
