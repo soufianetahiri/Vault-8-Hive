@@ -621,7 +621,7 @@ int Execute( char *path )
 
 	}
 
-	DLX(2, printf("Received Command: %s, Status: %i", receivedCommand, status));
+	DLX(2, printf("Received Command: %s, Status: %i\n", receivedCommand, status));
 	return(status);
 }
     

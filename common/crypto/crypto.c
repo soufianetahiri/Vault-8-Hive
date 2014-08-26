@@ -96,30 +96,31 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 	#define PLAINTEXT  "==Hello there!=="
 
 	unsigned char *testBuf;
+	unsigned char *encBuf;
+
+	DL(4);
 	testBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
 	memcpy( testBuf, PLAINTEXT, 16);
 
-
 	//encrypted buffer initialization
-	unsigned char *encBuf;
-	encBuf= (unsigned char *) calloc(size+1, sizeof(unsigned char));
+	encBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
+	DLX(4, printf("encBuf = %p\n", encBuf));
 	if (encBuf == NULL)
 	{
-		DLX(4, printf( "\n\n\nencBuf Failed calloc.\n"));
+		DLX(4, printf( "encBuf Failed calloc.\n"));
 	}
-
 	DL(4);
 
     //dh Exchange will occur here using dhExchange.c and ssl_write with
     //ssl_read.
 	if ( ssl->endpoint == SSL_IS_CLIENT )
 	{
-		DLX(4, printf( "\n\n\n\nWill attempt dhClientExchange.\n"));
+		DLX(4, printf( "Will attempt dhClientExchange.\n"));
 		//dhClientExchange( ssl );
 	}
 	else
 	{
-		DLX(4, printf( "\n\n\n\nWill attempt dhServerExchange.\n"));
+		DLX(4, printf( "Will attempt dhServerExchange.\n"));
 		//dhServerExchange( ssl );
 	}
 	dhRet = 0;
@@ -128,33 +129,39 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 	DLX(4, printf( "AES encryption occurs here.\n"));
 	if ( aes_setkey_enc( &aes, aeskey, 128 ) == 0)
 	{
-		DLX(4, printf( "\n\nclearBuf->%s\n", testBuf));
-		//aesRet = aes_crypt_ecb( &aes, 0, testBuf, encBuf);
-		//DLX(4, printf( "\n\nSTATUS: aes_crypt_ecb returned %d\n\n", aesRet));
-		//if ( aesRet == 0)
-		//{
-		//	DLX(4, printf( "\n\nSTATUS: aes_crypt_ecb success, returned %d\n\n", aesRet));
-		//	DLX(4, printf( "Encrypted encBuf->%s\n", encBuf));
-		//}
-		//else
-		//{
-		//	DLX(4, printf( "\n\nERROR: aes_crypt_ecb failed, returned %d\n\n", aesRet));
-		//}
-	//	//aes_setkey_dec( &aes, aeskey, 128 );
-	//	//aes_crypt_ecb( &aes, 1, encBuf, encBuf);	
-	//	DLX(4, printf( "Decrypted encBuf->%s\n\n\n\n", encBuf));
+		DLX(4, printf( "clearBuf->%s\n", testBuf));
+		aesRet = aes_crypt_ecb( &aes, 0, testBuf, encBuf);
+		DLX(4, printf( "STATUS: aes_crypt_ecb returned %d\n\n", aesRet));
+		if ( aesRet == 0)
+		{
+			DLX(4, printf( "STATUS: aes_crypt_ecb success, returned %d\n\n", aesRet));
+			{
+				int i;
+				for (i=0; i<size; i++)
+					printf("%p: %2.2x ", encBuf+i, *(encBuf+i));
+			}
+			printf("\n");
+			DLX(4, printf( "Encrypted encBuf->%x\n\n", encBuf));
+		}
+		else
+		{
+			DLX(4, printf( "ERROR: aes_crypt_ecb failed, returned %d\n\n", aesRet));
+		}
+		aes_setkey_enc( &aes, aeskey, 128 );
+		aes_crypt_ecb( &aes, 1, encBuf, encBuf);
+		DLX(4, printf( "Decrypted encBuf->%s\n\n\n\n", encBuf));
 	}
 	else
 	{
-		DLX(4, printf( "\n\nERROR: aes_setkey_enc failed\n\n", encBuf));
+		DLX(4, printf( "ERROR: aes_setkey_enc failed\n\n", encBuf));
 	}
 
     while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
     {
         if( ret != POLARSSL_ERR_NET_WANT_WRITE )
         {
-            DLX(4, printf( " failed. ssl_write returned %d\n", ret ));
-			return ret;
+            DLX(4, printf( "ssl_write failed, returned %d\n", ret ));
+            return ret;
         }
     }
 
@@ -163,8 +170,9 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 	//Destroy encBuf
     if (encBuf != NULL)
 	{
-		DLX(4, printf( " \n\n Deleting encBuf...\n" ));
-		free(encBuf);
+	    DLX(4, printf("encBuf = %p\n", encBuf));
+	    DLX(4, printf("Deleting encBuf...\n"));
+	    free(encBuf);
 	}
 	else
 	{
@@ -184,27 +192,30 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 
 	#define PLAINTEXT  "==Hello there!=="
 	unsigned char *testBuf;
-	testBuf= (unsigned char *) calloc(17, sizeof(unsigned char));
+	unsigned char *encBuf;
+
+	DL(4);
+	testBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
 	memcpy( testBuf, PLAINTEXT, 16);
 
 	//encrypted buffer initialization
-	unsigned char *encBuf;
-	encBuf= (unsigned char *) calloc(bufsize+1, sizeof(unsigned char));
+	encBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
+	DLX(4, printf("encBuf = %p\n", encBuf));
 	if (encBuf == NULL)
 	{
-		DLX(4, printf( "\n\n\nencBuf Failed calloc.\n"));
+		DLX(4, printf( "encBuf Failed calloc.\n"));
 	}
 
 	//dh Exchange will occur here using dhExchange.c and ssl_write with
     //ssl_read.
 	if ( ssl->endpoint == SSL_IS_CLIENT )
 	{
-		DLX(4, printf( "\n\n\n\nWill attempt dhClientExchange.\n"));
+		DLX(4, printf( "Will attempt dhClientExchange.\n"));
 		//dhClientExchange( ssl );
 	}
 	else
 	{
-		DLX(4, printf( "\n\n\n\nWill attempt dhServerExchange.\n"));
+		DLX(4, printf( "Will attempt dhServerExchange.\n"));
 		//dhServerExchange( ssl );
 	}
 	dhRet = 0;
@@ -253,12 +264,13 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 	//Destroy encBuf
     if (encBuf != NULL)
 	{
-		DLX(4, printf( " \n\n Deleting encBuf...\n" ));
+	    DLX(4, printf("encBuf = %p\n", encBuf));
+	    DLX(4, printf( "Deleting encBuf...\n" ));
 		free(encBuf);
 	}
 	else
 	{
-		DLX(4, printf( " SHOULD NEVER HAVE GOTTEN HERE IN CRYPT_WRITE\n" ));
+		DLX(4, printf( "SHOULD NEVER HAVE GOTTEN HERE IN CRYPT_WRITE\n" ));
 	}
 
 	return ret;
