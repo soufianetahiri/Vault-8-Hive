@@ -130,7 +130,7 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 	if ( aes_setkey_enc( &aes, aeskey, 128 ) == 0)
 	{
 		DLX(4, printf( "clearBuf->%s\n", testBuf));
-		aesRet = aes_crypt_ecb( &aes, 0, testBuf, encBuf);
+		aesRet = aes_crypt_ecb( &aes, AES_ENCRYPT, testBuf, encBuf);
 		DLX(4, printf( "STATUS: aes_crypt_ecb returned %d\n\n", aesRet));
 		if ( aesRet == 0)
 		{
@@ -147,9 +147,9 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 		{
 			DLX(4, printf( "ERROR: aes_crypt_ecb failed, returned %d\n\n", aesRet));
 		}
-		aes_setkey_enc( &aes, aeskey, 128 );
-		aes_crypt_ecb( &aes, 1, encBuf, encBuf);
-		DLX(4, printf( "Decrypted encBuf->%s\n\n\n\n", encBuf));
+		aes_setkey_dec( &aes, aeskey, 128 );
+		aes_crypt_ecb( &aes, AES_DECRYPT, encBuf, testBuf);
+		DLX(4, printf( "Decrypted encBuf->%s\n\n\n\n", testBuf));
 	}
 	else
 	{
