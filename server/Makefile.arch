@@ -12,10 +12,9 @@ STRIP := $(shell which strip)
 
 #Default FLAGS
 CFLAGS := -Wall -Wextra -ansi -std=gnu99
-CFLAGS += -I. -I .. -I../common -I../common/crypto -I../crypto -I../../crypto -I../../common/crypto -I../../common/ssl/include -I../common/ssl/include -I../include -I../common/bzip2
-#CFLAGS += -I. -I../common -I../common/crypto -I../common/ssl/include -I../common/bzip2
+CFLAGS += -I. -I .. -I../common -I../common/crypto -I../crypto -I../../crypto -I../../common/crypto
+CFLAGS += -I../../common/ssl/include -I../common/ssl/include -I../include -I../common/bzip2
 CFLAGS += -D_USE_BASH
-CFLAGS += -DPOLARSSL_HAVEGE_C
 
 LDFLAGS = -lpthread
 
