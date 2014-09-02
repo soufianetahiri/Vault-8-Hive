@@ -83,8 +83,8 @@
  *      library/padlock.c
  *      include/polarssl/bn_mul.h
  *
- */
 #define POLARSSL_HAVE_ASM
+ */
 
 /**
  * \def POLARSSL_HAVE_SSE2

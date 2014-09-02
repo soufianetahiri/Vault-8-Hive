@@ -10,5 +10,7 @@ CC=$(BIN)/gcc
 AR=${BIN}/ar
 RANLIB=${BIN}/ranlib
 
-CFLAGS += -I$(HEADERS) -L$(LIBS)
+CFLAGS += -I$(HEADERS)
 CFLAGS += -DLINUX -DARM
+
+LDFLAGS += -L$(LIBX) -lpthread -lutil

