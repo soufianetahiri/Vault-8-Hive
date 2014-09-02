@@ -11,7 +11,7 @@ extern "C" {
 #include "polarssl/x509.h"
  #include "../polarssl/include/polarssl/aes.h"
 
-#include "dhExchange.c"
+//#include "dhExchange.c"
 
 entropy_context entropy;	// Entropy context
 ctr_drbg_context ctr_drbg;	// Counter mode deterministic random byte generator context
@@ -88,6 +88,8 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 {
 	int		ret;
+
+#if 0
 	int 	dhRet;
 	int 	aesRet;
 	aes_context aes;
@@ -97,8 +99,6 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 
 	unsigned char *testBuf;
 	unsigned char *encBuf;
-
-	DL(4);
 	testBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
 	memcpy( testBuf, PLAINTEXT, 16);
 
@@ -156,17 +156,6 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 		DLX(4, printf( "ERROR: aes_setkey_enc failed\n\n", encBuf));
 	}
 
-    while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
-    {
-        if( ret != POLARSSL_ERR_NET_WANT_WRITE )
-        {
-            DLX(4, printf( "ssl_write failed, returned %d\n", ret ));
-            return ret;
-        }
-    }
-
-	DLX(4, printf( " %d bytes written\n", ret));
-
 	//Destroy encBuf
     if (encBuf != NULL)
 	{
@@ -178,6 +167,21 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 	{
 		DLX(4, printf( " SHOULD NEVER HAVE GOTTEN HERE IN CRYPT_WRITE\n" ));
 	}
+
+#endif
+
+	DL(4);
+
+    while( ( ret = ssl_write( ssl, buf, size ) ) <= 0 )
+    {
+        if( ret != POLARSSL_ERR_NET_WANT_WRITE )
+        {
+            DLX(4, printf( "ssl_write failed, returned %d\n", ret ));
+            return ret;
+        }
+    }
+
+	DLX(4, printf( " %d bytes written\n", ret));
 	return ret;
 
 }
@@ -186,50 +190,8 @@ int crypt_write( ssl_context *ssl, unsigned char *buf, int size )
 int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
 {
 	int		ret;
-	int 	dhRet;    
-	aes_context aes;
-    unsigned char aeskey[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f}; 
-
-	#define PLAINTEXT  "==Hello there!=="
-	unsigned char *testBuf;
-	unsigned char *encBuf;
 
 	DL(4);
-	testBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
-	memcpy( testBuf, PLAINTEXT, 16);
-
-	//encrypted buffer initialization
-	encBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
-	DLX(4, printf("encBuf = %p\n", encBuf));
-	if (encBuf == NULL)
-	{
-		DLX(4, printf( "encBuf Failed calloc.\n"));
-	}
-
-	//dh Exchange will occur here using dhExchange.c and ssl_write with
-    //ssl_read.
-	if ( ssl->endpoint == SSL_IS_CLIENT )
-	{
-		DLX(4, printf( "Will attempt dhClientExchange.\n"));
-		//dhClientExchange( ssl );
-	}
-	else
-	{
-		DLX(4, printf( "Will attempt dhServerExchange.\n"));
-		//dhServerExchange( ssl );
-	}
-	dhRet = 0;
-
-	//Aes exChange will occur here...
-	DLX(4, printf( "AES encryption occurs here.\n"));
-	//aes_setkey_enc( &aes, aeskey, 128 );
-	//aes_crypt_ecb( &aes, AES_ENCRYPT, testBuf, *encBuf);	
-	//aes_crypt_ecb( &aes, 0, testBuf, encBuf);	
-	//DLX(4, printf( "\n\nclearBuf=%s\n", *testBuf));
-	//DLX(4, printf( "encBuf=%s\n\n\n\n", *encBuf));
-	//aes_crypt_ecb( &aes, AES_DECRYPT, encBuf, encBuf);	
-	//aes_crypt_ecb( &aes, 1, encBuf, encBuf);	
-	//DLX(4, printf( "Decrypted encBuf=%s\n\n\n\n", *encBuf));
 
 	// TODO: look at this do/while loop again.  it only runs once.
 	// does it serve any other purpose?
@@ -260,18 +222,6 @@ int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsize )
         DLX(4, printf("crypt_read(): %d bytes read\n", ret ));
     }
     while( 0 );
-
-	//Destroy encBuf
-    if (encBuf != NULL)
-	{
-	    DLX(4, printf("encBuf = %p\n", encBuf));
-	    DLX(4, printf( "Deleting encBuf...\n" ));
-		free(encBuf);
-	}
-	else
-	{
-		DLX(4, printf( "SHOULD NEVER HAVE GOTTEN HERE IN CRYPT_WRITE\n" ));
-	}
 
 	return ret;
 }

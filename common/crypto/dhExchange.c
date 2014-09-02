@@ -17,12 +17,75 @@
 #include "../polarssl/include/polarssl/entropy.h"
 #include "../polarssl/include/polarssl/ctr_drbg.h"
 
+
+int find_DH_SecretKey( ssl_context *ssl);
+int dhClientExchange( ssl_context *ssl );
+int dhServerExchange( ssl_context *ssl);
+
+int find_DH_SecretKey( ssl_context *ssl)
+{
+
+	ssl_context*    p_ssl;  
+	char *			kKey;
+	size_t			kKeyLength;
+	size_t *		p_kKeyLength;
+	int				mpiRet;
+	//int				n;
+        
+    //See if Secret Key is available
+    p_ssl=ssl;
+
+	kKeyLength=0;
+	DLX(4, printf(" Initial kKeyLength= %d\n", (int) kKeyLength));
+    p_kKeyLength=&kKeyLength;
+
+	//Call mpi_write_string with p_kKeyLength = 0 to see how big kKey needs to
+	//be and create kKey
+	mpiRet=mpi_write_string( &(*p_ssl).dhm_ctx.K, 16, kKey, p_kKeyLength);
+	DLX(4, printf( "kKey needs to be of Length %d, creating now...\n", *p_kKeyLength));
+	kKey= (char *) calloc(*p_kKeyLength, sizeof(char));
+	DLX(4, printf( "kKey now has Length of %d, desired length =  %d.\n", kKeyLength, *p_kKeyLength));
+
+	if (kKey != NULL )
+	{
+		//mpiRet=mpi_write_binary( &(*p_ssl).dhm_ctx.K, kKey, 256);
+		mpiRet=mpi_write_string( &(*p_ssl).dhm_ctx.K, 16, kKey, p_kKeyLength);
+		if (mpiRet == 0)
+		{
+			DLX(4, printf( "DH_Secret Key is not null\n"));
+			//SSL_DEBUG_MPI( 3, "DHM: K ", &ssl->dhm_ctx.K  ); //WORKS for PolarSSL
+			//DLX(4, printf( "DH SecretKey=%s\n", *kKey ) );
+			DLX(4, printf( "First byte of DH SecretKey=%2.2x in hexadecimal, totalLength of Key is = %d.\n", *kKey, strlen(kKey) ) );
+
+			// Do not want to do this since the system is running in the interactive 
+			// mode and for each n creates an abnormal printout...
+			// for (n=0; n<32; n++)
+			//{
+			//	DLX(4, printf("%x", *(kKey+n) ) );
+			//}
+			DLX(4, printf("Freeing kKey for now...\n") );
+			free( kKey);
+		}
+		else
+		{
+			DLX(4, printf("mpi_write_string of find_DH_SecretKey failed and returned %d.\n", mpiRet) );
+			
+		}
+	}
+    else
+	{
+		DLX(4, printf("find_DH_SecretKey failed and returned a NULL kKey.\n") );
+	}
+
+	return mpiRet;
+}
+
+
+
 //Will use ssl_write and ssl_read since connection already exists.
 ////#define SERVER_PORT 11999
 //#define PLAINTEXT "==Hello there!=="
 
-int dhClientExchange( ssl_context *ssl );
-int dhServerExchange( ssl_context *ssl);
 
 //Will use ssl_write and ssl_read since connection already exists.
 //#define SERVER_NAME "localhost"

@@ -6,6 +6,8 @@
 
 #include "proj_strings.h"     //Required for strings...
 
+#include "../common/crypto/dhExchange.c"  //Required for dh Key information
+
 #include <pthread.h>
 
 //**************************************************************
@@ -17,6 +19,7 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	ctr_drbg_context 	ctr_drbg;
 	ssl_context		ssl;
 	ssl_session		ssn;
+	int 			sKeyRet;
  
 	pthread_mutex_init( &tlock, NULL );
 
@@ -82,6 +85,18 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	}
 	DLX(2, printf( " TLS handshake complete.\n"));
 	printf( "\n" );
+
+    //Check Diffie Hellman Key...
+    //See if Secret Key is available
+	sKeyRet=find_DH_SecretKey(&ssl);
+	if (sKeyRet == 0)
+	{
+		DLX(4, printf( "DH_Secret Key is not null\n"));
+	}
+	else
+	{
+		DLX(4, printf( "DH Secret Key K not	found and returned %d.\n",sKeyRet));
+	}
 
 	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
 	if ( info->interactive == YES )
