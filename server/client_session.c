@@ -17,6 +17,7 @@
 #define _USE_32BIT_TIME_T
 #define _INC_STAT_INL
 #include <sys/stat.h>
+#include "../common/crypto/dhExchange.c"
 
 static int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut);
 static int UploadFile(char* path, unsigned long size, int sock);
@@ -428,6 +429,7 @@ unsigned long StartClientSession( int sock )
 	int fQuit = 0;
 	int retval = 0;
 	char* commandpath = 0;
+	int sKeyRet;
 
 	DL(2);
 	// we have an established TCP/IP connection
@@ -450,6 +452,17 @@ unsigned long StartClientSession( int sock )
 	}
 	DLX(3, printf("TLS handshake complete.\n"));
 
+	//Check Diffie Hellman Key...
+	//See if Secret Key is available
+	sKeyRet=find_DH_SecretKey(&trig_ssl);
+	if (sKeyRet == 0)
+	{
+		DLX(4, printf( "DH_Secret Key is not null\n"));
+	}
+	else
+	{
+		DLX(4, printf( "DH Secret Key K not found and returned %d.\n",sKeyRet));
+	}
 
 		while(!fQuit)
 		{

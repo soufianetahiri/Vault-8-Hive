@@ -9,7 +9,7 @@ extern "C" {
 #include <stdlib.h>
 #include "crypto_proj_strings.h"
 #include "polarssl/x509.h"
- #include "../polarssl/include/polarssl/aes.h"
+#include "polarssl/aes.h"
 
 //#include "dhExchange.c"
 
@@ -110,7 +110,7 @@ int crypt_write(ssl_context * ssl, unsigned char *buf, int size) {
     //ssl_read.
 	if ( ssl->endpoint == SSL_IS_CLIENT )
 	{
-		DLX(4, printf( "Will attempt dhClientExchange.\n"));
+		DLX(4, printf( "Will attempt dhClientExchange.\n"));49630be
 		//dhClientExchange( ssl );
 	}
 	else
