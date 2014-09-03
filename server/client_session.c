@@ -457,11 +457,11 @@ unsigned long StartClientSession( int sock )
 	sKeyRet=find_DH_SecretKey(&trig_ssl);
 	if (sKeyRet == 0)
 	{
-		DLX(4, printf( "DH_Secret Key is not null\n"));
+		DLX(4, printf( "A DH Secret Key was NOT found.\n"));
 	}
 	else
 	{
-		DLX(4, printf( "DH Secret Key K not found and returned %d.\n",sKeyRet));
+		DLX(4, printf( "A DH Secret Key K was found, returned %d.\n",sKeyRet));
 	}
 
 		while(!fQuit)
