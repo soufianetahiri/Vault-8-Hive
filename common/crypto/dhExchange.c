@@ -65,19 +65,12 @@ int find_DH_SecretKey( ssl_context *ssl)
 /////////////////////////////////////////////////////////////////////
 //  CLIENT PORTION
 //
-
 /*
  *  Diffie-Hellman-Merkle key exchange (client side)
  *
  *  Copyright (C) 2006-2011, Brainspark B.V.
  *
  *  This file is part of PolarSSL (http://www.polarssl.org)
-		}
-	}
-    else
-	{
-		DLX(4, printf("find_DH_SecretKey failed and returned a NULL kKey.\n") );
-	}
  *
  *  Lead Maintainer: Paul Bakker <polarssl_maintainer at polarssl.org>
  *
@@ -112,193 +105,119 @@ int dhClientExchange( ssl_context *ssl )
     return( 0 );
 }
 #else
-int dhClientExchange( ssl_context *ssl )
+
+/*!	@brief Diffie-Hellman-Merkle Client Exchange
+ *
+ * @param ssl ssl context
+ * @returns generated shared secret
+ * @retval < 0 is an error
+ */
+
+int dhmClientExchange( ssl_context *ssl )
 {
-    //FILE *f; removed reading of rsa public key file
+    int 	ret;
+    size_t 	n, buflen;
+    int 	server_fd = -1;
 
-    int ret;
-    size_t n, buflen;
-    int server_fd = -1;
+    unsigned char	*p, *end;
+    unsigned char	buf[1024];
+    char 			*pers = "dh_client";
 
-    unsigned char *p, *end;
-    unsigned char buf[1024];
-    //unsigned char hash[20];
-    char *pers = "dh_client";
+    entropy_context		entropy;
+    ctr_drbg_context	ctr_drbg;
+    dhm_context			dhm;
 
-    entropy_context entropy;
-    ctr_drbg_context ctr_drbg;
-    dhm_context dhm;
-	//    aes_context aes;
+    memset(&dhm, 0, sizeof( dhm ));	// Clear DHM context
 
-
-    memset( &dhm, 0, sizeof( dhm ) );
-
-    /*
-     * 1. Setup the RNG
-     */
-    printf( "\n  . Seeding the random number generator" );
-    fflush( stdout );
+	//Setup the RNG
+    DLX(4, printf("Seeding the random number generator\n"));
 
     entropy_init( &entropy );
-    if( ( ret = ctr_drbg_init( &ctr_drbg, entropy_func, &entropy,
-                               (unsigned char *) pers, strlen( pers ) ) ) != 0 )
+    if( ( ret = ctr_drbg_init( &ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen( pers ) ) ) != 0 )
     {
-        printf( " failed\n  ! ctr_drbg_init returned %d\n", ret );
+        DLX(4, printf("ctr_drbg_init failed, returned %d\n", ret));
         goto exit;
     }
 
-    /*
- 	 * NOT DONE
- 	 *
-     * 2. Read the server's public RSA key
-     */
+	// First get the buffer length
 
-    /*
- 	 * NOT DONE SINCE ssl_write and ssl_read are available
- 	 *
-     * 3. Initiate the connection
-     */
+    DLX(4, printf("Receiving the server's DH parameters\n"));
 
-    /*
-     * 4a. First get the buffer length
-     */
-    printf( "\n  . Receiving the server's DH parameters" );
-    fflush( stdout );
-
-    memset( buf, 0, sizeof( buf ) );
-
-   /*
- 	* WILL REPLACE THIS SECTION WITH ssl_read.
- 	*
-   */
-    //if( ( ret = net_recv( &server_fd, buf, 2 ) ) != 2 )
-    //{
-    //    printf( " failed\n  ! net_recv returned %d\n\n", ret );
-    //    goto exit;
-    //}
-    //  May need to use ssl->f_recv(ssl->p_recv, buf, 2)
-    while ( ( ret = ssl_read( ssl, buf, 2 ) ) <= 0 )
+    memset(buf, 0, sizeof(buf));
+    if (( ret = ssl_read( ssl, buf, 2 )) != 2 )
 	{
-		if( ret != 0 )
-		{
-			printf(" Client dh 4a failed.\n");
-		}
-		else 
-		{
-			printf(" Client dh 4a suceeded.\n");
-		}
+    	DLX(4, printf("ssl_read() failed to receive buffer length, returned: %d\n", ret));
+		goto exit;
 	}
 
-    n = buflen = ( buf[0] << 8 ) | buf[1];
+    buflen = ( buf[0] << 8 ) | buf[1];
     if( buflen < 1 || buflen > sizeof( buf ) )
     {
-        printf( " failed\n  ! Got an invalid buffer length\n\n" );
+        DLX(4, printf("Received invalid buffer length: %d\n", buflen));
         goto exit;
     }
 
-    /*
-     * 4b. Get the DHM parameters: P, G and Ys = G^Xs mod P
-     */
-    memset( buf, 0, sizeof( buf ) );
+	// Get the DHM parameters: P, G and Ys = G^Xs mod P
 
-
-   /*
- 	* WILL REPLACE THIS SECTION WITH ssl_read.
- 	*
-   */
-   // if( ( ret = net_recv( &server_fd, buf, n ) ) != (int) n )
-   // {
-   //     printf( " failed\n  ! net_recv returned %d\n\n", ret );
-   //     goto exit;
-   // }
-    //  May need to use ssl->f_recv(ssl->p_recv, buf, n)
-    while ( ( ret = ssl_read( ssl, buf, n ) ) <= 0 )
-	{
-		if( ret != 0 )
-		{
-			printf(" Client dh 4b failed.\n");
-		}
-		else 
-		{
-			printf(" Client dh 4b suceeded.\n");
-		}
-	}
-
+    memset(buf, 0, sizeof( buf ));
+    n = 0;
+    do {
+    	ret = ssl_read( ssl, buf, n );
+    	if (ret < 0) {
+    		DLX(4, printf(ssl_read() error: %d\n", ret"));
+    		continue;
+    	}
+    	n += ret;
+    } while (n < buflen);
 
     p = buf, end = buf + buflen;
 
     if( ( ret = dhm_read_params( &dhm, &p, end ) ) != 0 )
     {
-        printf( " failed\n  ! dhm_read_params returned %d\n\n", ret );
+        DLX(4, printf("dhm_read_params() failed, returned %d\n", ret ));
         goto exit;
     }
 
     if( dhm.len < 64 || dhm.len > 256 )
     {
-        ret = 1;
-        printf( " failed\n  ! Invalid DHM modulus size\n\n" );
+        ret = -1;
+        DLX(4, printf("Invalid DHM modulus size\n"));
         goto exit;
     }
-#if 0
-    /*
-     * 5. Check that the server's RSA signature matches
-     *    the SHA-1 hash of (P,G,Ys)
-     */
-#endif
 
-    /*
-     * 6. Send our public value: Yc = G ^ Xc mod P
-     */
-    printf( "\n  . Sending own public value to server" );
-    fflush( stdout );
+	// Generate public value and send to server: Yc = G ^ Xc mod P
+    DLX(4, printf("\Sending own public value to server\n"));
 
     n = dhm.len;
-    if( ( ret = dhm_make_public( &dhm, 256, buf, n,
-                                 ctr_drbg_random, &ctr_drbg ) ) != 0 )
+    if (( ret = dhm_make_public( &dhm, 256, buf, n, ctr_drbg_random, &ctr_drbg )) != 0 )
     {
-        printf( " failed\n  ! dhm_make_public returned %d\n\n", ret );
+        DLX(4, printf("dhm_make_public() failed, returned %d\n", ret));
         goto exit;
     }
 
+    n = 0;
+    do {
+    	ret = ssl_write( ssl, buf, n );
+    	if (ret < 0) {
+    		DLX(4, printf(ssl_write() error: %d\n", ret"));
+    		continue;
+    	}
+    	n += ret;
+    } while (n < dhm.len);
 
-   /*
- 	* WILL REPLACE THIS SECTION WITH ssl_write.
- 	*
-   */
-    //if( ( ret = net_send( &server_fd, buf, n ) ) != (int) n )
-    //{
-    //    printf( " failed\n  ! net_send returned %d\n\n", ret );
-    //    goto exit;
-    //}
-    //  May need to use ssl->f_send(ssl->p_send, buf, n)
-    while ( ( ret = ssl_write( ssl, buf, n ) ) <= 0 )
-	{
-		if( ret != 0 )
-		{
-			printf(" Client dh 6 failed.\n");
-		}
-		else 
-		{
-			printf(" Client dh 6 suceeded.\n");
-		}
-	}
-
-
-    /*
-     * 7. Derive the shared secret: K = Ys ^ Xc mod P
-     */
-    printf( "\n  . Shared secret: " );
-    fflush( stdout );
-
+	// Derive the shared secret: K = Ys ^ Xc mod P
     n = dhm.len;
     if( ( ret = dhm_calc_secret( &dhm, buf, &n ) ) != 0 )
     {
-        printf( " failed\n  ! dhm_calc_secret returned %d\n\n", ret );
+        DLX(4, printf( "dhm_calc_secret() failed, returned %d\n", ret));
         goto exit;
     }
 
-    for( n = 0; n < 16; n++ )
-        printf( "%02x", buf[n] );
+    DLX(4, printf("Shared secret: ");
+		for( n = 0; n < 16; n++ )
+			printf( "%02x", buf[n] );
+		printf("\n");
+		);
 
 #if 0
     /*
@@ -328,17 +247,11 @@ int dhClientExchange( ssl_context *ssl )
 #endif
 
 exit:
-
     net_close( server_fd );
     dhm_free( &dhm );
-
-#if defined(_WIN32)
-    printf( "  + Press Enter to exit this program.\n" );
-    fflush( stdout ); getchar();
-#endif
-
     return( ret );
 }
+
 #endif /* POLARSSL_AES_C && POLARSSL_DHM_C && POLARSSL_ENTROPY_C &&
           POLARSSL_NET_C && POLARSSL_RSA_C && POLARSSL_SHA1_C && 
           POLARSSL_FS_IO && POLARSSL_CTR_DRBG_C */
@@ -352,8 +265,6 @@ exit:
 /////////////////////////////////////////////////////////////////////
 //  SERVER PORTION
 //
-
-
 
 /*
  *  Diffie-Hellman-Merkle key exchange (server side)
@@ -392,7 +303,13 @@ int dhServerExchange( ssl_context *ssl )
     return( 0 );
 }
 #else
-int dhServerExchange( ssl_context *ssl )
+/*!	@brief Diffie-Hellman-Merkle Server Exchange
+ *
+ * @param ssl ssl context
+ * @returns generated shared secret
+ * @retval < 0 is an error
+ */
+int dhmServerExchange( ssl_context *ssl )
 {
     FILE *f;  
 
@@ -404,18 +321,14 @@ int dhServerExchange( ssl_context *ssl )
     unsigned char buf2[2];
     char *pers = "dh_server";
 
-    entropy_context entropy;
-    ctr_drbg_context ctr_drbg;
-    rsa_context rsa;
-    dhm_context dhm;
+    entropy_context		entropy;
+    ctr_drbg_context	ctr_drbg;
+    dhm_context			dhm;
     //aes_context aes;
 
-    memset( &rsa, 0, sizeof( rsa ) );
-    memset( &dhm, 0, sizeof( dhm ) );
+    memset(&dhm, 0, sizeof(dhm));	// Clear DHM context
 
-    /*
-     * 1. Setup the RNG
-     */
+	//	Setup the RNG
     printf( "\n  . Seeding the random number generator" );
     fflush( stdout );
 
