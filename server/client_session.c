@@ -429,7 +429,7 @@ unsigned long StartClientSession( int sock )
 	int fQuit = 0;
 	int retval = 0;
 	char* commandpath = 0;
-	int sKeyRet;
+	dhm_context *tunnelDhm;
 
 	DL(2);
 	// we have an established TCP/IP connection
@@ -452,16 +452,12 @@ unsigned long StartClientSession( int sock )
 	}
 	DLX(3, printf("TLS handshake complete.\n"));
 
-	//Check Diffie Hellman Key...
-	//See if Secret Key is available
-	sKeyRet=find_DH_SecretKey(&trig_ssl);
-	if (sKeyRet == 0)
+	//Tunnel Dhm 
+	DLX(4, printf( "Beginning to do tunnel Diffie Hellman Handshake.\n"));
+	if ((tunnelDhm= dhHandshake( &trig_ssl )) == NULL)
 	{
-		DLX(4, printf( "A DH Secret Key was NOT found.\n"));
-	}
-	else
-	{
-		DLX(4, printf( "A DH Secret Key K was found, returned %d.\n",sKeyRet));
+		DLX(4, printf("Diffie Hellman Handshakefailed\n"));
+		goto Exit;
 	}
 
 		while(!fQuit)

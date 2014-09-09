@@ -17,9 +17,10 @@ pthread_mutex_t		tlock;
 void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 {
 	ctr_drbg_context 	ctr_drbg;
-	ssl_context		ssl;
-	ssl_session		ssn;
-	int 			sKeyRet;
+
+	ssl_context			ssl;
+	ssl_session			ssn;
+	dhm_context 		*tunnelDhm;
  
 	pthread_mutex_init( &tlock, NULL );
 
@@ -86,17 +87,28 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	DLX(2, printf( " TLS handshake complete.\n"));
 	printf( "\n" );
 
-    //Check Diffie Hellman Key...
+	//Tunnel Dhm 
+	DLX(4, printf( "Beginning to do tunnel Diffie Hellman Handshake.\n"));
+	if ((tunnelDhm = dhHandshake( &ssl )) == NULL)
+	{
+		DLX(4, printf("Diffie Hellman Handshake failed\n"));
+		return;
+	}
+	free( tunnelDhm);
+
+    //Check Diffie Hellman Key of ssl...  Should modify so we pass in dhm_conext
+    //only in the find_DH_SecretKey method.
     //See if Secret Key is available
-	sKeyRet=find_DH_SecretKey(&ssl);
-	if (sKeyRet == 0)
-	{
-		DLX(4, printf( "A DH Secret Key was NOT found.\n"));
-	}
-	else
-	{
-		DLX(4, printf( "A DH Secret Key K was found, returned %d.\n",sKeyRet));
-	}
+	//sKeyRet=find_DH_SecretKey(&ssl);
+	//if (sKeyRet == 0)
+	//{
+	//	DLX(4, printf( "A DH Secret Key was NOT found.\n"));
+	//}
+	//else
+	//{
+	//	DLX(4, printf( "A DH Secret Key K was found, returned %d.\n",sKeyRet));
+	//}
+
 
 	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
 	if ( info->interactive == YES )
