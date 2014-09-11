@@ -10,23 +10,33 @@
 	#define D(x) x
 
 	// Tracing function that displays its location if the debug level meets or exceeds the threshold
-	#define DL(l)											\
-		do {											\
-			if (l <= dbug_level_) {								\
+	#define DL(l)																	\
+		do {																		\
+			if (l <= dbug_level_) {													\
 				fprintf(stdout, "%s:%d: %s()\n", __FILE__, __LINE__,__FUNCTION__);	\
-				fflush(stdout);								\
-			}}										\
-		while (0)
+				fflush(stdout);														\
+			}																		\
+		} while (0)
 
 	// Debug function that displays its location and inserts code if the debug level meets or exceeds the threshold
-	#define DLX(l, x)										\
-		do {											\
-			if (l <= dbug_level_) {								\
+	#define DLX(l, x)																\
+		do {																		\
+			if (l <= dbug_level_) {													\
 				fprintf(stdout, "%s:%d: %s(): ", __FILE__, __LINE__,__FUNCTION__);	\
-				x;									\
-				fflush(stdout);								\
-			}}										\
-		while (0)
+				x;																	\
+				fflush(stdout);														\
+			}																		\
+		} while (0)
+
+	// Debug function to print a character buffer
+	#define DPB(l, text, line_preface, buf, len)						\
+		do {													\
+			if (l <= dbug_level_) {								\
+				fprintf(stdout, "%s:%d: %s(): %s\n", __FILE__, __LINE__,__FUNCTION__, text);	\
+				debug_print_buffer(line_preface, buf, len);	\
+			}													\
+		} while (0)
+
 
 	#ifdef SOLARIS
 		#define xs(x)   x
@@ -37,10 +47,13 @@
 		#define debug_msg(x, ...)
 	#endif
 
+	void debug_print_buffer(const char *preface, const unsigned char *buf, const size_t len);
+
 #else
 	#define D(x)
 	#define DL(l)
 	#define DLX(l, x)
+	#define DPB(l, text, preface, buf, len)
 
 	#ifdef SOLARIS
 		#define xs(x) "%x"

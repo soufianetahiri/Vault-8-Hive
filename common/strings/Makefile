@@ -54,7 +54,7 @@ ifdef TARGET
   ifdef DEBUG
     CFLAGS += -g -DDEBUG -O0
   else
-    CFLAGS += -O2
+    CFLAGS += -Os
   endif
   $(info =========================================================================)
   $(info TARGET: $(TARGET))
@@ -69,7 +69,7 @@ endif
 
 OBJS= string_utils.o
 
-#.SILENT:
+.SILENT:
 
 string_utils.o: string_utils.c $(STRINGS_BUILD_OPTS)
 	printf "\tCC\t\t$<\n"

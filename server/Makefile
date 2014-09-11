@@ -26,6 +26,7 @@ SSL = $(COMMON)/ssl/library
 CRYPTO = $(COMMON)/crypto
 BZIP2 = $(COMMON)/bzip2
 STRINGS = $(COMMON)/strings
+LIBDEBUG = $(COMMON)/debug
 
 .SILENT:
 
@@ -95,6 +96,7 @@ clean:
 	$(MAKE) -C $(SSL) clean
 	$(MAKE) -C $(CRYPTO) clean
 	$(MAKE) -C $(BZIP2) clean
+	$(MAKE) -C $(LIBDEBUG) clean
 
 .PHONY: distclean
 distclean: build_clean
@@ -103,6 +105,7 @@ distclean: build_clean
 	$(MAKE) -C $(SSL) $@
 	$(MAKE) -C $(CRYPTO) $@
 	$(MAKE) -C $(BZIP2) $@
+	$(MAKE) -C $(LIBDEBUG) $@
 
 tarball: clean
 	cd .. && tar \

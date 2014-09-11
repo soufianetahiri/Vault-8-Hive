@@ -25,7 +25,7 @@
 #endif
 
 #ifdef DEBUG
-#include "polarssl/include/polarssl/net.h"
+#include "polarssl/net.h"
 #endif
 
 //******************************************************************

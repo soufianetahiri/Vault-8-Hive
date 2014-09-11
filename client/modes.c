@@ -4,9 +4,8 @@
 #include "crypto.h"
 #include "colors.h"
 
-#include "proj_strings.h"     //Required for strings...
-
-#include "../common/crypto/dhExchange.c"  //Required for dh Key information
+#include "proj_strings.h"
+#include "dhExchange.h"
 
 #include <pthread.h>
 

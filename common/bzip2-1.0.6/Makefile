@@ -76,7 +76,7 @@ endif
 ifdef DEBUG
   CFLAGS += -g -DDEBUG -O0
 else
-  CFLAGS += -O2
+  CFLAGS += -Os
 endif
 
 ##########################################################################

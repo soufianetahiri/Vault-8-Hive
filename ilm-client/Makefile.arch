@@ -10,16 +10,11 @@ else ifeq ("$(TARGET)", "linux-x86_64")
 include ../common/Makefile-include.linux-x86_64
 endif
 
-ifdef DEBUG
-  CXXFLAGS += -g
-  CXXFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG
-  CXXFLAGS += -O0
-else
-  CXXFLAGS += -O2
-endif
-
-CC = gcc
+SHELL := $(shell which bash)
+CC := $(shell which gcc)
 GCCVERSION_GT_4.6 = $(shell expr `gcc -dumpversion | cut -f1,2 -d.` \>= 4.6)
+MD5SUM := $(shell which md5sum)
+STRIP := $(shell which strip)
 
 BINARY = hclient-$(TARGET)
 
@@ -85,6 +80,17 @@ ifdef ARCH_BUILD_CLIENTLIB
 else
   CLIENTLIB_REBUILD:=force-rebuild
 endif
+
+ifdef ARCH_BUILD_DEBUG
+  ifneq ("$(ARCH_BUILD_DEBUG)", "$(TARGET)")
+    DEBUG_REBUILD:=force-rebuild
+  else
+    DEBUG_REBUILD:=
+  endif
+else
+  DEBUG_REBUILD:=force-rebuild
+endif
+
 #===============================================================================
 
 ifeq "$(GCCVERSION_GT_4.6)" "1"
@@ -114,6 +120,19 @@ OBJS += hive.o
 OBJS += $(STRINGS)/string_utils.o
 OUTFILE = hive
 
+# Debug Configuration
+ifdef DEBUG
+  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  LIBS += $(LIBDEBUG)
+  ifeq ("$(DEBUG)", "2")	
+    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+  endif
+else
+  CFLAGS += -Os
+  LIBDEBUG :=
+endif
+
+
 $(info =========================================================================)
 $(info .   TARGET: $(TARGET))
 $(info .   SRCDIR: $(PWD))
@@ -124,9 +143,9 @@ $(info )
 
 .SILENT:
 .PHONY: all
-all: $(ILMCLIENT_REBUILD) $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS)
+all: $(ILMCLIENT_REBUILD) $(LIBSSL) $(LIBHCLIENT) $(HCLIENT) cryptcat $(LIBCRYPTO) $(OBJS) $(LIBDEBUG)
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
-	md5sum $(OUTFILE) > $(OUTFILE).md5
+	${MD5SUM} $(OUTFILE) > $(OUTFILE).md5
 	echo "ARCH_BUILD_ILMCLIENT=$(TARGET)" > ARCH_BUILD
 	printf "\n=========================================================================\n"
 	printf "\tBUILDING ILM CLIENT COMPLETE\n"
@@ -156,6 +175,9 @@ $(LIBCRYPTO): $(CRYPTO_REBUILD)
 
 $(STRINGS)/string_utils.o: $(STRINGS)/string_utils.c $(STRINGS)/string_utils.h
 	cd $(STRINGS) && ${CC} ${CFLAGS} -c string_utils.c string_utils.h
+
+$(LIBDEBUG): $(DEBUG_REBUILD)
+	cd $(COMMON)/debug && $(MAKE) TARGET=$(TARGET)
 
 .PHONY: cryptcat
 cryptcat:

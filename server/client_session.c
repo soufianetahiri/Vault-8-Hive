@@ -17,7 +17,7 @@
 #define _USE_32BIT_TIME_T
 #define _INC_STAT_INL
 #include <sys/stat.h>
-#include "../common/crypto/dhExchange.c"
+#include "dhExchange.h"
 
 static int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut);
 static int UploadFile(char* path, unsigned long size, int sock);

@@ -11,18 +11,22 @@ else ifeq ("$(TARGET)", "linux-x86_64")
   include Makefile-include.linux-x86_64
 endif
 
-CC = gcc
+SHELL := $(shell which bash)
+CC := $(shell which gcc)
 GCCVERSION_GT_4.6 = $(shell expr `gcc -dumpversion | cut -f1,2 -d.` \>= 4.6)
+MD5SUM := $(shell which md5sum)
+STRIP := $(shell which strip)
 
 BINARY = hclient-$(TARGET)
 
 COMMON = ../common
 CRYPTO = $(COMMON)/crypto
 SSL = $(COMMON)/ssl/library
-INCLUDES = -I$(SSL)/../include -I$(CRYPTO) -I../common
+INCLUDES = -I$(SSL)/../include -I$(CRYPTO) -I$(COMMON)/debug
 LIBSSL = $(SSL)/libpolarssl.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 STRINGS = $(COMMON)/strings
+LIBDEBUG = $(COMMON)/debug/libdebug.a
 
 .PHONY: force-rebuild
 $(info )
@@ -60,21 +64,23 @@ else
   SSL_REBUILD:=force-rebuild
 endif
 
-LDFLAGS = -lpthread
+ifdef ARCH_BUILD_DEBUG
+  ifneq ("$(ARCH_BUILD_DEBUG)", "$(TARGET)")
+    DEBUG_REBUILD:=force-rebuild
+  else
+    DEBUG_REBUILD:=
+  endif
+else
+  DEBUG_REBUILD:=force-rebuild
+endif
 
+LDFLAGS = -lpthread
 
 ifeq "$(GCCVERSION_GT_4.6)" "1"
 	CFLAGS += -Wno-unused-result
 endif
 
 CFLAGS += $(INCLUDES)
-
-ifdef DEBUG
-  CFLAGS += -g
-  CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DDEBUG -D_DEBUG -O0
-else
-  CFLAGS += -O2
-endif
 
 CRYPTCAT = -DLINUX cryptcat/netcat.c
 #CRYPTCAT = -DLINUX -lstdc++ cryptcat/farm9crypt.cc cryptcat/twofish.cc cryptcat/netcat.c
@@ -99,6 +105,18 @@ UNPATCHED_BINS = $(UNPATCHED_SOLARIS_SPARC) $(UNPATCHED_LINUX_X86)
 UNPATCHED_BINS += $(UNPATCHED_SOLARIS_X86) $(UNPATCHED_MIKROTIK_X86) $(UNPATCHED_MIKROTIK_MIPS)
 UNPATCHED_BINS += $(UNPATCHED_MIKROTIK_PPC) $(UNPATCHED_MIKROTIK_MIPSEL)
 
+# Debug Configuration
+ifdef DEBUG
+  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  LIBS += $(LIBDEBUG)
+  ifeq ("$(DEBUG)", "2")	
+    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+  endif
+else
+  CFLAGS += -Os
+  LIBDEBUG :=
+endif
+
 $(info =========================================================================)
 $(info .  TARGET: $(TARGET))
 $(info .  SRCDIR: $(PWD))
@@ -117,12 +135,20 @@ all: $(LIBSSL) hclient debug patcher library
 release: hclient
 
 .PHONY: hclient
-hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBSSL) $(LIBCRYPTO) $(OBJS)
-	${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS} 
-	strip ${BINARY}
-	md5sum ${BINARY} > ${BINARY}.md5
+hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBSSL) $(LIBCRYPTO) $(OBJS) $(LIBDEBUG)
+	if ! test $(DEBUG); then \
+		${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS}; \
+		${STRIP} ${BINARY};	\
+		${MD%SUM} ${BINARY} > ${BINARY}.md5; \
+		echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD; \
+		printf "\n\tCLIENT BUILD COMPLETE\n\n"; \
+	else \
+		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
+		printf "\tLD\t\t$@-dbg\n"; \
+		${CC} ${CFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS}; \
+		${MD%SUM} ${BINARY-dbg} > ${BINARY}-dbg.md5; \
+	fi
 	echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD
-	printf "\n\tCLIENT BUILD COMPLETE\n\n"
 
 $(LIBSSL): $(SSL_REBUILD)
 	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
@@ -130,8 +156,11 @@ $(LIBSSL): $(SSL_REBUILD)
 $(LIBCRYPTO): $(CRYPTO_REBUILD)
 	cd $(CRYPTO) && $(MAKE) TARGET=$(TARGET)
 
+$(LIBDEBUG): $(DEBUG_REBUILD)
+	cd $(COMMON)/debug && $(MAKE) TARGET=$(TARGET)
+
 .PHONY: debug
-debug: strings $(LIBSSL) $(LIBCRYPTO) $(OBJS)
+debug: strings $(LIBSSL) $(LIBCRYPTO) $(OBJS) $(LIBDEBUG)
 	${CC} ${CFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS} 
 	md5sum ${BINARY}-dbg > ${BINARY}-dbg.md5
 

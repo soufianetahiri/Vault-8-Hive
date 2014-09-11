@@ -1,12 +1,12 @@
 ####################################################
-# Architecture-agnostic Makefile for Hive crypto
+# Architecture-agnostic Makefile for Debugging
 ####################################################
  CC := $(shell which gcc)
 # Defaults
-CFLAGS	:= -Wall -W -Wdeclaration-after-statement
+CFLAGS	= -Wall -W -Wdeclaration-after-statement
 COMMON = ..
-SSL = $(COMMON)/ssl
-INCLUDES := -I$(COMMON)/debug -I../ssl/include
+LIBDEBUG = $(COMMON)/debug
+INCLUDES = -I.
 
 .PHONY: ARCH_BUILD linux-x86
 include ARCH_BUILD
@@ -36,47 +36,38 @@ endif
 ##########################################################################
 AR = ar
 
-LIBCRYPTO = libcrypto.a
+LIBDEBUG = libdebug.a
 
-LDFLAGS = -lpthread -lutil
-
-CRYPTO_OBJS = crypto.o init_crypto_strings.o loki_utils.o dhExchange.o
-
-PS = process_list.c
-NETSTAT = netstat_an.c netstat_rn.c
-IFC = ifconfig.c
+OBJS = debug.o
 
 CFLAGS += $(INCLUDES)
-
-DBGFLAGS += -DDEBUG -D_DEBUG -g
-
 STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 
 # Debug Options
 ifdef DEBUG
   CFLAGS += -g -DDEBUG -O0
 else
-  CFLAGS += -O2
+  CFLAGS += -Os
 endif
 
 .SILENT:
-.PHONY: $(CRYPTO_BUILD_OPTS)
+.PHONY: $(DEBUG_BUILD_OPTS)
 .PHONY: all
 
 $(info )
 $(info =========================================================================)
 ifdef TARGET
-  ifdef ARCH_BUILD_CRYPTO
-    ifneq ("$(ARCH_BUILD_CRYPTO)", "$(TARGET)")
-      $(info .  Rebuilding libcrypto for $(TARGET))
-      CRYPTO_BUILD_OPTS:=clean
+  ifdef ARCH_BUILD_DEBUG
+    ifneq ("$(ARCH_BUILD_DEBUG)", "$(TARGET)")
+      $(info .  Rebuilding libdebug for $(TARGET))
+      DEBUG_BUILD_OPTS:=clean
     else
-      CRYPTO_BUILD_OPTS:=
-      $(info .  libcrypto for $(TARGET) previously built.)
+      DEBUG_BUILD_OPTS:=
+      $(info .  libdebug for $(TARGET) previously built.)
     endif
   else
-    CRYPTO_BUILD_OPTS:=clean
-    $(info .  Building libcrypto for $(TARGET))
+    DEBUG_BUILD_OPTS:=clean
+    $(info .  Building libdebug for $(TARGET))
   endif
   
   $(info =========================================================================)
@@ -88,34 +79,24 @@ ifdef TARGET
   $(info )
 endif
 
-$(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) crypto_strings $(CRYPTO_OBJS)
+$(LIBDEBUG): $(DEBUG_BUILD_OPTS) $(OBJS)
 	printf "\tAR\t$@\n"
-	$(AR) $(ARFLAGS) $@ $(CRYPTO_OBJS)
-	echo "ARCH_BUILD_CRYPTO=$(TARGET)" > ARCH_BUILD
+	$(AR) $(ARFLAGS) $@ $(OBJS)
+	echo "ARCH_BUILD_DEBUG=$(TARGET)" > ARCH_BUILD
 	printf "=========================================================================\n"
 	printf "\t$@ COMPLETE\n"
 	printf "=========================================================================\n"
 
-.PHONY: crypto_strings
-crypto_strings: init_crypto_strings.o crypto_proj_strings.h
-crypto_proj_strings.h: init_crypto_strings.c
-init_crypto_strings.o: init_crypto_strings.c 
-init_crypto_strings.c: crypto_strings.txt 
-	python mod_gen_cryptostring_header.py crypto_strings.txt CRYPTO_STRINGS
-
 .PHONY: clean
 clean:
 	printf "\tCLEANING:\t$(CURDIR)\n"
-	rm -f $(LIBCRYPTO) $(CRYPTO_OBJS)
-	rm -f init_crypto_strings.*
-	rm -f crypto_strings_main.h
-	rm -f crypto_proj_strings.h
+	rm -f $(LIBDEBUG) $(OBJS)
 	>ARCH_BUILD
 
 .PHONY: distclean
 distclean: clean
 	printf "\tDIST CLEANING:\t$(CURDIR)\n"
-	rm -f $(LIBCRYPTO)
+	rm -f $(LIBDEBUG)
 
 .c.o:
 	printf "\tCC\t$<\n"

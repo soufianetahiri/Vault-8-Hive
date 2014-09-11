@@ -28,8 +28,8 @@
 #endif
 
 //PolarSSL Files
-#include "polarssl/include/polarssl/config.h"
-#include "polarssl/include/polarssl/sha1.h"
+#include "polarssl/config.h"
+#include "polarssl/sha1.h"
 
 #ifndef _SRANDFLAG_
 #define _SRANDFLAG_

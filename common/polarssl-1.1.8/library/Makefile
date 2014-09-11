@@ -45,13 +45,15 @@ ifdef TARGET
     TARGET:=
  endif
 endif 
-CFLAGS += -I../.. -I../../crypto -I../include -I../ssl/include
+CFLAGS += -I../../debug -I../../crypto -I../include -I../ssl/include
 
 ifdef DEBUG
-  CFLAGS += -g -O0
-  CFLAGS += -DDBUG -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DPOLARSSL_SSL_DEBUG_ALL
+  CFLAGS += -DDEBUG -D_DEBUG -g -O0 
+  ifeq ("$(DEBUG)", "2")        
+    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DPOLARSSL_SSL_DEBUG_ALL
+  endif
 else
-  CFLAGS += -O2
+  CFLAGS += -Os
 endif
 
 ifdef TARGET
