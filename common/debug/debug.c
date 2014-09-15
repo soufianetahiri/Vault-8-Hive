@@ -15,13 +15,16 @@ void debug_print_buffer(const char *line_preface, const unsigned char *buf, cons
 
         if (i % 16 == 0)
         	fprintf(stdout, "\n%s%4x: ", line_preface, i);
-        else
+        else {
         	fprintf(stdout, " ");
+        	if (i % 8 == 0)
+        		fprintf(stdout, " ");
+        }
 
         fprintf (stdout, "%02x", buf[i]);
 
     }
 	fprintf(stdout, "\n");
-    if( len % 16 )
+    if( (len+1) % 16 )
         fprintf(stdout, "\n");
 }

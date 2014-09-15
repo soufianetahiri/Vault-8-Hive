@@ -47,7 +47,7 @@ int crypt_handshake(ssl_context * ssl) {
 
 		while ((ret = ssl_handshake(ssl)) != 0) {
 			if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
-				DLX(4, printf("TLS handshake failed, returned: %0x\n", ret));
+				DLX(4, printf("TLS handshake failed, returned: -0x%04x\n", -ret));
 				return -1;
 			}
 		}
@@ -169,7 +169,7 @@ int crypt_write(ssl_context * ssl, unsigned char *buf, int size) {
 
 	while ((ret = ssl_write(ssl, buf, size)) <= 0) {
 		if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
-			DLX(4, printf(" failed. ssl_write returned %d\n", ret));
+			DLX(4, printf(" failed. ssl_write() returned -0x%04x\n", -ret));
 			return ret;
 		}
 	}
@@ -203,7 +203,7 @@ int crypt_read(ssl_context * ssl, unsigned char *buf, int bufsize) {
 		}
 
 		if (ret <= 0) {
-			DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned %0x\n", ret));
+			DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -ret));
 			break;
 		}
 
@@ -237,7 +237,7 @@ int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session
 			case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Too many random requested in single call."); break;
 			case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Input too large (Entropy + additional).\n"); break;
 			case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Read/write error in file\n"); break;
-			default:											printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret);}
+			default:											printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret);}
 		);
 		if ((ret = ctr_drbg_update_seed_file(ctr_drbg, "seedfile")) !=0 ) {
 			DLX(4, switch (ret) {
@@ -245,7 +245,7 @@ int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session
 				case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Seedfile too big?.\n"); break;
 				case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Seedfile too big?.\n"); break;
 				case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
-				default:											printf("ERROR: ctr_drbg_update_seedfile() failed, returned %0x\n", ret);
+				default:											printf("ERROR: ctr_drbg_update_seedfile() failed, returned -0x%04x\n", -ret);
 			}
 			);
 		}
@@ -260,7 +260,7 @@ int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session
 	DLX(4, printf("\tInitializing the TLS structure...\n"));
 
 	if ((ret = ssl_init(ssl)) != 0) {
-		DLX(4, printf(" failed, ssl_init returned: %d\n", ret));
+		DLX(4, printf(" failed, ssl_init returned: -0x%04x\n", -ret));
 		return -1;
 	}
 	DLX(4, printf(" ok\n"));
@@ -383,7 +383,7 @@ int crypt_setup_server(ctr_drbg_context * ctr_drbg, ssl_context * ssl, ssl_sessi
 			case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Too many random requested in single call."); break;
 			case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Input too large (Entropy + additional).\n"); break;
 			case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Read/write error in file\n"); break;
-			default:											printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret);}
+			default:											printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret);}
 		);
 		return -1;
 	}
@@ -391,14 +391,14 @@ int crypt_setup_server(ctr_drbg_context * ctr_drbg, ssl_context * ssl, ssl_sessi
 	if ((ret =
 		 ctr_drbg_init(ctr_drbg, entropy_func, &entropy, (const unsigned char *) personalization,
 					   strlen(personalization))) != 0) {
-		DLX(4, printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret));
+		DLX(4, printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret));
 		return -1;
 	}
 	ctr_drbg_set_prediction_resistance(ctr_drbg, CTR_DRBG_PR_OFF);	// Turn off prediction resistance
 	memset(ssl, 0, sizeof(ssl));
 
 	if ((ret = ssl_init(ssl)) != 0) {
-		DLX(4, printf(" failed, ssl_init returned %d\n\n", ret));
+		DLX(4, printf(" failed, ssl_init() returned -0x%04x\n\n", -ret));
 		return ret;
 	}
 
