@@ -202,7 +202,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
     if( ( ret = dhm_read_params( dhm, &p, end ) ) != 0 )
     {
         DLX(4, printf("dhm_read_params() failed, returned -0x%04x\n", -ret ));
- //       goto exit;
+        goto exit;
     }
 
     if( dhm->len < 64 || dhm->len > 256 )
@@ -387,7 +387,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
         goto exit;
     }
 
-#if 0
+#if 0	// Use this section if RSA PKCS signing is used
     if( ( f = fopen( "server.key", "rb" ) ) == NULL )
 	{
 		DLX(4, printf("Could not open server key file \"%s", SKEY));
@@ -416,6 +416,8 @@ dhm_context *dhServerExchange( ssl_context *ssl )
 	}
 	fclose( f );
 #endif
+
+	rsa_init( &rsa, RSA_PKCS_V15, 0 );
 	if ((ret = x509parse_keyfile(&rsa, "server.key", NULL)) != 0) {
 		printf("Could not read server key\n");
 		goto exit;
@@ -453,16 +455,20 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     DL(4);
     buf[n++] = (unsigned char)( rsa.len >> 8 );
     buf[n++] = (unsigned char)( rsa.len      );
+    DLX(4, printf("rsa.len = %i\n", rsa.len));
     DPB(4, "hash:", "\t", hash, sizeof(hash));
     DPB(4, "buf:", "\t", buf, n);
-#if 0
+    DLX(4, printf("rsa.padding = %x\n", rsa.padding));
+#if 1 // Use this section for RSA PKCS signing
     if ( (ret = rsa_pkcs1_sign(&rsa, NULL, NULL, RSA_PRIVATE, SIG_RSA_SHA1, 0, hash, buf+n) ) != 0) {
         DLX(4, printf("rsa_pcks1_sign() failed, returned: -0x%04x\n", -ret));
     	goto exit;
     }
 	buflen = n + rsa.len;
-#endif
+#else
 	buflen = n+2;
+#endif
+
     DPB(4, "buf:", "\t", buf, buflen);
 
     buf2[0] = (unsigned char)( buflen >> 8 );
@@ -522,7 +528,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
         DLX(4, printf("dhm_calc_secret() failed, returned -0x%04x\n", -ret));
         goto exit;
     }
-    DPB(4, "Shared Secret:\n", "\t", buf, n);
+    DPB(4, "Shared Secret:", "\t", buf, n);
     return(dhm);
 
 #if 0

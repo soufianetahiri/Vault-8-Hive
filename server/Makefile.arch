@@ -171,7 +171,7 @@ $(info )
 all: $(SERVER)
 
 $(LIBSSL): $(SSL_REBUILD)
-	cd $(SSL) && $(MAKE) TARGET=$(TARGET)
+	cd $(SSL) && $(MAKE) DEBUG=$(DEBUG) TARGET=$(TARGET)
 
 $(LIBBZIP2): $(BZIP2_REBUILD)
 	cd $(BZIP2) && $(MAKE) TARGET=$(TARGET)

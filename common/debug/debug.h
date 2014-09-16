@@ -32,7 +32,7 @@
 	#define DPB(l, text, line_preface, buf, len)						\
 		do {													\
 			if (l <= dbug_level_) {								\
-				fprintf(stdout, "%s:%d: %s(): %s\n", __FILE__, __LINE__,__FUNCTION__, text);	\
+				fprintf(stdout, "%s:%d: %s(): %s (%d bytes)\n", __FILE__, __LINE__,__FUNCTION__, text, len);	\
 				debug_print_buffer(line_preface, buf, len);	\
 			}													\
 		} while (0)
