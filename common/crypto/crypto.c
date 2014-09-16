@@ -183,7 +183,7 @@ int crypt_write(ssl_context * ssl, unsigned char *buf, int size) {
 int crypt_read(ssl_context * ssl, unsigned char *buf, int bufsize) {
 	int ret;
 
-	DL(4);
+	DL(6);
 
 	// TODO: look at this do/while loop again.  it only runs once.
 	// does it serve any other purpose?
@@ -207,7 +207,7 @@ int crypt_read(ssl_context * ssl, unsigned char *buf, int bufsize) {
 			break;
 		}
 
-		DLX(4, printf("crypt_read(): %d bytes read\n", ret));
+		DLX(6, printf("crypt_read(): %d bytes read\n", ret));
 	}
 	while (0);
 
@@ -228,9 +228,9 @@ int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session
 	 */
 
 	personalization = "client";
-	DLX(4, printf("\tInitializing RNG entropy...\n"));
+	DLX(6, printf("\tInitializing RNG entropy...\n"));
 	entropy_init(&entropy);
-	DLX(4, printf("\tInitializing RNG...\n"));
+	DLX(6, printf("\tInitializing RNG...\n"));
 	if ((ret = ctr_drbg_init(ctr_drbg, entropy_func, &entropy, (const unsigned char *) personalization, strlen(personalization))) != 0) {
 		DLX(4, switch (ret) {
 			case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
