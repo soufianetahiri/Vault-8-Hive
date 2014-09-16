@@ -23,15 +23,15 @@ extern "C" {
 #define CLIENT 1
 #define SERVER 2
 
-int crypt_setup_client( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session *ssn, int *sockfd );
-int crypt_setup_server( ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session *ssn, int *sockfd );
+int crypt_setup_client(ssl_context *ssl, ssl_session *ssn, int *sockfd );
+int crypt_setup_server(ssl_context *ssl, ssl_session *ssn, int *sockfd );
 int crypt_handshake( ssl_context *ssl );
 int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsz );
 int crypt_write( ssl_context *ssl, unsigned char *buf, int size );
 int	crypt_close_notify( ssl_context *ssl );
 int crypt_cleanup( ssl_context *ssl);
 void print_ssl_errors(int error);
-
+void gen_random(unsigned char *output, size_t output_len);
 
 #ifdef __cplusplus
 }

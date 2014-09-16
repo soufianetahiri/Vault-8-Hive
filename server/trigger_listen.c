@@ -70,19 +70,7 @@ int rng_state_init;
 void CalcVariance( signed int* variance, int range )
 {
 
-	if ( rng_state_init != 1 )
-	{
-		D(int ret;)
-		DLX(6, printf( "Initializing RNG.\n"));
-		entropy_init( &entropy );
-		if ( (D(ret =) ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, 0, 0)) != 0 ) {
-		    DLX(4, printf("ERROR: ctr_drbg_init() failed, returned %0x\n", ret));
-		    return;
-		}
-		rng_state_init = 1;
-	}
-	if( ctr_drbg_random( &ctr_drbg, (unsigned char *)variance, sizeof(int)) != 0 )
-		return;
+	gen_random((unsigned char *)variance, sizeof(int));
 	*variance %= range;
 
 	DLX(6, printf( "CalcVariance() called. %i\n", *variance));

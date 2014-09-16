@@ -15,7 +15,13 @@ extern "C" {
 
 entropy_context entropy;		// Entropy context
 ctr_drbg_context ctr_drbg;		// Counter mode deterministic random byte generator context
-const char *personalization;	// Custom data to add uniqueness
+const char *personalization = "7ddc11c4-5789-44d4-8de4-88c0d23d4029";	// Custom data to add uniqueness
+
+enum {FALSE = 0, TRUE} rng_initialized;
+
+char *my_dhm_P = (char *) my_dhm_P_String;	// The values of these strings are located in crypto_strings.txt
+char *my_dhm_G = (char *) my_dhm_G_String;
+
 
 static int my_set_session(ssl_context * ssl);
 static int my_get_session(ssl_context * ssl);
@@ -35,6 +41,47 @@ void my_debug(void *ctx, int level, const char *str) {
 		fprintf((FILE *) ctx, "%s", str);
 		fflush((FILE *) ctx);
 	}
+}
+
+//*******************************************************
+
+void rng_init()
+{
+	D(int ret);
+
+	DLX(6, printf( "Initializing RNG.\n"));
+	if ( (D(ret =) ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned const char *)personalization, strlen(personalization))) != 0 ) {
+		DLX(4, switch (ret) {
+					case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
+					case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Too many random requested in single call."); break;
+					case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Input too large (Entropy + additional).\n"); break;
+					case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Read/write error in file\n"); break;
+					default:											printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret);}
+				);
+		if ((D(ret =)ctr_drbg_update_seed_file(&ctr_drbg, ".seedfile")) !=0 ) {
+			DLX(4, switch (ret) {
+				case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Failed to open seed file.\n"); break;
+				case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Seed file too big?.\n"); break;
+				case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Seed file too big?.\n"); break;
+				case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
+				default:											printf("ERROR: ctr_drbg_update_seedfile() failed, returned -0x%04x\n", -ret);
+				}
+			);
+		}
+	}
+	ctr_drbg_set_prediction_resistance(&ctr_drbg, CTR_DRBG_PR_OFF);	// Turn off prediction resistance
+	rng_initialized = TRUE;
+	return;
+}
+
+void gen_random(unsigned char *output, size_t output_len)
+{
+	if (!rng_initialized)
+		rng_init();
+
+if ((ctr_drbg_random( &ctr_drbg, output, output_len)) != 0 )
+	return;
+
 }
 
 //*******************************************************
@@ -185,8 +232,6 @@ int crypt_read(ssl_context * ssl, unsigned char *buf, int bufsize) {
 
 	DL(6);
 
-	// TODO: look at this do/while loop again.  it only runs once.
-	// does it serve any other purpose?
 	do {
 		memset(buf, 0, bufsize);
 
@@ -220,45 +265,15 @@ int crypt_close_notify(ssl_context * ssl) {
 }
 
 //*******************************************************
-int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session *ssn, int *sockfd) {
+int crypt_setup_client(ssl_context *ssl, ssl_session *ssn, int *sockfd) {
 	int ret;
 
-	/*
-	 * 0. Initialize the RNG and the session datanitializing RNG entropy.
-	 */
+	if (! rng_initialized)	// Verify that the RNG is initialized.
+		rng_init();
 
-	personalization = "client";
-	DLX(6, printf("\tInitializing RNG entropy...\n"));
-	entropy_init(&entropy);
-	DLX(6, printf("\tInitializing RNG...\n"));
-	if ((ret = ctr_drbg_init(ctr_drbg, entropy_func, &entropy, (const unsigned char *) personalization, strlen(personalization))) != 0) {
-		DLX(4, switch (ret) {
-			case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
-			case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Too many random requested in single call."); break;
-			case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Input too large (Entropy + additional).\n"); break;
-			case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Read/write error in file\n"); break;
-			default:											printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret);}
-		);
-		if ((ret = ctr_drbg_update_seed_file(ctr_drbg, "seedfile")) !=0 ) {
-			DLX(4, switch (ret) {
-				case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Failed to open seedfile.\n"); break;
-				case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Seedfile too big?.\n"); break;
-				case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Seedfile too big?.\n"); break;
-				case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
-				default:											printf("ERROR: ctr_drbg_update_seedfile() failed, returned -0x%04x\n", -ret);
-			}
-			);
-		}
-		return -1;
-	}
-	ctr_drbg_set_prediction_resistance(ctr_drbg, CTR_DRBG_PR_OFF);	// Turn off prediction resistance
 	memset(ssn, 0, sizeof(ssl_session));
 
-	/*
-	 * 2. Setup stuff
-	 */
 	DLX(4, printf("\tInitializing the TLS structure...\n"));
-
 	if ((ret = ssl_init(ssl)) != 0) {
 		DLX(4, printf(" failed, ssl_init returned: -0x%04x\n", -ret));
 		return -1;
@@ -268,7 +283,7 @@ int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session
 	ssl_set_endpoint(ssl, SSL_IS_CLIENT);
 	ssl_set_authmode(ssl, SSL_VERIFY_NONE);
 
-	ssl_set_rng(ssl, ctr_drbg_random, ctr_drbg);
+	ssl_set_rng(ssl, ctr_drbg_random, &ctr_drbg);
 	ssl_set_dbg(ssl, my_debug, stdout);
 	ssl_set_bio(ssl, net_recv, sockfd, net_send, sockfd);
 
@@ -278,38 +293,6 @@ int crypt_setup_client(ctr_drbg_context *ctr_drbg, ssl_context *ssl, ssl_session
 	return 0;
 }
 
-//#ifdef SSL_SERVER
-//*******************************************************
-// most of these functions only used by server
-//*******************************************************
-
-/*
- * Computing a "safe" DH-1024 prime can take a very
- * long time, so a precomputed value is provided similar to that below
- * and is placed in the file crypto_strings.txt. The prime number and
- * generator is computed using the following openssl command:
- * 	openssl dhparam -[ 2 | 5 ] -text 1024
- * The resulting prime is stripped of its ":"s
- */
-/*char *my_dhm_P =
-	"9AF82179E27FBCE16709BB95796C5D12" \
-	"357BC034D507CF09F64085D2FA475386" \
-	"8298642DC4A8228387615AA8DFDFB4BB" \
-	"4C20232E3D6AACEE22D71E8A2BADCB06" \
-	"1E39CA06281048EC875FEEC82AB86BB8" \
-	"30748EE3372416792AAFA9291FF6654A" \
-	"849C3F0DA5BA31F000EF6E706F4314C9" \
-	"646DBF7B87D14522501E6EEE905CB447";
-*/
-
-	char *my_dhm_P = (char *) my_dhm_P_String;
-
-//char *my_dhm_G = "4";
-	char *my_dhm_G = (char *) my_dhm_G_String;
-
-/*
- * Sorted by order of preference
- */
 #if 0
 // = ssl_default_ciphers;
 	int my_ciphers[] = {
@@ -334,7 +317,7 @@ static x509_cert srvcert, ca_chain;
 static rsa_context rsa;
 
 //*******************************************************
-int crypt_setup_server(ctr_drbg_context * ctr_drbg, ssl_context * ssl, ssl_session * ssn, int *sockfd) {
+int crypt_setup_server(ssl_context * ssl, ssl_session * ssn, int *sockfd) {
 	int ret;
 	int certflags;
 
@@ -374,27 +357,9 @@ int crypt_setup_server(ctr_drbg_context * ctr_drbg, ssl_context * ssl, ssl_sessi
 		return -1;
 	}
 
-	personalization = "server";
-	DLX(6, printf("\tInitializing RNG entropy..."));
-	entropy_init(&entropy);
-	if ((ret =	ctr_drbg_init(ctr_drbg, entropy_func, &entropy, (const unsigned char *) personalization, strlen(personalization))) != 0) {
-		DLX(4, switch (ret) {
-			case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
-			case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Too many random requested in single call."); break;
-			case POLARSSL_ERR_CTR_DRBG_INPUT_TOO_BIG:			printf("Input too large (Entropy + additional).\n"); break;
-			case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Read/write error in file\n"); break;
-			default:											printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret);}
-		);
-		return -1;
-	}
+	if (! rng_initialized)	// Verify that the RNG is initialized.
+		rng_init();
 
-	if ((ret =
-		 ctr_drbg_init(ctr_drbg, entropy_func, &entropy, (const unsigned char *) personalization,
-					   strlen(personalization))) != 0) {
-		DLX(4, printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret));
-		return -1;
-	}
-	ctr_drbg_set_prediction_resistance(ctr_drbg, CTR_DRBG_PR_OFF);	// Turn off prediction resistance
 	memset(ssl, 0, sizeof(ssl));
 
 	if ((ret = ssl_init(ssl)) != 0) {
@@ -405,7 +370,7 @@ int crypt_setup_server(ctr_drbg_context * ctr_drbg, ssl_context * ssl, ssl_sessi
 	ssl_set_endpoint(ssl, SSL_IS_SERVER);
 	ssl_set_authmode(ssl, SSL_VERIFY_NONE);
 
-	ssl_set_rng(ssl, ctr_drbg_random, ctr_drbg);
+	ssl_set_rng(ssl, ctr_drbg_random, &ctr_drbg);
 	ssl_set_dbg(ssl, my_debug, stdout);
 	ssl_set_bio(ssl, net_recv, sockfd, net_send, sockfd);
 	ssl_set_scb(ssl, my_get_session, my_set_session);
@@ -517,48 +482,30 @@ int crypt_cleanup(ssl_context * ssl) {
 //*******************************************************
 void print_ssl_errors(int error)
 {
-	if (error == POLARSSL_ERR_X509_FEATURE_UNAVAILABLE)
-		printf("X509 Error: Feature not available\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_PEM)
-		printf("X509 Certificate Error: Invalid PEM format\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_FORMAT)
-		printf("X509 Certificate Error: Invalid format\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_VERSION)
-		printf("X509 Certificate Error: Invalid version\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_SERIAL)
-		printf("X509 Certificate Error: Invalid serial number\n");
+	switch(error) {
 
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_ALG)
-		printf("X509 Certificate Error: Invalid algorithm\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_NAME)
-		printf("X509 Certificate Error: Invalid name\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_DATE)
-		printf("X509 Certificate Error: Invalid date\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_PUBKEY)
-		printf("X509 Certificate Error: Invalid public key\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_SIGNATURE)
-		printf("X509 Certificate Error: Invalid signature\n");
+	case POLARSSL_ERR_X509_FEATURE_UNAVAILABLE:		printf("X509 Error: Feature not available\n");						break;
+	case POLARSSL_ERR_X509_CERT_INVALID_PEM:		printf("X509 Certificate Error: Invalid PEM format\n");				break;
+	case POLARSSL_ERR_X509_CERT_INVALID_FORMAT:		printf("X509 Certificate Error: Invalid format\n");					break;
+	case POLARSSL_ERR_X509_CERT_INVALID_VERSION:	printf("X509 Certificate Error: Invalid version\n");				break;
+	case POLARSSL_ERR_X509_CERT_INVALID_SERIAL:		printf("X509 Certificate Error: Invalid serial number\n");			break;
 
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_EXTENSIONS)
-		printf("X509 Certificate Error: Invalid extensions\n");
-	if (error == POLARSSL_ERR_X509_CERT_UNKNOWN_VERSION)
-		printf("X509 Certificate Error: Unknown version\n");
-	if (error == POLARSSL_ERR_X509_CERT_UNKNOWN_SIG_ALG)
-		printf("X509 Certificate Error: Unknown signature algorithm\n");
-	if (error == POLARSSL_ERR_X509_UNKNOWN_PK_ALG)
-		printf("X509 Error: Unknown algorithm\n");
-	if (error == POLARSSL_ERR_X509_CERT_SIG_MISMATCH)
-		printf("X509 Certificate Error: Signature mismatch\n");
+	case POLARSSL_ERR_X509_CERT_INVALID_ALG:		printf("X509 Certificate Error: Invalid algorithm\n");				break;
+	case POLARSSL_ERR_X509_CERT_INVALID_NAME:		printf("X509 Certificate Error: Invalid name\n");					break;
+	case POLARSSL_ERR_X509_CERT_INVALID_DATE:		printf("X509 Certificate Error: Invalid date\n");					break;
+	case POLARSSL_ERR_X509_CERT_INVALID_PUBKEY:		printf("X509 Certificate Error: Invalid public key\n");				break;
+	case POLARSSL_ERR_X509_CERT_INVALID_SIGNATURE:	printf("X509 Certificate Error: Invalid signature\n");				break;
 
-	if (error == POLARSSL_ERR_X509_CERT_VERIFY_FAILED)
-		printf("X509 Certificate Error: Verify failed\n");
-	if (error == POLARSSL_ERR_X509_CERT_INVALID_PEM)
-		printf("X509 Certificate Error: Invalid X509 PEM format\n");
-	if (error == POLARSSL_ERR_X509_KEY_INVALID_VERSION)
-		printf("X509 Key Error: Invalid version\n");
-	if (error == POLARSSL_ERR_X509_KEY_INVALID_FORMAT)
-		printf("X509 Key Error: Invalid format\n");
+	case POLARSSL_ERR_X509_CERT_INVALID_EXTENSIONS:	printf("X509 Certificate Error: Invalid extensions\n");				break;
+	case POLARSSL_ERR_X509_CERT_UNKNOWN_VERSION:	printf("X509 Certificate Error: Unknown version\n");				break;
+	case POLARSSL_ERR_X509_CERT_UNKNOWN_SIG_ALG:	printf("X509 Certificate Error: Unknown signature algorithm\n");	break;
+	case POLARSSL_ERR_X509_UNKNOWN_PK_ALG:			printf("X509 Error: Unknown algorithm\n");							break;
+	case POLARSSL_ERR_X509_CERT_SIG_MISMATCH:		printf("X509 Certificate Error: Signature mismatch\n");				break;
 
-	if (error == POLARSSL_ERR_X509_UNKNOWN_PK_ALG)
-		printf("X509 Key Error: Unsupported key algorithm\n");
+	case POLARSSL_ERR_X509_CERT_VERIFY_FAILED:		printf("X509 Certificate Error: Verify failed\n");					break;
+	case POLARSSL_ERR_X509_KEY_INVALID_VERSION:		printf("X509 Key Error: Invalid version\n");						break;
+	case POLARSSL_ERR_X509_KEY_INVALID_FORMAT:		printf("X509 Key Error: Invalid format\n");							break;
+
+	default:										printf("SSL Error -0x%04x\n", -error);								break;
+	}
 }
