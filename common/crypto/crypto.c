@@ -27,7 +27,7 @@ enum flag rng_initialized = FALSE;		// Random number generator initialization fl
 const char *personalization = "7ddc11c4-5789-44d4-8de4-88c0d23d4029";	// Custom data to add uniqueness
 char *my_dhm_P = (char *) my_dhm_P_String;	// The values of these strings are located in crypto_strings.txt
 char *my_dhm_G = (char *) my_dhm_G_String;
-
+unsigned char shared_key[AES_KEY_SIZE];
 
 static int my_set_session(ssl_context * ssl);
 static int my_get_session(ssl_context * ssl);
@@ -121,7 +121,7 @@ int gen_random(unsigned char *output, size_t output_len)
 int aes_init(ssl_context *ssl) {
 
 	int ret;
-	unsigned char shared_key[AES_KEY_SIZE];
+
 
 	if (ssl == NULL) {
 		DLX(4, printf("failed, no SSL context.\n"));
@@ -227,6 +227,9 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	size_t bufsize, sent;
 	unsigned char *inbuf, *outbuf;
 
+	unsigned char iv2[16];					// Initialization vector2
+	memcpy(iv2, iv, sizeof(iv));			// Make a copy of iv for TEST
+
 	DPB(8, "Buffer to write", buf, size);
 	if (encrypt) {
 		DLX(6, printf("AES encrypting write buffer\n"));
@@ -241,11 +244,26 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 		DPB(8, "Buffer before encryption", inbuf, bufsize);
 		DPB(8, "Initialization Vector", iv, sizeof(iv));
 		DLX(8, printf("aes.nr = %d\n", aes.nr));
+		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);
 		if (( ret = aes_crypt_cbc(&aes, AES_ENCRYPT, bufsize, iv, inbuf, outbuf)) < 0) {	// Encrypt the block
 			DLX(4, printf("aes_crypt_cbd() failed, returned: -0x%04x\n", -ret));
 			return ret;
 		}
 		DPB(8, "Buffer after encryption", outbuf, bufsize);
+
+
+		// TEST OF DECRYPTION
+		memset(inbuf, 0, sizeof(inbuf));	// clear buffer
+		DPB(8, "Initialization Vector", iv2, sizeof(iv2));
+	    DPB(4, "Shared Key", shared_key, AES_KEY_SIZE);
+		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);
+		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, bufsize, iv2, outbuf, inbuf)) < 0) {	// Decrypt the block
+			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
+			return ret;
+		}
+		DPB(8, "TEST: Buffer after decryption", inbuf, bufsize);
+
+
 		free(inbuf);
 	} else {		// If not encrypting, adjust pointers
 		outbuf = buf;
