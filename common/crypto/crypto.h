@@ -19,6 +19,7 @@ extern "C" {
 #define SRV_CERT_FILE	"./server.crt"
 #define CA_CERT_FILE	"./ca.crt"
 #define SRV_KEY_FILE	"./server.key"
+#define AES_KEY_SIZE	256
 
 #define CLIENT 1
 #define SERVER 2
@@ -26,12 +27,14 @@ extern "C" {
 int crypt_setup_client(ssl_context *ssl, ssl_session *ssn, int *sockfd );
 int crypt_setup_server(ssl_context *ssl, ssl_session *ssn, int *sockfd );
 int crypt_handshake( ssl_context *ssl );
-int crypt_read( ssl_context *ssl, unsigned char *buf, int bufsz );
-int crypt_write( ssl_context *ssl, unsigned char *buf, int size );
+int crypt_read( ssl_context *ssl, unsigned char *buf, size_t bufsz );
+int crypt_write( ssl_context *ssl, unsigned char *buf, size_t size );
 int	crypt_close_notify( ssl_context *ssl );
 int crypt_cleanup( ssl_context *ssl);
 void print_ssl_errors(int error);
-void gen_random(unsigned char *output, size_t output_len);
+int gen_random(unsigned char *output, size_t output_len);
+int aes_init(ssl_context *ssl);
+int aes_terminate();
 
 #ifdef __cplusplus
 }

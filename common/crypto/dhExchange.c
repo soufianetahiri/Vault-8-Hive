@@ -152,8 +152,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 	//Setup the RNG
     DLX(6, printf("Seeding the random number generator\n"));
     entropy_init(&entropy);
-    if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)
-    {
+    if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)  {
         DLX(4, printf("ctr_drbg_init failed, returned -0x%04x\n", -ret));
         goto exit;
     }
@@ -163,16 +162,14 @@ dhm_context *dhClientExchange( ssl_context *ssl )
     DLX(6, printf("Receiving the server's DH parameters\n"));
 
     memset(buf, 0, sizeof(buf));
-    if (( ret = ssl_read( ssl, buf, 2 )) != 2 )
-	{
+    if (( ret = ssl_read( ssl, buf, 2 )) != 2 ) {
     	DLX(4, printf("ssl_read() failed to receive buffer length, returned: -0x%04x\n", -ret));
 		goto exit;
 	}
 
     buflen = ( buf[0] << 8 ) | buf[1];
     DLX(6, printf("Waiting to receive %d bytes\n", buflen));
-    if( buflen < 1 || buflen > sizeof( buf ) )
-    {
+    if( buflen < 1 || buflen > sizeof( buf ) ) {
         DLX(4, printf("Received invalid buffer length: %d\n", buflen));
         goto exit;
     }
@@ -193,18 +190,16 @@ dhm_context *dhClientExchange( ssl_context *ssl )
     	n += ret;
     } while (n < buflen);
 
-	DPB(8, "Received buffer follows:", "\t", buf, buflen);
+	DPB(8, "Received buffer follows:", buf, buflen);
     p = buf, end = buf + buflen;
 
     DLX(6, printf("Received DHM params: %d bytes -- calling dhm_read_params()\n", n));
-    if( ( ret = dhm_read_params( dhm, &p, end ) ) != 0 )
-    {
+    if( ( ret = dhm_read_params( dhm, &p, end ) ) != 0 )  {
         DLX(4, printf("dhm_read_params() failed, returned -0x%04x\n", -ret ));
         goto exit;
     }
 
-    if( dhm->len < 64 || dhm->len > 256 )
-    {
+    if( dhm->len < 64 || dhm->len > 256 ) {
         DLX(4, printf("Invalid DHM modulus size\n"));
         goto exit;
     }
@@ -230,16 +225,15 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 	// Generate public value and send to server: Yc = G ^ Xc mod P
     DL(8);
     buflen = dhm->len;
-    if (( ret = dhm_make_public( dhm, 256, buf, buflen, ctr_drbg_random, &ctr_drbg )) != 0 )
-    {
+    if (( ret = dhm_make_public( dhm, AES_KEY_SIZE, buf, buflen, ctr_drbg_random, &ctr_drbg )) != 0 ) {
         DLX(4, printf("dhm_make_public() failed, returned -0x%04x\n", -ret));
         goto exit;
     }
     DLX(6, printf("Sending public value to server, length = %i\n", buflen));
-    DPB(8, "DHM Parameters:", "\t", buf, buflen);
+    DPB(8, "DHM Parameters:", buf, buflen);
     n = 0;
     do {
-    	ret = ssl_write( ssl, buf+n, buflen-n );
+    	ret = ssl_write(ssl, buf+n, buflen-n);
     	if (ret < 0) {
     		DLX(4, printf("ssl_write() error, returned: -0x%04x\n", -ret));
     		continue;
@@ -250,13 +244,11 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 
 	// Derive the shared secret: K = Ys ^ Xc mod P
     n = dhm->len;
-    if( ( ret = dhm_calc_secret( dhm, buf, &n ) ) != 0 )
-    {
+    if( (ret = dhm_calc_secret(dhm, buf, &n ) ) != 0) {
         DLX(4, printf( "dhm_calc_secret() failed, returned -0x%04x\n", -ret));
         goto exit;
     }
-
-    DPB(6, "Shared Secret:", "\t", buf, n);
+    DPB(6, "Shared Secret:", buf, n);
 
     return(dhm);
 
@@ -379,8 +371,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     DLX(6, printf("Seeding the random number generator\n"));
     entropy_init(&entropy);
 
-    if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)
-    {
+    if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)  {
         DLX(4, printf("ctr_drbg_init() failed, returned: -0x%04x\n", -ret));
         goto exit;
     }
@@ -411,8 +402,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
 
     DLX(6, printf("Creating the server's DH parameters\n"));
     memset( buf, 0, sizeof(buf));	// Clear buffer
-    if (( ret = dhm_make_params( dhm, 256, buf, &n, ctr_drbg_random, &ctr_drbg)) != 0 )
-    {
+    if (( ret = dhm_make_params( dhm, AES_KEY_SIZE, buf, &n, ctr_drbg_random, &ctr_drbg)) != 0 ) {
         DLX(4, printf("dhm_make_params() failed, returned: -0x%04x\n", -ret));
         goto exit;
     }
@@ -426,8 +416,8 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     buf[n++] = (unsigned char)( rsa.len >> 8 );
     buf[n++] = (unsigned char)( rsa.len      );
     DLX(6, printf("rsa.len = %i\n", rsa.len));
-    DPB(6, "hash:", "\t", hash, sizeof(hash));
-    DPB(6, "buf:", "\t", buf, n);
+    DPB(6, "hash:", hash, sizeof(hash));
+    DPB(6, "buf:", buf, n);
     DLX(6, printf("rsa.padding = %x\n", rsa.padding));
 
     if ( (ret = rsa_pkcs1_sign(&rsa, NULL, NULL, RSA_PRIVATE, SIG_RSA_SHA1, 0, hash, buf+n) ) != 0) {
@@ -436,7 +426,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     }
 	buflen = n + rsa.len;
 
-    DPB(6, "buf:", "\t", buf, buflen);
+    DPB(6, "buf:", buf, buflen);
     buf2[0] = (unsigned char)( buflen >> 8 );
     buf2[1] = (unsigned char)( buflen      );
 
@@ -459,7 +449,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     	n += ret;
     } while (n < buflen);
 
-	DPB(6, "Buffer sent follows:", "\t", buf, buflen);
+	DPB(6, "Buffer sent follows:", buf, buflen);
 
 	// Get the client's public value: Yc = G ^ Xc mod P
 
@@ -481,20 +471,18 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     } while (n < buflen);
 
     DL(8);
-    if ((ret = dhm_read_public( dhm, buf, dhm->len )) != 0 )
-    {
+    if ((ret = dhm_read_public( dhm, buf, dhm->len )) != 0 ) {
 		DLX(4, printf("dhm_read_public() error, returned: -0x%04x\n", -ret));
         goto exit;
     }
 
 	// Derive the shared secret: K = Ys ^ Xc mod P
     DL(8);
-    if( ( ret = dhm_calc_secret( dhm, buf, &n ) ) != 0 )
-    {
+    if( ( ret = dhm_calc_secret( dhm, buf, &n ) ) != 0 ) {
         DLX(4, printf("dhm_calc_secret() failed, returned -0x%04x\n", -ret));
         goto exit;
     }
-    DPB(6, "Shared Secret:", "\t", buf, n);
+    DPB(6, "Shared Secret:", buf, n);
     return(dhm);
 
 #if 0
@@ -535,5 +523,3 @@ exit:
 //
 //  END OF SERVER PORTION
 /////////////////////////////////////////////////////////////////////
-
-

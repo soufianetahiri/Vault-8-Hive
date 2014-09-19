@@ -10,15 +10,21 @@ extern "C" {
 #include "crypto_proj_strings.h"
 #include "polarssl/x509.h"
 #include "polarssl/aes.h"
+#include "dhExchange.h"
 
 //#include "dhExchange.c"
 
-entropy_context entropy;		// Entropy context
-ctr_drbg_context ctr_drbg;		// Counter mode deterministic random byte generator context
+entropy_context entropy;				// Entropy context
+ctr_drbg_context ctr_drbg;				// Counter mode deterministic random byte generator context
+dhm_context *dhm;						// Diffie-Hellman context
+aes_context aes;						// AES context for command/control
+unsigned char iv[16];					// Initialization vector
+enum flag {FALSE = 0, TRUE};
+
+enum flag encrypt = FALSE;				// AES encryption flag
+enum flag rng_initialized = FALSE;		// Random number generator initialization flag
+
 const char *personalization = "7ddc11c4-5789-44d4-8de4-88c0d23d4029";	// Custom data to add uniqueness
-
-enum {FALSE = 0, TRUE} rng_initialized;
-
 char *my_dhm_P = (char *) my_dhm_P_String;	// The values of these strings are located in crypto_strings.txt
 char *my_dhm_G = (char *) my_dhm_G_String;
 
@@ -44,13 +50,18 @@ void my_debug(void *ctx, int level, const char *str) {
 }
 
 //*******************************************************
-
-void rng_init()
+/*!
+ * @brief Initialize random number generator
+ * @return
+ * @retval < 0 -- error
+ * @retval 1 -- success
+ */
+int rng_init()
 {
-	D(int ret);
+	int ret = 1;
 
 	DLX(6, printf( "Initializing RNG.\n"));
-	if ( (D(ret =) ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned const char *)personalization, strlen(personalization))) != 0 ) {
+	if ( (ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned const char *)personalization, strlen(personalization))) != 0 ) {
 		DLX(4, switch (ret) {
 					case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
 					case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Too many random requested in single call."); break;
@@ -58,7 +69,7 @@ void rng_init()
 					case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Read/write error in file\n"); break;
 					default:											printf("ERROR: ctr_drbg_init() failed, returned -0x%04x\n", -ret);}
 				);
-		if ((D(ret =)ctr_drbg_update_seed_file(&ctr_drbg, ".seedfile")) !=0 ) {
+		if ((ret = ctr_drbg_update_seed_file(&ctr_drbg, ".seedfile")) !=0 ) {
 			DLX(4, switch (ret) {
 				case POLARSSL_ERR_CTR_DRBG_FILE_IO_ERROR:			printf("Failed to open seed file.\n"); break;
 				case POLARSSL_ERR_CTR_DRBG_REQUEST_TOO_BIG:			printf("Seed file too big?.\n"); break;
@@ -69,19 +80,93 @@ void rng_init()
 			);
 		}
 	}
+	ret = ret < 0 ? ret : 1;
 	ctr_drbg_set_prediction_resistance(&ctr_drbg, CTR_DRBG_PR_OFF);	// Turn off prediction resistance
 	rng_initialized = TRUE;
-	return;
+	return ret;
 }
 
-void gen_random(unsigned char *output, size_t output_len)
+/*!
+ * gen_random
+ * @brief generate random numbers
+ * @param output - output buffer
+ * @param output_len - length of output buffer
+ * @return
+ * @retval 0 -- error
+ * @retval 1 -- success
+ */
+int gen_random(unsigned char *output, size_t output_len)
 {
-	if (!rng_initialized)
-		rng_init();
+	if (!rng_initialized) {
+		if (rng_init() < 0) {
+			DLX(4, printf( "Failed to initialize random number generator\n"));
+			return 0;
+		}
+	}
 
-if ((ctr_drbg_random( &ctr_drbg, output, output_len)) != 0 )
-	return;
+	if ((ctr_drbg_random( &ctr_drbg, output, output_len)) != 0) {
+		DLX(4, printf( "Failed to generate random number\n"));
+	}
+	return 1;
+}
 
+//*******************************************************
+/*!
+ *
+ * @param ssl -- SSL context
+ * @return
+ * @retval 0 -- error
+ * @retval 1 -- success
+ */
+int aes_init(ssl_context *ssl) {
+
+	int ret;
+	unsigned char shared_key[AES_KEY_SIZE];
+
+	if (ssl == NULL) {
+		DLX(4, printf("failed, no SSL context.\n"));
+		return 0;
+	}
+
+	DLX(4, printf( "Diffie-Hellman Handshake\n"));
+	if ((dhm = dhHandshake( ssl )) == NULL)
+	{
+		DLX(4, printf("Diffie-Hellman Handshake failed\n"));
+		return 0;
+	}
+
+	// Extract shared key from DHM context
+    if ((ret = mpi_write_binary(&dhm->K, shared_key, AES_KEY_SIZE)) < 0) {
+    	DLX(4, printf("mpi_write_binary() failed, returned: -0x%04x\n", ret));;
+    	return 0;
+    }
+    DPB(4, "Shared Key", shared_key, AES_KEY_SIZE);
+
+    // Use shared secret key from Diffie-Hellman key exchange for AES key
+    if ((ret = aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE)) != 0) {
+    	DLX(4, printf("aes_setkey_enc() failed, returned: -0x%04x\n", ret));
+    	return 0;
+	}
+    if ((ret = aes_setkey_dec(&aes, shared_key, AES_KEY_SIZE)) != 0) {
+    	DLX(4, printf("aes_setkey_enc() failed, returned: -0x%04x\n", ret));
+    	return 0;
+	}
+    md5(shared_key, AES_KEY_SIZE, iv);	// Seed initialization vector with md5 hash of shared key
+    DPB(4, "Initialization Vector", iv, sizeof(iv));
+    encrypt = TRUE;
+    return 1;
+}
+
+int aes_terminate()
+{
+	if (aes.nr == 0) {
+		DLX(4, printf("failed, AES context is invalid.\n"));
+		return 0;
+	}
+	memset(&aes, 0, sizeof(aes));	// Clear the AES context
+	dhm_free(dhm);
+	free(dhm);
+	return 1;
 }
 
 //*******************************************************
@@ -112,7 +197,7 @@ int crypt_handshake(ssl_context * ssl) {
 
 		DL(4);
 		do {
-			ret = ssl_write(ssl, buf + sent, size);
+			ret = ssl_write(ssl, buf + sent, size-sent);
 			if (ret == POLARSSL_ERR_NET_WANT_WRITE) {
 				DLX(4, printf("POLARSSL_ERR_NET_WANT_WRITE\n"));
 				continue;
@@ -128,136 +213,144 @@ int crypt_handshake(ssl_context * ssl) {
 #endif
 
 //*******************************************************
-int crypt_write(ssl_context * ssl, unsigned char *buf, int size) {
-	int ret;
+	/*!
+	 * crypt_write()
+	 * @param ssl -- SSL context
+	 * @param buf -- buffer to transmit
+	 * @param size -- size of buffer
+	 * @return
+	 * @retval >= 0 -- number of characters written
+	 * @retval < 0  -- error
+	 */
+int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
+	int ret = 0;
+	size_t bufsize, sent;
+	unsigned char *inbuf, *outbuf;
 
-#if 0
-	int 	dhRet;
-	int 	aesRet;
-	aes_context aes;
-    unsigned char aeskey[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff}; 
-	//unsigned char testBuf[]="Hello World    \0";
-	#define PLAINTEXT  "==Hello there!=="
-
-	unsigned char *testBuf;
-	unsigned char *encBuf;
-	testBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
-	memcpy( testBuf, PLAINTEXT, 16);
-
-	//encrypted buffer initialization
-	encBuf= (unsigned char *) calloc(16, sizeof(unsigned char));
-	DLX(4, printf("encBuf = %p\n", encBuf));
-	if (encBuf == NULL)
-	{
-		DLX(4, printf( "encBuf Failed calloc.\n"));
-	}
-	DL(4);
-
-    //dh Exchange will occur here using dhExchange.c and ssl_write with
-    //ssl_read.
-	if ( ssl->endpoint == SSL_IS_CLIENT )
-	{
-		DLX(4, printf( "Will attempt dhClientExchange.\n"));49630be
-		//dhClientExchange( ssl );
-	}
-	else
-	{
-		DLX(4, printf( "Will attempt dhServerExchange.\n"));
-		//dhServerExchange( ssl );
-	}
-	dhRet = 0;
-
-	//Aes exChange will occur here...
-	DLX(4, printf( "AES encryption occurs here.\n"));
-	if ( aes_setkey_enc( &aes, aeskey, 128 ) == 0)
-	{
-		DLX(4, printf( "clearBuf->%s\n", testBuf));
-		aesRet = aes_crypt_ecb( &aes, AES_ENCRYPT, testBuf, encBuf);
-		DLX(4, printf( "STATUS: aes_crypt_ecb returned %d\n\n", aesRet));
-		if ( aesRet == 0)
-		{
-			DLX(4, printf( "STATUS: aes_crypt_ecb success, returned %d\n\n", aesRet));
-			{
-				int i;
-				for (i=0; i<size; i++)
-					printf("%p: %2.2x ", encBuf+i, *(encBuf+i));
-			}
-			printf("\n");
-			DLX(4, printf( "Encrypted encBuf->%x\n\n", encBuf));
+	DPB(8, "Buffer to write", buf, size);
+	if (encrypt) {
+		DLX(6, printf("AES encrypting write buffer\n"));
+		bufsize = (size % 16) ? size + (16 - size%16) : size;	// Compute size of buffers - multiple of 16
+		inbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );	// Allocate buffers
+		outbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );
+		if (inbuf == NULL || outbuf == NULL) {
+				DLX(4, printf("calloc() failed\n"));
+				return -1;
 		}
-		else
-		{
-			DLX(4, printf( "ERROR: aes_crypt_ecb failed, returned %d\n\n", aesRet));
-		}
-		aes_setkey_dec( &aes, aeskey, 128 );
-		aes_crypt_ecb( &aes, AES_DECRYPT, encBuf, testBuf);
-		DLX(4, printf( "Decrypted encBuf->%s\n\n\n\n", testBuf));
-	}
-	else
-	{
-		DLX(4, printf( "ERROR: aes_setkey_enc failed\n\n", encBuf));
-	}
-
-	//Destroy encBuf
-    if (encBuf != NULL)
-	{
-	    DLX(4, printf("encBuf = %p\n", encBuf));
-	    DLX(4, printf("Deleting encBuf...\n"));
-	    free(encBuf);
-	}
-	else
-	{
-		DLX(4, printf( " SHOULD NEVER HAVE GOTTEN HERE IN CRYPT_WRITE\n" ));
-	}
-
-#endif
-
-	DL(4);
-
-	while ((ret = ssl_write(ssl, buf, size)) <= 0) {
-		if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
-			DLX(4, printf(" failed. ssl_write() returned -0x%04x\n", -ret));
+		memcpy(inbuf, buf, size);	// Copy input buffer to padded input buffer
+		DPB(8, "Buffer before encryption", inbuf, bufsize);
+		DPB(8, "Initialization Vector", iv, sizeof(iv));
+		DLX(8, printf("aes.nr = %d\n", aes.nr));
+		if (( ret = aes_crypt_cbc(&aes, AES_ENCRYPT, bufsize, iv, inbuf, outbuf)) < 0) {	// Encrypt the block
+			DLX(4, printf("aes_crypt_cbd() failed, returned: -0x%04x\n", -ret));
 			return ret;
 		}
+		DPB(8, "Buffer after encryption", outbuf, bufsize);
+		free(inbuf);
+	} else {		// If not encrypting, adjust pointers
+		outbuf = buf;
+		bufsize = size;
 	}
 
-	DLX(4, printf(" %d bytes written\n", ret));
+	DLX(6, printf("Sending %d bytes\n", bufsize));
+	sent = 0;
+	do {	// Write loop
+		ret = ssl_write(ssl, outbuf+sent, bufsize-sent);
+		if (ret < 0) {
+			if (ret == POLARSSL_ERR_NET_WANT_WRITE)
+				continue;
+
+			if (ret == POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY) {
+				DLX(4, printf("Remote closed connection\n"));
+				break;
+			}
+
+			DLX(4, printf("ssl_write() failed, returned: -0x%04x\n", -ret));
+			break;
+
+		} else
+			sent += ret;
+	} while (sent < bufsize);
+	DLX(6, printf("Sent %d bytes\n", sent));
+
+	ret = (ret < 0)? ret : (int)sent; //Return the number of bytes sent or the error code
+	if (encrypt)
+		free(outbuf);			// Clean-up
 	return ret;
 
 }
 
 //*******************************************************
-int crypt_read(ssl_context * ssl, unsigned char *buf, int bufsize) {
-	int ret;
+int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
+	int ret = 0, received = 0;
+	size_t bufsize;
+	unsigned char *inbuf, *outbuf;
 
 	DL(6);
+	if (encrypt) {
+		bufsize = (size % 16) ? size + (16 - size%16) : size;					// Compute size of buffers - multiple of 16
+		inbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate buffers
+		outbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );
+		if (inbuf == NULL || outbuf == NULL) {
+				DLX(4, printf("calloc() failed\n"));
+				return -1;
+		}
+	} else {
+		inbuf = buf;
+		bufsize = size;
+	}
 
 	do {
-		memset(buf, 0, bufsize);
-
-		ret = ssl_read(ssl, buf, bufsize);
-
+		// Read data from network
+		ret = ssl_read(ssl, inbuf, bufsize);
 		if (ret == POLARSSL_ERR_NET_WANT_READ) {
 			DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
 			continue;
 		}
-
 		if (ret == POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY) {
 			DLX(4, printf("POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
 			break;
 		}
-
 		if (ret <= 0) {
 			DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -ret));
 			break;
 		}
+		DLX(6, printf("%d bytes read\n", ret));
+	} while (0);
 
-		DLX(6, printf("crypt_read(): %d bytes read\n", ret));
+	if (ret < 0) {				// Clean-up and return on read error
+		if (encrypt) {
+			free(inbuf);
+			free(outbuf);
+		}
+		return ret;
 	}
-	while (0);
 
-	return ret;
+	received = ret;
+	if (encrypt) {
+		DPB(8, "Buffer before decryption", inbuf, received);
+		if ( (received % 16) !=0 ) {
+			DLX(6, printf("WARNING: Received data is not a multiple of 16\n"));
+		}
+		DLX(6, printf("AES decrypting read buffer\n"));
+		DLX(8, printf("aes.nr = %d\n", aes.nr));
+		DPB(8, "Initialization Vector", iv, sizeof(iv));
+		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, bufsize, iv, inbuf, outbuf)) < 0) {	// Decrypt the block
+			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
+			return ret;
+		}
+		DPB(8, "Buffer after decryption", outbuf, bufsize);
+		memcpy(buf, outbuf, bufsize);
+
+		free(inbuf);
+		free(outbuf);
+	} else {
+		bufsize = received;
+	}
+
+	return bufsize;
 }
+
 
 //*******************************************************
 int crypt_close_notify(ssl_context * ssl) {

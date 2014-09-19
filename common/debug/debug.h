@@ -29,11 +29,11 @@
 		} while (0)
 
 	// Debug function to print a character buffer
-	#define DPB(l, text, line_preface, buf, len)						\
+	#define DPB(l, text, buf, len)						\
 		do {													\
 			if (l <= dbug_level_) {								\
 				fprintf(stdout, "%s:%d: %s(): %s (%d bytes)\n", __FILE__, __LINE__,__FUNCTION__, text, len);	\
-				debug_print_buffer(line_preface, buf, len);	\
+				debug_print_buffer(buf, len);	\
 			}													\
 		} while (0)
 
@@ -47,13 +47,13 @@
 		#define debug_msg(x, ...)
 	#endif
 
-	void debug_print_buffer(const char *preface, const unsigned char *buf, const size_t len);
+	void debug_print_buffer(const unsigned char *buf, const size_t len);
 
 #else
 	#define D(x)
 	#define DL(l)
 	#define DLX(l, x)
-	#define DPB(l, text, preface, buf, len)
+	#define DPB(l, text, buf, len)
 
 	#ifdef SOLARIS
 		#define xs(x) "%x"
