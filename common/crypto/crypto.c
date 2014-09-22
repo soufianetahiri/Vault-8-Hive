@@ -7,6 +7,7 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include "crypto_proj_strings.h"
 #include "polarssl/x509.h"
 #include "polarssl/aes.h"
@@ -122,7 +123,6 @@ int aes_init(ssl_context *ssl) {
 
 	int ret;
 
-
 	if (ssl == NULL) {
 		DLX(4, printf("failed, no SSL context.\n"));
 		return 0;
@@ -141,16 +141,6 @@ int aes_init(ssl_context *ssl) {
     	return 0;
     }
     DPB(4, "Shared Key", shared_key, AES_KEY_SIZE);
-
-    // Use shared secret key from Diffie-Hellman key exchange for AES key
-    if ((ret = aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE)) != 0) {
-    	DLX(4, printf("aes_setkey_enc() failed, returned: -0x%04x\n", ret));
-    	return 0;
-	}
-    if ((ret = aes_setkey_dec(&aes, shared_key, AES_KEY_SIZE)) != 0) {
-    	DLX(4, printf("aes_setkey_enc() failed, returned: -0x%04x\n", ret));
-    	return 0;
-	}
     md5(shared_key, AES_KEY_SIZE, iv);	// Seed initialization vector with md5 hash of shared key
     DPB(4, "Initialization Vector", iv, sizeof(iv));
     encrypt = TRUE;
@@ -217,7 +207,7 @@ int crypt_handshake(ssl_context * ssl) {
 	 * crypt_write()
 	 * @param ssl -- SSL context
 	 * @param buf -- buffer to transmit
-	 * @param size -- size of buffer
+	 * @param size -- size of buffer (<= 65,535 bytes)
 	 * @return
 	 * @retval >= 0 -- number of characters written
 	 * @retval < 0  -- error
@@ -225,55 +215,43 @@ int crypt_handshake(ssl_context * ssl) {
 int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	int ret = 0;
 	size_t bufsize, sent;
-	unsigned char *inbuf, *outbuf;
+	unsigned char *encbuf;
 
-	unsigned char iv2[16];					// Initialization vector2
-	memcpy(iv2, iv, sizeof(iv));			// Make a copy of iv for TEST
+	if (size > UINT16_MAX) {	// Check size of write request
+		DLX(6, printf("Size to write (%u bytes) is too big. Must be <= %u bytes\n", size, UINT16_MAX));
+		return -1;
+	}
 
-	DPB(8, "Buffer to write", buf, size);
+	DPB(6, "Buffer to write", buf, size);
 	if (encrypt) {
 		DLX(6, printf("AES encrypting write buffer\n"));
-		bufsize = (size % 16) ? size + (16 - size%16) : size;	// Compute size of buffers - multiple of 16
-		inbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );	// Allocate buffers
-		outbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );
-		if (inbuf == NULL || outbuf == NULL) {
+		bufsize = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);	// Compute size of buffers - multiple of 16, including length field
+		encbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate encryption buffer
+		if (encbuf == NULL) {
 				DLX(4, printf("calloc() failed\n"));
 				return -1;
 		}
-		memcpy(inbuf, buf, size);	// Copy input buffer to padded input buffer
-		DPB(8, "Buffer before encryption", inbuf, bufsize);
+	    encbuf[0] = (unsigned char)(size >> 8);	// Insert the data length
+	    encbuf[1] = (unsigned char) size;
+		memcpy(encbuf+2, buf, size);	// Copy input buffer to padded encryption buffer
+		DPB(8, "Buffer before encryption", encbuf, bufsize);
 		DPB(8, "Initialization Vector", iv, sizeof(iv));
 		DLX(8, printf("aes.nr = %d\n", aes.nr));
-		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);
-		if (( ret = aes_crypt_cbc(&aes, AES_ENCRYPT, bufsize, iv, inbuf, outbuf)) < 0) {	// Encrypt the block
+		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);		// Set key for encryption
+		if (( ret = aes_crypt_cbc(&aes, AES_ENCRYPT, bufsize, iv, encbuf, encbuf)) < 0) {	// Encrypt the block
 			DLX(4, printf("aes_crypt_cbd() failed, returned: -0x%04x\n", -ret));
 			return ret;
 		}
-		DPB(8, "Buffer after encryption", outbuf, bufsize);
-
-
-		// TEST OF DECRYPTION
-		memset(inbuf, 0, sizeof(inbuf));	// clear buffer
-		DPB(8, "Initialization Vector", iv2, sizeof(iv2));
-	    DPB(4, "Shared Key", shared_key, AES_KEY_SIZE);
-		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);
-		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, bufsize, iv2, outbuf, inbuf)) < 0) {	// Decrypt the block
-			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
-			return ret;
-		}
-		DPB(8, "TEST: Buffer after decryption", inbuf, bufsize);
-
-
-		free(inbuf);
+		DPB(8, "Buffer after encryption", encbuf, bufsize);
 	} else {		// If not encrypting, adjust pointers
-		outbuf = buf;
+		encbuf = buf;
 		bufsize = size;
 	}
 
 	DLX(6, printf("Sending %d bytes\n", bufsize));
 	sent = 0;
 	do {	// Write loop
-		ret = ssl_write(ssl, outbuf+sent, bufsize-sent);
+		ret = ssl_write(ssl, encbuf+sent, bufsize-sent);
 		if (ret < 0) {
 			if (ret == POLARSSL_ERR_NET_WANT_WRITE)
 				continue;
@@ -293,7 +271,7 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 
 	ret = (ret < 0)? ret : (int)sent; //Return the number of bytes sent or the error code
 	if (encrypt)
-		free(outbuf);			// Clean-up
+		free(encbuf);			// Clean-up
 	return ret;
 
 }
@@ -302,25 +280,24 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 	int ret = 0, received = 0;
 	size_t bufsize;
-	unsigned char *inbuf, *outbuf;
+	unsigned char *encbuf;
 
 	DL(6);
 	if (encrypt) {
 		bufsize = (size % 16) ? size + (16 - size%16) : size;					// Compute size of buffers - multiple of 16
-		inbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate buffers
-		outbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );
-		if (inbuf == NULL || outbuf == NULL) {
+		encbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate buffers
+		if (encbuf == NULL) {
 				DLX(4, printf("calloc() failed\n"));
 				return -1;
 		}
 	} else {
-		inbuf = buf;
+		encbuf = buf;
 		bufsize = size;
 	}
 
 	do {
 		// Read data from network
-		ret = ssl_read(ssl, inbuf, bufsize);
+		ret = ssl_read(ssl, encbuf, bufsize);
 		if (ret == POLARSSL_ERR_NET_WANT_READ) {
 			DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
 			continue;
@@ -336,36 +313,36 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		DLX(6, printf("%d bytes read\n", ret));
 	} while (0);
 
-	if (ret < 0) {				// Clean-up and return on read error
+	if (ret < 0) {		// Clean-up and return on read error
 		if (encrypt) {
-			free(inbuf);
-			free(outbuf);
+			free(encbuf);
 		}
 		return ret;
 	}
 
 	received = ret;
 	if (encrypt) {
-		DPB(8, "Buffer before decryption", inbuf, received);
+		DPB(8, "Buffer before decryption", encbuf, received);
 		if ( (received % 16) !=0 ) {
 			DLX(6, printf("WARNING: Received data is not a multiple of 16\n"));
 		}
-		DLX(6, printf("AES decrypting read buffer\n"));
+		DLX(8, printf("AES decrypting read buffer\n"));
 		DLX(8, printf("aes.nr = %d\n", aes.nr));
 		DPB(8, "Initialization Vector", iv, sizeof(iv));
-		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, bufsize, iv, inbuf, outbuf)) < 0) {	// Decrypt the block
+		aes_setkey_dec(&aes, shared_key, AES_KEY_SIZE);		// Set key for decryption
+		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, bufsize, iv, encbuf, encbuf)) < 0) {	// Decrypt the block
 			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
 			return ret;
 		}
-		DPB(8, "Buffer after decryption", outbuf, bufsize);
-		memcpy(buf, outbuf, bufsize);
+		DPB(8, "Buffer after decryption", encbuf, bufsize);
+		bufsize = (encbuf[0] << 8) + encbuf[1];
+		memcpy(buf, encbuf+2, bufsize);
 
-		free(inbuf);
-		free(outbuf);
+		free(encbuf);
 	} else {
 		bufsize = received;
 	}
-
+	DPB(6, "Buffer read", buf, bufsize);
 	return bufsize;
 }
 

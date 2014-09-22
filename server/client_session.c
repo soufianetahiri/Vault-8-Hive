@@ -241,10 +241,8 @@ int DownloadFile(char *path, unsigned long size, int sock)
 		// double-check size calculation
 		size = hstat( fileno( fd ) );
 	}
-
-	DLX(2, printf("Total fstat() size: %i\n", (int)buf.st_size));
-	DLX(2, printf("Total size: %i\n", (int)size));
-	DLX(2, printf("Remote file size is %ld\n", size));
+	DLX(2, printf("File: %i\n", path));
+	DLX(2, printf("File size: %ld\n", size));
 
 	// Setup reply struct
 	ret.reply = 0;
