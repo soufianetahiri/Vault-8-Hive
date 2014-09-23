@@ -6,6 +6,8 @@
 	#include <errno.h>
 	extern int dbug_level_;		// The current debug level, a global variable defined in main.c.
 
+	void debug_print_buffer(const unsigned char *buf, const size_t len);
+
 	// General debug function to insert debug code
 	#define D(x) x
 
@@ -29,14 +31,13 @@
 		} while (0)
 
 	// Debug function to print a character buffer
-	#define DPB(l, text, buf, len)						\
-		do {													\
-			if (l <= dbug_level_) {								\
+	#define DPB(l, text, buf, len)																				\
+		do {																									\
+			if (l <= dbug_level_) {																				\
 				fprintf(stdout, "%s:%d: %s(): %s (%d bytes)\n", __FILE__, __LINE__,__FUNCTION__, text, len);	\
-				debug_print_buffer(buf, len);	\
-			}													\
+				debug_print_buffer(buf, len);																	\
+			}																									\
 		} while (0)
-
 
 	#ifdef SOLARIS
 		#define xs(x)   x
@@ -47,13 +48,13 @@
 		#define debug_msg(x, ...)
 	#endif
 
-	void debug_print_buffer(const unsigned char *buf, const size_t len);
+
 
 #else
-	#define D(x)
-	#define DL(l)
-	#define DLX(l, x)
-	#define DPB(l, text, buf, len)
+	#define D(x) 					do {} while(0)
+	#define DL(l)					do {} while(0)
+	#define DLX(l, x)				do {} while(0)
+	#define DPB(l, text, buf, len)	do {} while(0)
 
 	#ifdef SOLARIS
 		#define xs(x) "%x"

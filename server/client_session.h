@@ -1,12 +1,13 @@
 #ifndef _CLIENT_SESSION_H
 #define _CLIENT_SESSION_H
-
+#include "debug.h"
 #include "polarssl/ssl.h"
 #include "crypto.h"
 
 #include "compat.h"
 #include "function_strings.h"
 
+#define DATA_BUFFER_SIZE	4096
 #define	CONNECT_TIMEOUT	60 * 5 //connect timeout = 60 seconds * 5 minutes
 #define SESSION_TIMEOUT 60 * 60 * 1		// session timeout = 60 seconds * 60 minutes * 1 hours
 // for testing
@@ -56,7 +57,7 @@ typedef struct _REPLY {
  */
 
 typedef struct _DATA {
-	unsigned char	data[4096];
+	unsigned char	data[DATA_BUFFER_SIZE];
 } DATA;
 
 /* FOLLOWING DEFINITIONS FOR EXIT THROUGH HELP ARE ALSO IN servers Shell.h file */

@@ -20,7 +20,7 @@ LIBBZIP2 = $(BZIP2)/libbz2.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 LIBDEBUG = $(COMMON)/debug/libdebug.a
 
-INCLUDES = -I. -I$(BZIP2) -I$(CRYPTO) -I$(BZIP2) -I$(COMMON)/ssl/include -I../debug
+INCLUDES = -I. -I$(BZIP2) -I$(CRYPTO) -I$(BZIP2) -I$(COMMON)/ssl/include -I$(COMMON)/debug
 
 #Default FLAGS
 CFLAGS := -Wall -Wextra -ansi -std=gnu99

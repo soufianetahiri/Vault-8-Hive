@@ -1,6 +1,7 @@
 #include "hclient.h"
 #include "crypto.h"
 #include "proj_strings.h"	//Necessary for strings...
+#include "debug.h"
 
 ssl_context *ssl_f;
 
@@ -80,6 +81,7 @@ int Upload(char **argv, struct proc_vars *info)
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(lfile, 0, 255);
 	memset(&sbuf, 0, sizeof(struct send_buf));
@@ -187,6 +189,7 @@ int Download(char **argv, struct proc_vars *info)
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(lfile, 0, 255);
 	memset(&sbuf, 0, 264);
@@ -234,6 +237,7 @@ int Download(char **argv, struct proc_vars *info)
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
+		DLX(6, printf("Receiving file, size: %lu\n", rbuf.padding));
 		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding))) == 0) {
 			//(void) asprintf(&message, "successful download of %d bytes from %s to %s\n", ntohl(rbuf.padding), rfile, lfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", download5String, ntohl(rbuf.padding), upload8String, rfile,
@@ -271,6 +275,7 @@ int Remove(char **argv, struct proc_vars *info)
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(&sbuf, 0, 264);
 	memset(&rbuf, 0, 8);
@@ -328,6 +333,7 @@ int Execute(char **argv, struct proc_vars *info)
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(&sbuf, 0, 264);
 	memset(&rbuf, 0, 8);
@@ -386,8 +392,8 @@ int StopSession(struct proc_vars *info)
 	struct send_buf sbuf;
 	struct recv_buf rbuf;
 
+	DL(4);
 	memset(&sbuf, 0, 264);
-
 	memset(&rbuf, 0, 8);
 
 	if ((info->listen == YES) && ((info->command == EXIT) || (info->command == SHUTDOWNBOTH))) {
@@ -564,7 +570,7 @@ int SendFile(int fd, int size)
 
 	// crypt_read() returns number of bytes written
 	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
-		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
+		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", sendFile2String);
 		return ERROR;
 	}
@@ -592,7 +598,7 @@ int RecvFile(int fd, int size)
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
-		if ((rbytes = crypt_read(ssl_f, buffer, 4096)) == ERROR) {
+		if ((rbytes = crypt_read(ssl_f, buffer, 4096)) < 0) {
 			//fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
 			fprintf(stderr, "%s", recvFile1String);
 			return ERROR;
@@ -609,12 +615,11 @@ int RecvFile(int fd, int size)
 				return ERROR;
 			}
 		}
-
 		size -= rbytes;
 	}
 
-	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) == ERROR) {
-		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
+	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) < 0) {
+		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", recvFile2String);
 		return ERROR;
 	}
@@ -653,15 +658,14 @@ void SendCommand(struct send_buf *sbuf, struct recv_buf *rbuf, struct proc_vars 
 		}
 	}
 
-
-//      if ( crypt_write( ssl_f, (unsigned char *)sbuf, 264 ) == ERROR )
+	DLX(4, printf("Sending command\n"));
 	if (crypt_write(ssl_f, (unsigned char *) sbuf, 264) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure sending request to the remote computer\n");
 		fprintf(stderr, "%s", sendCommand1String);
 		rbuf->reply = htonl(ERROR);
 		return;
 	}
-//      if ( crypt_read( ssl_f, (unsigned char *)rbuf, 8 ) == ERROR )
+
 	if (crypt_read(ssl_f, (unsigned char *) rbuf, 8) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 		fprintf(stderr, "%s", sendCommand2String);

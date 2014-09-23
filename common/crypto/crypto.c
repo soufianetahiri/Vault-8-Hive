@@ -234,9 +234,9 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	    encbuf[0] = (unsigned char)(size >> 8);	// Insert the data length
 	    encbuf[1] = (unsigned char) size;
 		memcpy(encbuf+2, buf, size);	// Copy input buffer to padded encryption buffer
-		DPB(8, "Buffer before encryption", encbuf, bufsize);
-		DPB(8, "Initialization Vector", iv, sizeof(iv));
-		DLX(8, printf("aes.nr = %d\n", aes.nr));
+		DPB(9, "Buffer before encryption", encbuf, bufsize);
+		DPB(9, "Initialization Vector", iv, sizeof(iv));
+		DLX(9, printf("aes.nr = %d\n", aes.nr));
 		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);		// Set key for encryption
 		if (( ret = aes_crypt_cbc(&aes, AES_ENCRYPT, bufsize, iv, encbuf, encbuf)) < 0) {	// Encrypt the block
 			DLX(4, printf("aes_crypt_cbd() failed, returned: -0x%04x\n", -ret));
@@ -248,7 +248,7 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 		bufsize = size;
 	}
 
-	DLX(6, printf("Sending %d bytes\n", bufsize));
+	DLX(8, printf("Sending %d bytes\n", bufsize));
 	sent = 0;
 	do {	// Write loop
 		ret = ssl_write(ssl, encbuf+sent, bufsize-sent);
@@ -261,13 +261,18 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 				break;
 			}
 
+			if (ret == POLARSSL_ERR_NET_CONN_RESET) {
+				DLX(4, printf("Connection reset by peer\n"));
+				break;
+			}
+
 			DLX(4, printf("ssl_write() failed, returned: -0x%04x\n", -ret));
 			break;
 
 		} else
 			sent += ret;
 	} while (sent < bufsize);
-	DLX(6, printf("Sent %d bytes\n", sent));
+	DLX(7, printf("Sent %d bytes\n", sent));
 
 	ret = (ret < 0)? ret : (int)sent; //Return the number of bytes sent or the error code
 	if (encrypt)
@@ -275,7 +280,16 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	return ret;
 
 }
-
+/*!
+ * @brief crypt_read - reads an ssl data stream
+ * @param ssl
+ * @param buf
+ * @param size
+ * @return
+ * @retval > 0 - Number of bytes read
+ * @retval 0 - EOF
+ * @retval < 0 - Error
+ */
 //*******************************************************
 int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 	int ret = 0, received = 0;
@@ -297,44 +311,50 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 
 	do {
 		// Read data from network
-		ret = ssl_read(ssl, encbuf, bufsize);
-		if (ret == POLARSSL_ERR_NET_WANT_READ) {
-			DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
-			continue;
+		received = ssl_read(ssl, encbuf, bufsize);
+		switch (received) {
+			case POLARSSL_ERR_NET_WANT_READ:
+				DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
+				continue;
+
+			case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:
+				DLX(4, printf("POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
+				break;
+
+			case POLARSSL_ERR_NET_CONN_RESET:
+				DLX(4, printf("Connection reset by peer\n"));
+				break;
+
+			case 0: // EOF
+				if (encrypt)
+					free(encbuf);
+				return 0;
+				break;
+
+			default:
+				if (received < 0) {
+					DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -received));
+					return received;
+				} else
+					DLX(6, printf("%d bytes read\n", received));
+				break;
 		}
-		if (ret == POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY) {
-			DLX(4, printf("POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
-			break;
-		}
-		if (ret <= 0) {
-			DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -ret));
-			break;
-		}
-		DLX(6, printf("%d bytes read\n", ret));
 	} while (0);
 
-	if (ret < 0) {		// Clean-up and return on read error
-		if (encrypt) {
-			free(encbuf);
-		}
-		return ret;
-	}
-
-	received = ret;
 	if (encrypt) {
 		DPB(8, "Buffer before decryption", encbuf, received);
 		if ( (received % 16) !=0 ) {
 			DLX(6, printf("WARNING: Received data is not a multiple of 16\n"));
 		}
 		DLX(8, printf("AES decrypting read buffer\n"));
-		DLX(8, printf("aes.nr = %d\n", aes.nr));
-		DPB(8, "Initialization Vector", iv, sizeof(iv));
+		DLX(9, printf("aes.nr = %d\n", aes.nr));
+		DPB(9, "Initialization Vector", iv, sizeof(iv));
 		aes_setkey_dec(&aes, shared_key, AES_KEY_SIZE);		// Set key for decryption
-		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, bufsize, iv, encbuf, encbuf)) < 0) {	// Decrypt the block
+		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, received, iv, encbuf, encbuf)) < 0) {	// Decrypt the block
 			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
 			return ret;
 		}
-		DPB(8, "Buffer after decryption", encbuf, bufsize);
+		DPB(8, "Buffer after decryption", encbuf, received);
 		bufsize = (encbuf[0] << 8) + encbuf[1];
 		memcpy(buf, encbuf+2, bufsize);
 
@@ -343,7 +363,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		bufsize = received;
 	}
 	DPB(6, "Buffer read", buf, bufsize);
-	return bufsize;
+	return received;
 }
 
 
