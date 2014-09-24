@@ -14,7 +14,7 @@ void debug_print_buffer(const unsigned char *buf, const size_t len)
             break;
 
         if (i % 16 == 0)
-        	fprintf(stdout, "\n\t%4x: ", i);
+        	fprintf(stdout, "\n\t%4x: ", (unsigned int)i);
         else {
         	fprintf(stdout, " ");
         	if (i % 8 == 0)

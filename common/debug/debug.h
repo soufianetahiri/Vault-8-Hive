@@ -51,7 +51,7 @@
 
 
 #else
-	#define D(x) 					do {} while(0)
+	#define D(x)
 	#define DL(l)					do {} while(0)
 	#define DLX(l, x)				do {} while(0)
 	#define DPB(l, text, buf, len)	do {} while(0)
