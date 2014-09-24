@@ -272,11 +272,12 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 		} else
 			sent += ret;
 	} while (sent < bufsize);
-	DLX(7, printf("Sent %d bytes\n", sent));
+	DLX(8, printf("Bytes sent: %d\n", sent));
 
-	ret = (ret < 0)? ret : (int)sent; //Return the number of bytes sent or the error code
+	ret = (ret < 0) ? ret : (int)size; 		//Return the number of (unencrypted) bytes sent or the error code
+	DLX(7, printf("Return value: %d\n", ret));
 	if (encrypt)
-		free(encbuf);			// Clean-up
+		free(encbuf);						// Clean-up
 	return ret;
 
 }
