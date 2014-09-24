@@ -31,12 +31,12 @@
 		} while (0)
 
 	// Debug function to print a character buffer
-	#define DPB(l, text, buf, len)																				\
-		do {																									\
-			if (l <= dbug_level_) {																				\
-				fprintf(stdout, "%s:%d: %s(): %s (%d bytes)\n", __FILE__, __LINE__,__FUNCTION__, text, len);	\
-				debug_print_buffer(buf, len);																	\
-			}																									\
+	#define DPB(l, text, buf, len)																							\
+		do {																												\
+			if (l <= dbug_level_) {																							\
+				fprintf(stdout, "%s:%d: %s(): %s (%u bytes)\n", __FILE__, __LINE__,__FUNCTION__, text, (unsigned int) len);	\
+				debug_print_buffer(buf, len);																				\
+			}																												\
 		} while (0)
 
 	#ifdef SOLARIS
