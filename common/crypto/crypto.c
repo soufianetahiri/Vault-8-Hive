@@ -218,7 +218,7 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	unsigned char *encbuf;
 
 	if (size > UINT16_MAX) {	// Check size of write request
-		DLX(6, printf("Size to write (%u bytes) is too big. Must be <= %u bytes\n", size, (unsigned int)UINT16_MAX));
+		DLX(6, printf("Size to write (%u bytes) is too big. Must be <= %u bytes\n", (unsigned int)size, UINT16_MAX));
 		return -1;
 	}
 
@@ -248,7 +248,7 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 		bufsize = size;
 	}
 
-	DLX(8, printf("Sending %d bytes\n", bufsize));
+	DLX(8, printf("Sending %u bytes\n", (unsigned int)bufsize));
 	sent = 0;
 	do {	// Write loop
 		ret = ssl_write(ssl, encbuf+sent, bufsize-sent);
@@ -272,7 +272,7 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 		} else
 			sent += ret;
 	} while (sent < bufsize);
-	DLX(8, printf("Bytes sent: %d\n", sent));
+	DLX(8, printf("Bytes sent: %u\n", (unsigned int)sent));
 
 	ret = (ret < 0) ? ret : (int)size; 		//Return the number of (unencrypted) bytes sent or the error code
 	DLX(7, printf("Return value: %d\n", ret));
@@ -357,12 +357,10 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		}
 		DPB(8, "Buffer after decryption", encbuf, received);
 		bufsize = (encbuf[0] << 8) + encbuf[1];
-		if (bufsize > size) {		// Data in the embedded length field does not match the length of the data sent
+		if (bufsize > size)		// Data in the embedded length field does not match the length of the data sent
 			DLX(4, printf("ERROR: Buffer read (%lu) is larger than buffer available (%lu)\n", bufsize, size));
-			free(encbuf);
-			break;
-		}
-		memcpy(buf, encbuf+2, bufsize);
+		else
+			memcpy(buf, encbuf+2, bufsize);
 
 		free(encbuf);
 	} else {
