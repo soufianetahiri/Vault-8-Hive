@@ -153,7 +153,7 @@ int aes_terminate()
 		DLX(4, printf("failed, AES context is invalid.\n"));
 		return 0;
 	}
-	memset(&aes, 0, sizeof(aes));	// Clear the AES context
+	memset(&aes, 0, sizeof(aes_context));	// Clear the AES context
 	dhm_free(dhm);
 	free(dhm);
 	return 1;
@@ -475,7 +475,7 @@ int crypt_setup_server(ssl_context * ssl, ssl_session * ssn, int *sockfd) {
 	if (! rng_initialized)	// Verify that the RNG is initialized.
 		rng_init();
 
-	memset(ssl, 0, sizeof(ssl));
+	memset(ssl, 0, sizeof(ssl_context));
 
 	if ((ret = ssl_init(ssl)) != 0) {
 		DLX(4, printf(" failed, ssl_init() returned -0x%04x\n\n", -ret));
