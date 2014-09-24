@@ -234,7 +234,7 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	    encbuf[0] = (unsigned char)(size >> 8);	// Insert the data length
 	    encbuf[1] = (unsigned char) size;
 		memcpy(encbuf+2, buf, size);	// Copy input buffer to padded encryption buffer
-		DPB(9, "Buffer before encryption", encbuf, bufsize);
+		DPB(8, "Buffer before encryption", encbuf, bufsize);
 		DPB(9, "Initialization Vector", iv, sizeof(iv));
 		DLX(9, printf("aes.nr = %d\n", aes.nr));
 		aes_setkey_enc(&aes, shared_key, AES_KEY_SIZE);		// Set key for encryption
@@ -298,8 +298,8 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 	unsigned char *encbuf;
 
 	DL(6);
-	if (encrypt) {
-		bufsize = (size % 16) ? size + (16 - size%16) : size;					// Compute size of buffers - multiple of 16
+	if (encrypt) {																// Allocate encryption buffer -- multiple of 16 bytes
+		bufsize = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);	// Buffer size needed must account for 2-byte size field
 		encbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate buffers
 		if (encbuf == NULL) {
 				DLX(4, printf("calloc() failed\n"));
@@ -358,7 +358,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		DPB(8, "Buffer after decryption", encbuf, received);
 		bufsize = (encbuf[0] << 8) + encbuf[1];
 		if (bufsize > size)	{	// Data in the embedded length field does not match the length of the data sent
-			DLX(4, printf("ERROR: Buffer read (%lu) is larger than buffer available (%lu)\n", bufsize, size));
+			DLX(4, printf("ERROR: Buffer read (%u) is larger than buffer available (%u)\n", (unsigned int)bufsize, (unsigned int)size));
 			free(encbuf);
 			return -1;
 		}

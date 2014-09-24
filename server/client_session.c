@@ -263,7 +263,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 			if ((rv = crypt_write(&trig_ssl, data, bytes_read)) < 0) {
 				if (bytes_written == POLARSSL_ERR_NET_WANT_WRITE)
 					continue;
-				DLX(3, printf("crypt_write() error, returned -0x%04d\n", rv));
+				DLX(3, printf("crypt_write() error, returned -0x%04x\n", rv));
 				goto Error;
 			}
 			bytes_written += rv;
