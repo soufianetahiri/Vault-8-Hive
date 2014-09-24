@@ -357,8 +357,11 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		}
 		DPB(8, "Buffer after decryption", encbuf, received);
 		bufsize = (encbuf[0] << 8) + encbuf[1];
-		if (bufsize > size)		// Data in the embedded length field does not match the length of the data sent
+		if (bufsize > size)	{	// Data in the embedded length field does not match the length of the data sent
 			DLX(4, printf("ERROR: Buffer read (%lu) is larger than buffer available (%lu)\n", bufsize, size));
+			free(encbuf);
+			return -1;
+		}
 		else
 			memcpy(buf, encbuf+2, bufsize);
 

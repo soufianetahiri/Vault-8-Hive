@@ -168,9 +168,9 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 	}
 
     buflen = ( buf[0] << 8 ) | buf[1];
-    DLX(6, printf("Waiting to receive %d bytes\n", buflen));
+    DLX(6, printf("Waiting to receive %u bytes\n", (unsigned int)buflen));
     if( buflen < 1 || buflen > sizeof( buf ) ) {
-        DLX(4, printf("Received invalid buffer length: %d\n", buflen));
+        DLX(4, printf("Received invalid buffer length: %u\n", (unsigned int)buflen));
         goto exit;
     }
 
@@ -193,7 +193,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 	DPB(8, "Received buffer follows:", buf, buflen);
     p = buf, end = buf + buflen;
 
-    DLX(6, printf("Received DHM params: %d bytes -- calling dhm_read_params()\n", n));
+    DLX(6, printf("Received DHM params: %u bytes\n", (unsigned int)n));
     if( ( ret = dhm_read_params( dhm, &p, end ) ) != 0 )  {
         DLX(4, printf("dhm_read_params() failed, returned -0x%04x\n", -ret ));
         goto exit;
@@ -229,7 +229,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
         DLX(4, printf("dhm_make_public() failed, returned -0x%04x\n", -ret));
         goto exit;
     }
-    DLX(6, printf("Sending public value to server, length = %i\n", buflen));
+    DLX(6, printf("Sending public value to server, length = %u\n", (unsigned int)buflen));
     DPB(8, "DHM Parameters:", buf, buflen);
     n = 0;
     do {
@@ -406,7 +406,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
         DLX(4, printf("dhm_make_params() failed, returned: -0x%04x\n", -ret));
         goto exit;
     }
-    DLX(6, printf("buf: %p, n: %d\n", buf, n));
+    DLX(6, printf("buf: %p, n: %u\n", buf, (unsigned int)n));
 
 	// Sign the parameters and send them
     // NOTE: The client side does not currently verify the hash, but the dhm_read_params() function
@@ -415,7 +415,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     DL(8);
     buf[n++] = (unsigned char)( rsa.len >> 8 );
     buf[n++] = (unsigned char)( rsa.len      );
-    DLX(6, printf("rsa.len = %i\n", rsa.len));
+    DLX(6, printf("rsa.len = %u\n", (unsigned int)rsa.len));
     DPB(6, "hash:", hash, sizeof(hash));
     DPB(6, "buf:", buf, n);
     DLX(6, printf("rsa.padding = %x\n", rsa.padding));
@@ -431,7 +431,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     buf2[1] = (unsigned char)( buflen      );
 
     // Send the buffer length to the client
-    DLX(6, printf("Sending buffer of length: %d\n", buflen));
+    DLX(6, printf("Sending buffer of length: %u\n", (unsigned int)buflen));
 	if ( (ret = ssl_write( ssl, buf2, 2)) != 2) {
 		DLX(4, printf("ssl_write() failed to send buffer length to client. Returned: -0x%04x\n", -ret));
 		goto exit;
