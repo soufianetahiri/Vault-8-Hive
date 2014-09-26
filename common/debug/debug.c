@@ -10,8 +10,10 @@ void debug_print_buffer(const unsigned char *buf, const size_t len)
 
 	for( i = 0; i < len; i++ ) {
 
-        if( i >= 4096 )
+        if( i >= 8192 ) {
+        	fprintf(stdout, "\n\tOutput truncated at 8192 bytes...");
             break;
+        }
 
         if (i % 16 == 0)
         	fprintf(stdout, "\n\t%4x: ", (unsigned int)i);

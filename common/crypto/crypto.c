@@ -357,6 +357,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		}
 		DPB(8, "Buffer after decryption", encbuf, received);
 		bufsize = (encbuf[0] << 8) + encbuf[1];
+		DLX(8, printf("bufsize = %u\n", (unsigned int)bufsize));
 		if (bufsize > size)	{	// Data in the embedded length field does not match the length of the data sent
 			DLX(4, printf("ERROR: Buffer read (%u) is larger than buffer available (%u)\n", (unsigned int)bufsize, (unsigned int)size));
 			free(encbuf);
@@ -370,7 +371,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 		bufsize = received;
 	}
 	DPB(6, "Buffer read", buf, bufsize);
-	return received;
+	return bufsize;		// This is the actual number of bytes read
 }
 
 

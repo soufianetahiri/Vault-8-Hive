@@ -170,7 +170,7 @@ int Connection::Accept( std::string& ip )
 	cout << endl << " Enabling encrypted communications:" << endl;
 
     // from a SSL/TLS perspective, the client acts like a SSL server
-    if ( crypt_setup_server( &ctr_drbg, &ssl, &ssn, &acceptfd ) != SUCCESS )
+    if ( crypt_setup_server(&ssl, &ssn, &acceptfd) != SUCCESS )
     {
 		state = CONNERROR;
         D( printf( " * ERROR: crypt_setup_server() failed\n" ); )
@@ -192,6 +192,11 @@ int Connection::Accept( std::string& ip )
 
 	cout << "  . TLS handshake complete." << endl << endl;
 
+	if ((aes_init(&ssl)) == 0) {
+		DLX(4, printf("AES initialization failed"));
+		return ERROR;
+	}
+	cout << "  . AES-encrypted tunnel established." << endl << endl;
 	state = CONNECTED;
 	return SUCCESS;
 }

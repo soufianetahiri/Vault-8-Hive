@@ -543,30 +543,30 @@ void DisplayHelp(char *progname)
 
 int SendFile(int fd, int size)
 {
-	int rbytes;
+	int rbytes, wbytes;
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
-		if ((rbytes = read(fd, buffer, 4096)) == ERROR) {
+		// Read the local file
+		if ((rbytes = read(fd, buffer, 4096)) < 0) {
 			perror("\tSendFile()");
 			return ERROR;
 		}
-
-		if (rbytes < 4096) {
-			GenRandomBytes((char *) &buffer[rbytes], (4096 - rbytes), NULL, 0);
-		}
-		// always send 4k chunks. crypt_write() will return number of bytes written
-		if (crypt_write(ssl_f, buffer, 4096) <= 0) {
-			//fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
-			fprintf(stderr, "%s", sendFile1String);
-			return ERROR;
-		}
-
+		// Sent bytes read to the remote file
+		wbytes = 0;
+		do {
+			if ((wbytes += crypt_write(ssl_f, buffer, rbytes)) < 0) {
+				//fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
+				fprintf(stderr, "%s", sendFile1String);
+				return ERROR;
+			}
+		} while (wbytes < rbytes);
 		size -= rbytes;
 	}
+	DLX(8, printf("Sent %d bytes\n", size));
 
 	// crypt_read() returns number of bytes written
 	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
@@ -574,24 +574,21 @@ int SendFile(int fd, int size)
 		fprintf(stderr, "%s", sendFile2String);
 		return ERROR;
 	}
+	DLX(8, printf("Remote reports %d bytes received\n", rbuf.reply));
 	// returns zero on success
 	return (rbuf.reply);
 }
 
-/* ******************************************************************************************************************************
- *
+/*!
  * RecvFile(int fd, int size, int tcpfd)
- * Description -- function receives a file from the remote computer; used with the download command/function
- * Parameters  -- fd    = file descriptor to the file on the local computer 
- *                size  = size of file to be downloaded to local computer
- *                tcpfd = socket descriptor for the live connection
- * Return      -- returns zero (0) on success and non-zero on failure
- *
- * **************************************************************************************************************************** */
-
+ * @brief RecvFile receives a file from the remote computer -- used with the download command/function
+ * @param fd -- file descriptor of the file on the local computer
+ * @param size -- size of the file to be downloaded
+ * @returns - number of bytes received or -1 on error
+ */
 int RecvFile(int fd, int size)
 {
-	int rbytes;
+	int rbytes, wbytes;
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
@@ -604,24 +601,16 @@ int RecvFile(int fd, int size)
 			return ERROR;
 		}
 
-		if (size < rbytes) {
-			if (write(fd, buffer, size) == ERROR) {
+		// Write received bytes to the local file (fd)
+		wbytes = 0;
+		do {
+			if ((wbytes += write(fd, buffer, rbytes)) < 0) {
 				perror("\tRecvFile()");
 				return ERROR;
 			}
-		} else {
-			if (write(fd, buffer, rbytes) == ERROR) {
-				perror("\tRecvFile()");
-				return ERROR;
-			}
-		}
-		size -= rbytes;
-	}
+		} while (wbytes < rbytes);
 
-	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) < 0) {
-		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledgment from the remote computer\n");
-		fprintf(stderr, "%s", recvFile2String);
-		return ERROR;
+		size -= rbytes;
 	}
 
 	return (rbuf.reply);
