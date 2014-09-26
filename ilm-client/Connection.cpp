@@ -190,10 +190,10 @@ int Connection::Accept( std::string& ip )
         return ERROR;
     }
 
-	cout << "  . TLS handshake complete." << endl << endl;
+	cout << "  . TLS handshake complete." << endl;
 
 	if ((aes_init(&ssl)) == 0) {
-		DLX(4, printf("AES initialization failed"));
+		cout << "  * Error: AES initialization failed." << endl;
 		return ERROR;
 	}
 	cout << "  . AES-encrypted tunnel established." << endl << endl;

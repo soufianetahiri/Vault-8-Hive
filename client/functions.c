@@ -568,13 +568,13 @@ int SendFile(int fd, int size)
 	}
 	DLX(8, printf("Sent %d bytes\n", size));
 
-	// crypt_read() returns number of bytes written
+	// Get the result of the remote's upload command
 	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
 		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", sendFile2String);
 		return ERROR;
 	}
-	DLX(8, printf("Remote reports %d bytes received\n", rbuf.reply));
+	DLX(8, printf("Remote reports %lu bytes received\n", rbuf.reply));
 	// returns zero on success
 	return (rbuf.reply);
 }
@@ -584,7 +584,7 @@ int SendFile(int fd, int size)
  * @brief RecvFile receives a file from the remote computer -- used with the download command/function
  * @param fd -- file descriptor of the file on the local computer
  * @param size -- size of the file to be downloaded
- * @returns - number of bytes received or -1 on error
+ * @returns - 0 is successful or -1 on error
  */
 int RecvFile(int fd, int size)
 {
@@ -592,6 +592,7 @@ int RecvFile(int fd, int size)
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
+	DLX(8, printf("Receiving %d byte file...", size));
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
@@ -601,6 +602,7 @@ int RecvFile(int fd, int size)
 			return ERROR;
 		}
 
+		DLX(8, printf("Received %d bytes", rbytes));
 		// Write received bytes to the local file (fd)
 		wbytes = 0;
 		do {
@@ -613,6 +615,12 @@ int RecvFile(int fd, int size)
 		size -= rbytes;
 	}
 
+	// Get result of remote command
+	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) < 0) {
+		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledgment from the remote computer\n");
+		fprintf(stderr, "%s", recvFile2String);
+		return ERROR;
+	}
 	return (rbuf.reply);
 }
 

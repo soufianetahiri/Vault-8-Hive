@@ -19,6 +19,10 @@ extern "C"
 #include "crypto_strings_main.h"
 }
 
+#ifdef DEBUG
+int dbug_level_ = 2;	// debug level
+#endif
+
 using namespace InterfaceLibrary;
 using namespace InterfaceLibrary::Primitive;
 
