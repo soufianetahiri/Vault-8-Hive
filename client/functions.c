@@ -83,7 +83,7 @@ int Upload(char **argv, struct proc_vars *info)
 	char *message;
 	struct stat st;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	DL(4);
 	memset(rfile, 0, 255);
@@ -190,7 +190,7 @@ int Download(char **argv, struct proc_vars *info)
 	char *tptr;
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	DL(4);
 	memset(rfile, 0, 255);
@@ -276,7 +276,7 @@ int Remove(char **argv, struct proc_vars *info)
 	char rfile[255];
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	DL(4);
 	memset(rfile, 0, 255);
@@ -334,7 +334,7 @@ int Execute(char **argv, struct proc_vars *info)
 	char rfile[255];
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	DL(4);
 	memset(rfile, 0, 255);
@@ -393,7 +393,7 @@ int StopSession(struct proc_vars *info)
 	char question[4];
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	DL(4);
 	memset(&sbuf, 0, 264);
@@ -572,7 +572,7 @@ int SendFile(int fd, size_t size)
 	DLX(8, printf("Sent %lu bytes\n", (unsigned long)size));
 
 	// Get the result of the remote's upload file command
-	if ((crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
+	if ((crypt_read(ssl_f, (unsigned char *) &rbuf, sizeof(REPLY))) <= 0) {
 		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", sendFile2String);
 		return ERROR;
@@ -640,7 +640,7 @@ int RecvFile(int fd, int size)
  *
  * **************************************************************************************************************************** */
 
-void SendCommand(struct send_buf *sbuf, struct recv_buf *rbuf, struct proc_vars *info)
+void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
 {
 	int len = strlen(sbuf->path) + 1;
 
@@ -668,7 +668,7 @@ void SendCommand(struct send_buf *sbuf, struct recv_buf *rbuf, struct proc_vars 
 		return;
 	}
 
-	if (crypt_read(ssl_f, (unsigned char *) rbuf, 8) <= 0) {
+	if (crypt_read(ssl_f, (unsigned char *) rbuf, sizeof(REPLY)) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 		fprintf(stderr, "%s", sendCommand2String);
 		rbuf->reply = htonl(ERROR);

@@ -317,6 +317,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 
 				case 0: // EOF
 					if (encrypt) {
+						DLX(4, printf("EOF, SSL return = 0\n"));
 						free(encbuf);
 						free(decbuf);
 					}
@@ -325,7 +326,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 
 				default:
 					if (ret < 0) {
-						DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -received));
+						DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", (unsigned int)-received));
 						return ret;
 					} else
 						DLX(6, printf("%d bytes read\n", ret));
@@ -333,6 +334,7 @@ int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 			}
 		} while (0);
 		received += ret;
+		DLX(6, printf("%d bytes read, total received: %u\n", ret, (unsigned int)received));
 
 		if (encrypt) {
 			DPB(8, "Buffer before decryption", encbuf, received);

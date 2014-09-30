@@ -31,7 +31,7 @@
 #define EXIT              0                                /* command = ex for exit */
 #define UPLOAD            1                                /* command = ul for upload */
 #define EXECUTE           2                                /* command = exec for execute */
-#define UPLOADEXECUTE     3                                /* not implemented att */
+#define UPLOADEXECUTE     3                                /* not implemented */
 #define DOWNLOAD          4                                /* command = dl for download */
 #define DELETE            5                                /* command = del for delete */
 #define SHUTDOWNBOTH	  6				   /* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
@@ -94,7 +94,10 @@ union aword {
    } w;
 };
 
-
+typedef struct _REPLY {
+        unsigned long   reply;
+        unsigned long   padding;
+} REPLY;
 
 /* Function Prototypes */
 void Usage(char*);                                         /* definition: misc.c */
@@ -119,7 +122,7 @@ int StopSession(struct proc_vars*);                        /* definition: functi
 void DisplayHelp(char*);                                   /* definition: functions.c */
 int SendFile(int, size_t);                                 /* definition: functions.c */
 int RecvFile(int, int);                                    /* definition: functions.c */
-void SendCommand(struct send_buf*, struct recv_buf*, struct proc_vars*);
+void SendCommand(struct send_buf*, REPLY*, struct proc_vars*);
 
 void GenRandomBytes(char*, int, char*, int);               /* definition: crypto.c */
 //void BlowfishEncipher(unsigned long*, unsigned long*);     /* definition: crypto.c */
