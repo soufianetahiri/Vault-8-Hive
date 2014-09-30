@@ -52,9 +52,6 @@
 #define FAILURE -1
 #endif
 
-#define MAX(a,b)	( ((a)>(b)) ? (a) : (b) )
-#define MIN(a,b)	( ((a)>(b)) ? (b) : (a) )
-
 #if defined SOLARIS || defined WIN32
 char exe_path[256];
 #endif

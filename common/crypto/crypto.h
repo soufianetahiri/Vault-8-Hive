@@ -23,6 +23,8 @@ extern "C" {
 
 #define CLIENT 1
 #define SERVER 2
+#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
+#define MIN(a,b)	(((a) < (b)) ? (a) : (b))
 
 int crypt_setup_client(ssl_context *ssl, ssl_session *ssn, int *sockfd );
 int crypt_setup_server(ssl_context *ssl, ssl_session *ssn, int *sockfd );

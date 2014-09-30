@@ -143,11 +143,11 @@ int Upload(char **argv, struct proc_vars *info)
 	//fprintf(stdout, "\n\tupload %s (local) to %s (remote) with size %ld\n", lfile, rfile, st.st_size );
 	fprintf(stdout, "\n\t%s %s %s %s %s %ld\n", uploadString, lfile, upload5String, rfile, upload6String, (long int)st.st_size);
 
-	DLX(6, printf("Sending command: command: %d, path: %s, size: %lu\n", sbuf.command, sbuf.path, st.st_size));
+	DLX(6, printf("Sending command: command: %d, path: %s, size: %lu\n", sbuf.command, sbuf.path, (long unsigned int)st.st_size));
 	SendCommand(&sbuf, &rbuf, info);
 
 	if (rbuf.reply == 0) {
-		if ((rbuf.reply = SendFile(fd, st.st_size)) == 0) {
+		if ((rbuf.reply = SendFile(fd, (size_t)st.st_size)) == 0) {
 			//(void) asprintf(&message, "successful upload of %d bytes from %s to %s\n", (int)st.st_size, lfile, rfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", upload7String, (int) st.st_size, upload8String, lfile,
 				      rfile);
@@ -240,7 +240,7 @@ int Download(char **argv, struct proc_vars *info)
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
-		DLX(6, printf("Receiving file, size: %lu\n", rbuf.padding));
+		DLX(6, printf("Receiving file, size: %lu\n", (unsigned long)ntohl(rbuf.padding)));
 		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding))) == 0) {
 			//(void) asprintf(&message, "successful download of %d bytes from %s to %s\n", ntohl(rbuf.padding), rfile, lfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", download5String, ntohl(rbuf.padding), upload8String, rfile,
@@ -541,14 +541,14 @@ void DisplayHelp(char *progname)
  * @param size - size of file to be uploaded to the remote computer
  * @return - returns zero (0) on success and non-zero if any error(s) occur
  */
-int SendFile(int fd, int size)
+int SendFile(int fd, size_t size)
 {
 	int rbytes, wbytes, ret;
 	unsigned int total_bytes_sent = 0;
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
-	DLX(8, printf("Sending %d byte file...\n", size));
+	DLX(8, printf("Sending %lu byte file...\n", (unsigned long)size));
 	while (total_bytes_sent < size) {
 		memset(buffer, 0, 4096);
 
@@ -569,7 +569,7 @@ int SendFile(int fd, int size)
 		}
 		total_bytes_sent += rbytes;
 	}
-	DLX(8, printf("Sent %d bytes\n", size));
+	DLX(8, printf("Sent %lu bytes\n", (unsigned long)size));
 
 	// Get the result of the remote's upload file command
 	if ((crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
@@ -595,17 +595,18 @@ int RecvFile(int fd, int size)
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
-	DLX(8, printf("Receiving %d byte file...", size));
+	DLX(8, printf("Receiving %d byte file...\n", size));
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
-		if ((rbytes = crypt_read(ssl_f, buffer, 4096)) < 0) {
+		DL(8);
+		if ((rbytes = crypt_read(ssl_f, buffer, MAX(size,4096))) < 0) {
 			//fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
 			fprintf(stderr, "%s", recvFile1String);
 			return ERROR;
 		}
 
-		DLX(8, printf("Received %d bytes", rbytes));
+		DLX(8, printf("Received %d bytes\n", rbytes));
 		// Write received bytes to the local file (fd)
 		wbytes = 0;
 		do {
@@ -619,6 +620,7 @@ int RecvFile(int fd, int size)
 	}
 
 	// Get result of remote command
+	DL(8);
 	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) < 0) {
 		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", recvFile2String);

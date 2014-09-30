@@ -117,8 +117,8 @@ int Remove(char**, struct proc_vars*);                     /* definition: functi
 int Execute(char**, struct proc_vars*);                    /* definition: functions.c */
 int StopSession(struct proc_vars*);                        /* definition: functions.c */
 void DisplayHelp(char*);                                   /* definition: functions.c */
-int SendFile(int, int);                               /* definition: functions.c */
-int RecvFile(int, int);                               /* definition: functions.c */
+int SendFile(int, size_t);                                 /* definition: functions.c */
+int RecvFile(int, int);                                    /* definition: functions.c */
 void SendCommand(struct send_buf*, struct recv_buf*, struct proc_vars*);
 
 void GenRandomBytes(char*, int, char*, int);               /* definition: crypto.c */
