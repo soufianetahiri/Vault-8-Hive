@@ -31,7 +31,7 @@ class Connection
 		int Close( void );
 		int Listen( uint16_t port );
 		int Accept( std::string& ip );
-		int TxCommand( struct send_buf* sbuf, struct recv_buf* rbuf, unsigned char command_code );
+		int TxCommand( struct send_buf* sbuf, REPLY* rbuf, unsigned char command_code );
 		int RecvFile( int fd, int size );
 		int SendFile( int fd, int size );
 

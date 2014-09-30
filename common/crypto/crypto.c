@@ -272,8 +272,8 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 //*******************************************************
 int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
 	int ret = 0;
-	size_t bufsize, block_size, received=0;
-	unsigned char *encbuf, *decbuf;
+	size_t bufsize = 0, block_size = 0, received=0;
+	unsigned char *encbuf = NULL, *decbuf = NULL;
 	unsigned short getmore = 0;
 
 	DLX(6, printf("Requested read size: %lu\n", (unsigned long)size));

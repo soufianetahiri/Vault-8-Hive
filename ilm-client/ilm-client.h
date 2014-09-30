@@ -54,5 +54,9 @@ struct recv_buf
    unsigned long padding;    /* size of the file being downloaded to the local computer */
 };
 
+typedef struct _REPLY {
+        unsigned long   reply;
+        unsigned long   padding;
+} REPLY;
 
 #endif 

@@ -208,7 +208,7 @@ int Connection::Accept( std::string& ip )
 
 
 //*****************************************************************************************
-int Connection::TxCommand( struct send_buf* sbuf, struct recv_buf* rbuf, unsigned char command_code )
+int Connection::TxCommand( struct send_buf* sbuf, REPLY *rbuf, unsigned char command_code )
 {
 	int len = strlen( sbuf->path ) + 1;
 
@@ -263,7 +263,7 @@ int Connection::TxCommand( struct send_buf* sbuf, struct recv_buf* rbuf, unsigne
 	}
 
 // crypt_read() returns the detailed error code, but we return ERROR for all errors
-	if ( crypt_read( &ssl, (unsigned char *)rbuf, 8 ) < 0 )
+	if (crypt_read( &ssl, (unsigned char *)rbuf, sizeof(REPLY)) < 0 )
 	{
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 //		printf( " * %s", sendCommand2String );
@@ -284,9 +284,9 @@ error:
 //*****************************************************************************************
 int Connection::RecvFile( int fd, int size )
 {
-    int                 rbytes;
-    unsigned char       buffer[4096];
-    struct recv_buf     rbuf;
+    int				rbytes;
+    unsigned char	buffer[4096];
+    REPLY			rbuf;
 
 
 	if ( state != CONNECTED )
@@ -325,7 +325,7 @@ int Connection::RecvFile( int fd, int size )
         size -= rbytes;
     }
 
-    if ( ( rbytes = crypt_read( &ssl, (unsigned char *)&rbuf, 8 ) ) <= 0 )
+    if ( ( rbytes = crypt_read( &ssl, (unsigned char *)&rbuf, sizeof(REPLY)) ) <= 0 )
     {
         //fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
         printf( " * %s", recvFile2String );
@@ -339,9 +339,9 @@ int Connection::RecvFile( int fd, int size )
 //*****************************************************************************************
 int Connection::SendFile( int fd, int size )
 {
-    int                 rbytes;
-    unsigned char       buffer[4096];
-    struct recv_buf     rbuf;
+    int				rbytes;
+    unsigned char	buffer[4096];
+    REPLY			rbuf;
 
 
 	if ( state != CONNECTED )
@@ -374,7 +374,7 @@ int Connection::SendFile( int fd, int size )
         size -= rbytes;
     }
 
-    if ( ( rbytes = crypt_read( &ssl, (unsigned char *)&rbuf, 8 ) ) <= 0 )
+    if ( (rbytes = crypt_read( &ssl, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
     {
         //fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
         printf( " * %s", sendFile2String );

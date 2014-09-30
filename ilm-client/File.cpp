@@ -33,10 +33,10 @@ void File::Delete( Primitive::Activation& actvn, ProcessCmdAccumulator&, Process
 	String			*argPtr = ( String * )( actvn.arguments );
 	string			filename = *argPtr;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	strcat( sbuf.path, filename.c_str() );
 
@@ -79,10 +79,10 @@ void File::Get( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmd
 	string		rfile = remote_file;
 	int			fd;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	cout << " Remote File: " << remote_file << endl;
 	cout << " Local File: " << local_file << endl;
@@ -162,10 +162,10 @@ void File::Put( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmd
 	int			fd;
 	struct stat	st;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	cout << " Local File: " << local_file << endl;
 	cout << " Remote File: " << remote_file << endl;

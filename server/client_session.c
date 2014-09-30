@@ -165,8 +165,9 @@ int UploadFile(char* path, unsigned long size, int sock)
 		}
 		DLX(8, printf("Receive() bytes_read: %d\n", bytes_read));
 		// Write bytes to file
+		written = 0;
 		while (written < (unsigned int)bytes_read) {
-			if ((retval = fwrite( data.data, bytes_read, 1, fd )) == 0) {
+			if ((retval = fwrite( data.data, 1, bytes_read, fd )) == 0) {
 				if (ferror(fd)) {
 					DLX(4, printf("ERROR: fwrite()\n"));
 					goto Error;
@@ -179,7 +180,10 @@ int UploadFile(char* path, unsigned long size, int sock)
 		DLX(8, printf("Bytes received: %u\n", received));
 	}
 
-	fclose(fd);
+	if (fclose(fd) != 0) {
+		DLX(4, printf("fclose() failed\n"));
+		return -1;
+	}
 	return 0;
 
 Error:

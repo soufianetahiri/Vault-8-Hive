@@ -42,14 +42,14 @@ char cryptcat_path[] = "cryptcat";
 //*******************************************************************************
 void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& , ProcessCmdResponse& resp )
 {
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
-	String		*argPtr = (String *)(actvn.arguments);
-	String		args = *argPtr++;
-	string		command = args;
+	struct send_buf	sbuf;
+	REPLY			rbuf;
+	String			*argPtr = (String *)(actvn.arguments);
+	String			args = *argPtr++;
+	string			command = args;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Pending;
 
@@ -77,14 +77,14 @@ void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& , Pr
 //*******************************************************************************
 void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
-	String		*argPtr = (String *)(actvn.arguments);
-	String		args = *argPtr++;
-	string		command = args;
+	struct send_buf	sbuf;
+	REPLY			rbuf;
+	String			*argPtr = (String *)(actvn.arguments);
+	String			args = *argPtr++;
+	string			command = args;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Remote_Failure;
 	printf( " ! This feature is not implemented\n" );
@@ -116,11 +116,11 @@ void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator&, Pro
 //*******************************************************************************
 void Command::Exit( Primitive::Activation&, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	struct send_buf	sbuf;
+	REPLY			rbuf;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Pending;
 
@@ -173,12 +173,12 @@ Command::ShutDown::ShutDown() {
 //*******************************************************************************
 ProcessCmdResponse Command::ShutDown::Process(binary&)
 {
-    ProcessCmdResponse resp;
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
+    ProcessCmdResponse	resp;
+	struct send_buf		sbuf;
+	REPLY				rbuf;
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 //    cout << "Processing Command::ShutDown" << endl;
 
@@ -239,11 +239,11 @@ Command::LaunchTrueShell::LaunchTrueShell() {
 //*******************************************************************************
 ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 {
-    ProcessCmdResponse resp;
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
-	int				fd;
-	int				rv = 0;
+    ProcessCmdResponse	resp;
+	struct send_buf		sbuf;
+	REPLY				rbuf;
+	int					fd;
+	int					rv = 0;
 
 //	ostringstream text;
 
@@ -264,7 +264,7 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	printf( " . ip_len %i, ip %s\n", args.ip_len, args.ip_str );
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Pending;
 
