@@ -159,7 +159,11 @@ int UploadFile(char* path, unsigned long size, int sock)
 	
 	while (received < size) {
 		// Read bytes from network
-		if ((bytes_read = Receive(sock,(unsigned char*) &data, (size-received > sizeof(DATA)) ? sizeof(DATA) : size-received, PKT_TIMEOUT)) < 0) {
+		if ((bytes_read = Receive(sock,(unsigned char*) &data, (size-received > sizeof(DATA)) ? sizeof(DATA) : size-received, PKT_TIMEOUT)) <= 0) {
+			if (bytes_read == 0) {
+				DLX(4, printf("Session disconnected\n"));
+				break;
+			}
 			DLX(4, printf("ERROR: Receive()\n"));
 			goto Error;
 		}

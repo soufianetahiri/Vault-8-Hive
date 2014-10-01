@@ -161,11 +161,17 @@ int aes_terminate()
 }
 
 //*******************************************************
+/*!
+ * crypt_handshake(ssl_context * ssl)
+ * @brief Establish an SSL connection
+ * @param ssl -- SSL context
+ * @return
+ * @retval 0 -- error
+ * @retval 1 -- success
+ */
 int crypt_handshake(ssl_context * ssl) {
 		int ret;
-		/*
-		 * 5. Handshake
-		 */
+
 		DLX(4, printf("\tPerforming the TLS handshake... \n"));
 
 		while ((ret = ssl_handshake(ssl)) != 0) {
@@ -174,7 +180,6 @@ int crypt_handshake(ssl_context * ssl) {
 				return -1;
 			}
 		}
-
 		DLX(4, printf("\tTLS handshake complete\n"));
 
 		return 0;
@@ -183,6 +188,8 @@ int crypt_handshake(ssl_context * ssl) {
 //*******************************************************
 /*!
  * crypt_write()
+ * crypt_write(ssl_context *ssl, unsigned char *buf, size_t size)
+ * @brief Write data to the encrypted network connection
  * @param ssl -- SSL context
  * @param buf -- buffer to transmit
  * @param size -- size of buffer (<= 65,535 bytes)
@@ -193,7 +200,7 @@ int crypt_handshake(ssl_context * ssl) {
 int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	int ret = 0;
 	size_t bufsize, sent;
-	unsigned char *encbuf;
+	unsigned char *encbuf = NULL;
 
 	if (size > UINT16_MAX) {	// Check size of write request
 		DLX(6, printf("Size to write (%u bytes) is too big. Must be <= %u bytes\n", (unsigned int)size, UINT16_MAX));
@@ -253,14 +260,15 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
 	DLX(8, printf("Bytes sent: %u\n", (unsigned int)sent));
 
 	ret = (ret < 0) ? ret : (int)size; 		//Return the number of (unencrypted) bytes sent or the error code
-	DLX(7, printf("Return value: %d\n", ret));
+	DLX(4, printf("Return value: 0x%04x\n", ret));
 	if (encrypt)
 		free(encbuf);						// Clean-up
 	return ret;
 
 }
 /*!
- * @brief crypt_read - reads an ssl data stream
+ * int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size)
+ * @brief Read data from the encrypted network connection
  * @param ssl - SSL context
  * @param buf - read buffer of at least size bytes
  * @param size - maximum size to read
@@ -271,119 +279,93 @@ int crypt_write(ssl_context *ssl, unsigned char *buf, size_t size) {
  */
 //*******************************************************
 int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size) {
-	int ret = 0;
-	size_t bufsize = 0, block_size = 0, received=0;
-	unsigned char *encbuf = NULL, *decbuf = NULL;
-	unsigned short getmore = 0;
+	int ret = 0, received = 0;
+	size_t bufsize;
+	unsigned char *encbuf = NULL;
 
-	DLX(6, printf("Requested read size: %lu\n", (unsigned long)size));
+	DLX(6, printf("New read request for %lu bytes\n", (unsigned long)size));
 	if (encrypt) {																// Allocate encryption buffer -- multiple of 16 bytes
 		bufsize = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);	// Buffer size needed must account for 2-byte size field
-		encbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate buffers
-		decbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );
-		if (encbuf == NULL || decbuf == NULL) {
+		encbuf = (unsigned char *) calloc(bufsize, sizeof(unsigned char) );		// Allocate encryption buffer
+		if (encbuf == NULL) {
 				DLX(4, printf("calloc() failed\n"));
 				return -1;
 		}
 	} else {
-		decbuf = buf;
-		block_size = size;
+		encbuf = buf;
+		bufsize = size;
 	}
-	// The outside loop here is used to resolve the case in which a complete encryption block
-	// is not received on the first read. The first field in the encrypted block received is the
-	// size of the encrypted block sent. If that doesn't match the expected size, a second read is
-	// made in an attempt to complete the block and another decryption is performed on the larger
-	// block.
+
 	do {
-		do {
-			// Read data from network
-			ret = ssl_read(ssl, encbuf+received, bufsize-received);
-			switch (ret) {
-				case POLARSSL_ERR_NET_WANT_READ:
-					DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
-					continue;
+		// Read data from network
+		received = ssl_read(ssl, encbuf, bufsize);
+		switch (received) {		// Process any exceptions
+			case POLARSSL_ERR_NET_WANT_READ:
+				DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
+				continue;
 
-				case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:
-					DLX(4, printf("POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
-					ret = -1;
-					goto Error;
-					break;
+			case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:
+				DLX(4, printf("POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY\n"));
+				ret = received;
+				goto Exception;
+				break;
 
-				case POLARSSL_ERR_NET_CONN_RESET:
-					DLX(4, printf("Connection reset by peer\n"));
-					ret = -1;
-					goto Error;
-					break;
+			case POLARSSL_ERR_NET_CONN_RESET:
+				DLX(4, printf("Connection reset by peer\n"));
+				ret = received;
+				goto Exception;
+				break;
 
-				case 0: // EOF
-					if (encrypt) {
-						DLX(4, printf("EOF, SSL return = 0\n"));
-						free(encbuf);
-						free(decbuf);
-					}
-					return 0;
-					break;
+			case 0: // EOF
+				ret = received;
+				goto Exception;
+				break;
 
-				default:
-					if (ret < 0) {
-						DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", (unsigned int)-received));
-						return ret;
-					} else
-						DLX(6, printf("%d bytes read\n", ret));
-					break;
-			}
-		} while (0);
-		received += ret;
-		DLX(6, printf("%d bytes read, total received: %u\n", ret, (unsigned int)received));
-
-		if (encrypt) {
-			DPB(8, "Buffer before decryption", encbuf, received);
-			if ( (received % 16) !=0 ) {
-				DLX(6, printf("WARNING: Received data is not a multiple of 16\n"));
-			}
-			DLX(8, printf("AES decrypting read buffer\n"));
-			DLX(9, printf("aes.nr = %d\n", aes.nr));
-			DPB(9, "Initialization Vector", iv, sizeof(iv));
-			aes_setkey_dec(&aes, shared_key, AES_KEY_SIZE);		// Set key for decryption
-			if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, received, iv, encbuf, decbuf)) < 0) {	// Decrypt the block
-				DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
-				goto Error;
-			}
-			DPB(8, "Buffer after decryption", decbuf, received);
-			if (!getmore) {
-				size = (decbuf[0] << 8) + decbuf[1];	// Retrieve the sent data size from the first field in the buffer
-				block_size = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);
-				DLX(8, printf("Data size sent: %u, Block size sent: %u\n", (unsigned int) size, (unsigned int)block_size));
-			}
-			if (received < block_size) {
-				getmore++;
-				DLX(8, printf(">>> After %d read, incomplete encryption block. Reading again...\n", getmore));
-			}
-			DLX(8, printf("bufsize = %u\n", (unsigned int)bufsize));
+			default:
+				if (received < 0) {
+					DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -received));
+					ret = received;
+					goto Exception;
+				} else
+					DLX(6, printf("%d bytes read\n", received));
+				break;
 		}
-	} while (bufsize < block_size);
+	} while (0);
 
-	if (encrypt){
-		if (received != block_size)	{	// Data in the embedded length field does not match the length of the data sent
+	if (encrypt) {
+		DPB(8, "Buffer before decryption", encbuf, received);
+		if ( (received % 16) !=0 ) {
+			DLX(6, printf("WARNING: Received data is not a multiple of 16\n"));
+		}
+		DLX(8, printf("AES decrypting read buffer\n"));
+		DLX(9, printf("aes.nr = %d\n", aes.nr));
+		DPB(9, "Initialization Vector", iv, sizeof(iv));
+		aes_setkey_dec(&aes, shared_key, AES_KEY_SIZE);		// Set key for decryption
+		if (( ret = aes_crypt_cbc(&aes, AES_DECRYPT, received, iv, encbuf, encbuf)) < 0) {	// Decrypt the block
+			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
+			return ret;
+		}
+		DPB(8, "Buffer after decryption", encbuf, received);
+		bufsize = (encbuf[0] << 8) + encbuf[1];
+		DLX(8, printf("bufsize = %u\n", (unsigned int)bufsize));
+		if (bufsize > size)	{	// Data in the embedded length field does not match the length of the data sent
 			DLX(4, printf("ERROR: Buffer read (%u) is larger than buffer available (%u)\n", (unsigned int)bufsize, (unsigned int)size));
-			ret = -1;
-			goto Error;
+			free(encbuf);
+			return -1;
 		}
 		else
-			memcpy(buf, decbuf+2, size);
+			memcpy(buf, encbuf+2, bufsize);
 
 		free(encbuf);
-		free(decbuf);
 	} else {
-		size = received;
+		bufsize = received;
 	}
-	DPB(6, "Buffer read", buf, size);
-	return size;		// This is the actual number of bytes read
+	DPB(6, "Buffer read", buf, bufsize);
+	return bufsize;		// This is the actual number of bytes read
 
-	Error:
+	Exception:
 		if (encrypt) {
 			free(encbuf);
-			free(decbuf);
 		}
 		return ret;
 }
@@ -520,8 +502,6 @@ int crypt_setup_server(ssl_context * ssl, ssl_session * ssn, int *sockfd) {
 	return 0;
 
 }
-//#endif
-//#ifdef SSL_SERVER
 
 //*******************************************************
 /*
