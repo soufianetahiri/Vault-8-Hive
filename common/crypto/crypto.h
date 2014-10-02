@@ -26,17 +26,27 @@ extern "C" {
 #define MAX(a,b)	(((a) > (b)) ? (a) : (b))
 #define MIN(a,b)	(((a) < (b)) ? (a) : (b))
 
-int crypt_setup_client(ssl_context *ssl, ssl_session *ssn, int *sockfd );
-int crypt_setup_server(ssl_context *ssl, ssl_session *ssn, int *sockfd );
-int crypt_handshake( ssl_context *ssl );
-int crypt_read( ssl_context *ssl, unsigned char *buf, size_t bufsz );
-int crypt_write( ssl_context *ssl, unsigned char *buf, size_t size );
-int	crypt_close_notify( ssl_context *ssl );
-int crypt_cleanup( ssl_context *ssl);
+enum flag {FALSE = 0, TRUE};
+
+typedef struct _crypt_context {
+	ssl_context	*ssl;
+	ssl_session	*ssn;
+	int 		*socket;
+	enum flag	encrypt;
+	aes_context	*aes;
+} crypt_context;
+
+crypt_context *crypt_setup_client(int *sockfd );
+crypt_context *crypt_setup_server(int *sockfd );
+int crypt_handshake(crypt_context *ioc);
+int crypt_read(crypt_context *ioc, unsigned char *buf, size_t bufsize );
+int crypt_write(crypt_context *ioc, unsigned char *buf, size_t bufsize );
+int	crypt_close_notify(crypt_context *ioc);
+void crypt_cleanup(crypt_context *ioc);
 void print_ssl_errors(int error);
 int gen_random(unsigned char *output, size_t output_len);
-int aes_init(ssl_context *ssl);
-int aes_terminate();
+int aes_init(crypt_context *ioc);
+int aes_terminate(crypt_context *ioc);
 
 #ifdef __cplusplus
 }

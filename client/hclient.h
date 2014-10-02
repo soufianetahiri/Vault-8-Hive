@@ -19,8 +19,9 @@
 #include <signal.h>
 #include <errno.h>
 
-#include "trigger.h"
 #include "crypto.h"
+#include "trigger.h"
+
 /* Preprocessor Macros */
 #define DEFAULT_DELAY     30								/* default trigger delay */
 #define YES               1
@@ -110,10 +111,10 @@ void FreeArgv(char**);                                     /* definition: parser
 char** BuildArgv(char*);                                   /* definition: parser.c */
 
 void Run(struct proc_vars*, struct trigger_params *);      /* definition: modes.c */
-void InteractiveMode( struct proc_vars *, ssl_context * );                   /* definition: modes.c */
+void InteractiveMode(struct proc_vars *, crypt_context *);                   /* definition: modes.c */
 void AutomaticMode(struct proc_vars*);                     /* definition: modes.c */
 
-int CommandToFunction(char**, struct proc_vars*, ssl_context * ); /* definition: functions.c */
+int CommandToFunction(char**, struct proc_vars*, crypt_context * ); /* definition: functions.c */
 int Upload(char**, struct proc_vars*);                     /* definition: functions.c */
 int Download(char**, struct proc_vars*);                   /* definition: functions.c */
 int Remove(char**, struct proc_vars*);                     /* definition: functions.c */

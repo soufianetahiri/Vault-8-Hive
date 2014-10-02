@@ -15,9 +15,8 @@ pthread_mutex_t		tlock;
 //**************************************************************
 void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 {
-	ssl_context			ssl;
-	ssl_session			ssn;
- 
+	crypt_context		*cp;		// Command post connection context pointer
+
 	pthread_mutex_init( &tlock, NULL );
 
 	// if we aren't listening, then we don't need to take the lock.
@@ -66,14 +65,14 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	printf( "\n %s%s:%s\n", BLUE, run1String, RESET );
 
 	// from a SSL/TLS perspective, the client acts like a SSL server
-	if ( crypt_setup_server(&ssl, &ssn, &(info->tcpfd) ) != SUCCESS )
+	if ((cp = crypt_setup_server(&info->tcpfd)) != NULL )
 	{
 		DLX(2, printf( " ERROR: crypt_setup_server() failed\n"));
 		return;
 	}
 	DL(2);
 	// start TLS handshake
-	if ( crypt_handshake( &ssl ) != SUCCESS )
+	if (crypt_handshake(cp) != SUCCESS)
 	{
 		// TODO: encode this string(s)
 		//printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
@@ -83,7 +82,7 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	DLX(2, printf( " TLS handshake complete.\n"));
 	printf( "\n" );
 
-	if ((aes_init(&ssl)) == 0) {
+	if ((aes_init(cp)) == 0) {
 		DLX(4, printf("AES initialization failed"));
 		return;
 	}
@@ -91,16 +90,16 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
 	if ( info->interactive == YES )
 	{
-		InteractiveMode( info, &ssl );
+		InteractiveMode(info, cp);
 	}
 
-	crypt_close_notify( &ssl );
+	crypt_close_notify(cp);
 
 	return;
 }
 
 //**************************************************************
-void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
+void InteractiveMode(struct proc_vars* info, crypt_context *ioc)
 {
    char cline[525];
    char** argv;
@@ -113,7 +112,7 @@ void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
       cline[strlen(cline) - 1] = '\0';
       argv = BuildArgv(cline);
       if ((argv != NULL) && (argv[0] != '\0')) {
-         CommandToFunction(argv, info, ssl );
+         CommandToFunction(argv, info, ioc);
       }
       FreeArgv(argv);
    }

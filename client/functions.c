@@ -6,7 +6,7 @@
 #include "proj_strings.h"	//Necessary for strings...
 #include "debug.h"
 
-ssl_context *ssl_f;
+crypt_context *cc;		// Command and control network connection context
 
 /* ******************************************************************************************************************************
  *
@@ -18,12 +18,12 @@ ssl_context *ssl_f;
  *
  * **************************************************************************************************************************** */
 
-int CommandToFunction(char **argv, struct proc_vars *info, ssl_context * ssl)
+int CommandToFunction(char **argv, struct proc_vars *info, crypt_context *ioc)
 {
 	int retval = 0;
 
-	// set ssl_context variable that is global to this file
-	ssl_f = ssl;
+	// set command and control context variable that is global to this file
+	cc = ioc;
 
 // May want to reconsider comparisons here, had to add strlen(argv[0]) to exec and ex to discriminate or change name from ex to q for quit.
 
@@ -560,7 +560,7 @@ int SendFile(int fd, size_t size)
 		// Sent bytes read to the remote file
 		wbytes = 0;
 		while (wbytes < rbytes) {
-			if ((ret = crypt_write(ssl_f, buffer, rbytes)) < 0) {
+			if ((ret = crypt_write(cc, buffer, rbytes)) < 0) {
 				//fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
 				fprintf(stderr, "%s", sendFile1String);
 				return ERROR;
@@ -572,7 +572,7 @@ int SendFile(int fd, size_t size)
 	DLX(8, printf("Sent %lu bytes\n", (unsigned long)size));
 
 	// Get the result of the remote's upload file command
-	if ((crypt_read(ssl_f, (unsigned char *) &rbuf, sizeof(REPLY))) <= 0) {
+	if ((crypt_read(cc, (unsigned char *) &rbuf, sizeof(REPLY))) <= 0) {
 		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", sendFile2String);
 		return ERROR;
@@ -600,7 +600,7 @@ int RecvFile(int fd, int size)
 		memset(buffer, 0, 4096);
 
 		DL(8);
-		if ((rbytes = crypt_read(ssl_f, buffer, MAX(size,4096))) < 0) {
+		if ((rbytes = crypt_read(cc, buffer, MAX(size,4096))) < 0) {
 			//fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
 			fprintf(stderr, "%s", recvFile1String);
 			return ERROR;
@@ -621,7 +621,7 @@ int RecvFile(int fd, int size)
 
 	// Get result of remote command
 	DL(8);
-	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) < 0) {
+	if ((rbytes = crypt_read(cc, (unsigned char *) &rbuf, 8)) < 0) {
 		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", recvFile2String);
 		return ERROR;
@@ -661,14 +661,14 @@ void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
 	}
 
 	DLX(4, printf("Sending command\n"));
-	if (crypt_write(ssl_f, (unsigned char *) sbuf, 264) <= 0) {
+	if (crypt_write(cc, (unsigned char *) sbuf, 264) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure sending request to the remote computer\n");
 		fprintf(stderr, "%s", sendCommand1String);
 		rbuf->reply = htonl(ERROR);
 		return;
 	}
 
-	if (crypt_read(ssl_f, (unsigned char *) rbuf, sizeof(REPLY)) <= 0) {
+	if (crypt_read(cc, (unsigned char *) rbuf, sizeof(REPLY)) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 		fprintf(stderr, "%s", sendCommand2String);
 		rbuf->reply = htonl(ERROR);
