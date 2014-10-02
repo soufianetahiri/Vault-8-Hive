@@ -65,7 +65,7 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	printf( "\n %s%s:%s\n", BLUE, run1String, RESET );
 
 	// from a SSL/TLS perspective, the client acts like a SSL server
-	if ((cp = crypt_setup_server(&info->tcpfd)) != NULL )
+	if ((cp = crypt_setup_server(&info->tcpfd)) == NULL )
 	{
 		DLX(2, printf( " ERROR: crypt_setup_server() failed\n"));
 		return;

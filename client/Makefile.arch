@@ -139,12 +139,12 @@ hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBSSL) $(LIBCRYPTO) $(OBJS) $(LIBDE
 	if ! test $(DEBUG); then \
 		${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS}; \
 		${STRIP} ${BINARY};	\
-		${MD%SUM} ${BINARY} > ${BINARY}.md5; \
+		${MD5SUM} ${BINARY} > ${BINARY}.md5; \
 	else \
 		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
 		printf "\tLD\t\t$@-dbg\n"; \
 		${CC} ${CFLAGS} -o ${BINARY}-dbg ${OBJS} $(LIBS) ${LDFLAGS}; \
-		${MD%SUM} ${BINARY}-dbg > ${BINARY}-dbg.md5; \
+		${MD5SUM} ${BINARY}-dbg > ${BINARY}-dbg.md5; \
 	fi
 	echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD
 	printf "\n\tCLIENT BUILD COMPLETE\n\n"; \
