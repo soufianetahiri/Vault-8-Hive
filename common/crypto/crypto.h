@@ -47,6 +47,7 @@ void print_ssl_errors(int error);
 int gen_random(unsigned char *output, size_t output_len);
 int aes_init(crypt_context *ioc);
 int aes_terminate(crypt_context *ioc);
+void print_ssl_error(int error);
 
 #ifdef __cplusplus
 }

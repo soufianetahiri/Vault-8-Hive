@@ -29,7 +29,6 @@ unsigned char shared_key[AES_KEY_SIZE];
 
 static int	my_set_session(ssl_context * ssl);
 static int	my_get_session(ssl_context * ssl);
-static void	print_ssl_error(int error);
 
 //*******************************************************
 #ifndef DEBUG
@@ -280,6 +279,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 	size_t bufsize;
 	unsigned char *encbuf = NULL;
 
+	memset(buf, 0, size);
 	DLX(6, printf("New read request for %lu bytes\n", (unsigned long)size));
 	if (ioc->encrypt) {																// Allocate encryption buffer -- multiple of 16 bytes
 		bufsize = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);	// Buffer size needed must account for 2-byte size field
@@ -369,7 +369,10 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 
 //*******************************************************
 int crypt_close_notify(crypt_context *ioc) {
-	return ssl_close_notify(ioc->ssl);
+	if (ioc)
+		if (ioc->ssl)
+			return ssl_close_notify(ioc->ssl);
+	return 0;
 }
 
 //*******************************************************
@@ -601,12 +604,16 @@ static int my_set_session(ssl_context * ssl) {
 
 //*******************************************************
 void crypt_cleanup(crypt_context *ioc) {
-
-	ssl_free(ioc->ssl);
-	free(ioc->ssl);
-	free(ioc->ssn);
-	free(ioc->aes);
-	free(ioc);
+	if (ioc) {
+		if (ioc->ssl) {
+			ssl_free(ioc->ssl);
+			free(ioc->ssn);
+			free(ioc->ssl);
+		}
+		if (ioc->aes)
+			free(ioc->aes);
+		free(ioc);
+	}
 	return;
 }
 

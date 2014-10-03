@@ -163,7 +163,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 
     memset(buf, 0, sizeof(buf));
     if (( ret = ssl_read( ssl, buf, 2 )) != 2 ) {
-    	DLX(4, printf("ssl_read() failed to receive buffer length, returned: -0x%04x\n", -ret));
+    	DLX(4, printf("ssl_read() failed to receive buffer length: "); print_ssl_error(ret));
 		goto exit;
 	}
 
@@ -183,7 +183,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
     	if (ret == 0)
     		break;
     	if (ret < 0) {
-    		DLX(4, printf("ssl_read() error, returned: -0x%04x\n", -ret));
+    		DLX(4, printf("ssl_read() failed: "); print_ssl_error(ret));
     		continue;
     	} else
     		DLX(8, printf("Read %d bytes\n", ret));
@@ -195,7 +195,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 
     DLX(6, printf("Received DHM params: %u bytes\n", (unsigned int)n));
     if( ( ret = dhm_read_params( dhm, &p, end ) ) != 0 )  {
-        DLX(4, printf("dhm_read_params() failed, returned -0x%04x\n", -ret ));
+        DLX(4, printf("dhm_read_params() failed: "); print_ssl_error(ret));
         goto exit;
     }
 
@@ -217,7 +217,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 
     if ( (ret = rsa_pkcs1_verify( &rsa, RSA_PUBLIC, SIG_RSA_SHA1, 0, hash, p ) ) != 0 )
     {
-        DLX(4, printf("rsa_pkcs1_verify() failed, returned -0x%04x\n", -ret ));
+        DLX(4, printf("rsa_pkcs1_verify() failed: "); print_ssl_error(ret));
         goto exit;
     }
 #endif
@@ -225,8 +225,8 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 	// Generate public value and send to server: Yc = G ^ Xc mod P
     DL(8);
     buflen = dhm->len;
-    if (( ret = dhm_make_public( dhm, AES_KEY_SIZE, buf, buflen, ctr_drbg_random, &ctr_drbg )) != 0 ) {
-        DLX(4, printf("dhm_make_public() failed, returned -0x%04x\n", -ret));
+    if (( ret = dhm_make_public( dhm, AES_KEY_SIZE, buf, buflen, ctr_drbg_random, &ctr_drbg)) != 0 ) {
+        DLX(4, printf("dhm_make_public() failed: "); print_ssl_error(ret));
         goto exit;
     }
     DLX(6, printf("Sending public value to server, length = %u\n", (unsigned int)buflen));
@@ -235,7 +235,7 @@ dhm_context *dhClientExchange( ssl_context *ssl )
     do {
     	ret = ssl_write(ssl, buf+n, buflen-n);
     	if (ret < 0) {
-    		DLX(4, printf("ssl_write() error, returned: -0x%04x\n", -ret));
+    		DLX(4, printf("ssl_write() failed: "); print_ssl_error(ret));
     		continue;
     	} else
     		DLX(8, printf("Wrote %d bytes\n", ret));
@@ -245,46 +245,12 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 	// Derive the shared secret: K = Ys ^ Xc mod P
     n = dhm->len;
     if( (ret = dhm_calc_secret(dhm, buf, &n ) ) != 0) {
-        DLX(4, printf( "dhm_calc_secret() failed, returned -0x%04x\n", -ret));
+        DLX(4, printf( "dhm_calc_secret() failed: "); print_ssl_error(ret));
         goto exit;
     }
     DPB(6, "Shared Secret:", buf, n);
 
     return(dhm);
-
-#if 0
-    DLX(4, printf("Shared secret:");
-		for( n = 0; n < 16; n++ )
-			printf( "%02x", buf[n] );
-		printf("\n");
-		);
-#endif
-#if 0
-    /*
-     * 8. Setup the AES-256 decryption key
-     *
-     * This is an overly simplified example; best practice is
-     * to hash the shared secret with a random value to derive
-     * the keying material for the encryption/decryption keys,
-     * IVs and MACs.
-     */
-    printf( "...\n  . Receiving and decrypting the ciphertext" );
-    fflush( stdout );
-
-    aes_setkey_dec( &aes, buf, 256 );
-
-    memset( buf, 0, sizeof( buf ) );
-
-    if( ( ret = net_recv( &server_fd, buf, 16 ) ) != 16 )
-    {
-        printf( " failed\n  ! net_recv returned %d\n\n", ret );
-        goto exit;
-    }
-
-    aes_crypt_ecb( &aes, AES_DECRYPT, buf, buf );
-    buf[16] = '\0';
-    printf( "\n  . Plaintext is \"%s\"\n\n", (char *) buf );
-#endif
 
 exit:
     net_close( server_fd );
@@ -372,7 +338,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     entropy_init(&entropy);
 
     if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)  {
-        DLX(4, printf("ctr_drbg_init() failed, returned: -0x%04x\n", -ret));
+        DLX(4, printf("ctr_drbg_init() failed: "); print_ssl_error(ret));
         goto exit;
     }
 
@@ -389,12 +355,12 @@ dhm_context *dhServerExchange( ssl_context *ssl )
 	// Get the DHM modulus and generator
     DLX(6, printf("Reading P\n"));
     if ((ret = mpi_read_string(&dhm->P, 16, POLARSSL_DHM_RFC3526_MODP_2048_P)) != 0 ) {
-    	DLX(4, printf("mpi_read_string() failed, returned: -0x%04x\n", -ret));
+    	DLX(4, printf("mpi_read_string() failed: "); print_ssl_error(ret));
     	goto exit;
     }
     DLX(6, printf("Reading G\n"));
     if ((ret = mpi_read_string(&dhm->G, 16, POLARSSL_DHM_RFC3526_MODP_2048_G)) != 0 ) {
-    	DLX(4, printf("mpi_read_string() failed, returned: -0x%04x\n", -ret));
+    	DLX(4, printf("mpi_read_string() failed: "); print_ssl_error(ret));
     	goto exit;
     }
 
@@ -403,7 +369,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     DLX(6, printf("Creating the server's DH parameters\n"));
     memset( buf, 0, sizeof(buf));	// Clear buffer
     if (( ret = dhm_make_params( dhm, AES_KEY_SIZE, buf, &n, ctr_drbg_random, &ctr_drbg)) != 0 ) {
-        DLX(4, printf("dhm_make_params() failed, returned: -0x%04x\n", -ret));
+        DLX(4, printf("dhm_make_params() failed: "); print_ssl_error(ret));
         goto exit;
     }
     DLX(6, printf("buf: %p, n: %u\n", buf, (unsigned int)n));
@@ -421,7 +387,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     DLX(6, printf("rsa.padding = %x\n", rsa.padding));
 
     if ( (ret = rsa_pkcs1_sign(&rsa, NULL, NULL, RSA_PRIVATE, SIG_RSA_SHA1, 0, hash, buf+n) ) != 0) {
-        DLX(4, printf("rsa_pcks1_sign() failed, returned: -0x%04x\n", -ret));
+        DLX(4, printf("rsa_pcks1_sign() failed: "); print_ssl_error(ret));
     	goto exit;
     }
 	buflen = n + rsa.len;
@@ -433,7 +399,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     // Send the buffer length to the client
     DLX(6, printf("Sending buffer of length: %u\n", (unsigned int)buflen));
 	if ( (ret = ssl_write( ssl, buf2, 2)) != 2) {
-		DLX(4, printf("ssl_write() failed to send buffer length to client. Returned: -0x%04x\n", -ret));
+		DLX(4, printf("ssl_write() failed to send buffer length to client: "); print_ssl_error(ret));
 		goto exit;
 	}
 
@@ -463,7 +429,7 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     	if (ret == 0)	// EOF
     		break;
     	if (ret < 0) {
-    		DLX(4, printf("ssl_read() error, returned: -0x%04x\n", -ret));
+    		DLX(4, printf("ssl_read() failed: "); print_ssl_error(ret));
     		continue;
     	}else
     		DLX(6, printf("Read %d bytes\n", ret));
@@ -472,43 +438,18 @@ dhm_context *dhServerExchange( ssl_context *ssl )
 
     DL(8);
     if ((ret = dhm_read_public( dhm, buf, dhm->len )) != 0 ) {
-		DLX(4, printf("dhm_read_public() error, returned: -0x%04x\n", -ret));
+		DLX(4, printf("dhm_read_public() failed: "); print_ssl_error(ret));
         goto exit;
     }
 
 	// Derive the shared secret: K = Ys ^ Xc mod P
     DL(8);
     if( ( ret = dhm_calc_secret( dhm, buf, &n ) ) != 0 ) {
-        DLX(4, printf("dhm_calc_secret() failed, returned -0x%04x\n", -ret));
+        DLX(4, printf("dhm_calc_secret() failed: "); print_ssl_error(ret));
         goto exit;
     }
     DPB(6, "Shared Secret:", buf, n);
     return(dhm);
-
-#if 0
-    /*
-     * 8. Setup the AES-256 encryption key
-     *
-     * This is an overly simplified example; best practice is
-     * to hash the shared secret with a random value to derive
-     * the keying material for the encryption/decryption keys
-     * and MACs.
-     */
-    printf( "...\n  . Encrypting and sending the ciphertext" );
-    fflush( stdout );
-
-    aes_setkey_enc( &aes, buf, 256 );
-    memcpy( buf, PLAINTEXT, 16 );
-    aes_crypt_ecb( &aes, AES_ENCRYPT, buf, buf );
-
-    if( ( ret = net_send( &client_fd, buf, 16 ) ) != 16 )
-    {
-        printf( " failed\n  ! net_send returned %d\n\n", ret );
-        goto exit;
-    }
-
-    printf( "\n\n" );
-#endif
 
 exit:
     dhm_free( dhm );

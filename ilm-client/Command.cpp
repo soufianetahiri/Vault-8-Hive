@@ -25,11 +25,8 @@ extern "C" {
 
 }
 
-#ifdef DEBUG
-int dbug_level_ = 4;    // debug level
-#endif
-
 //*******************************************************************************
+
 using namespace InterfaceLibrary;
 using namespace InterfaceLibrary::Primitive;
 

@@ -672,7 +672,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 		retval = crypt_write(beacon_io, enc_buf + bytes_sent, sz_to_send);
 		if( retval < 0) {
-			DLX(4, printf("\tcrypt_write() failed with error: -0x%04x\n", -retval));
+			DLX(4, printf("crypt_write() failed: "); print_ssl_error(retval));
 			retval = FAILURE;
 			goto EXIT;
 		}

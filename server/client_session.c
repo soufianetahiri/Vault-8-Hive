@@ -13,7 +13,7 @@
 #define _USE_32BIT_TIME_T
 #define _INC_STAT_INL
 #include <sys/stat.h>
-#include "dhExchange.h"
+#include "crypto.h"
 
 static int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut);
 static int UploadFile(char* path, unsigned long size, int sock);
@@ -106,7 +106,7 @@ int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long time
 		if (select(sock+1,&readFDs,0,0,&timeout)) {
 //			received = recv(sock,(char*)buf + receivedTotal,size - receivedTotal,0);
 			if ((received = crypt_read(cp, buf + receivedTotal, size - receivedTotal)) < 0) {
-				DLX(4, printf("crypt_read() failed, returned: -0x%04d", received));
+				DLX(4, printf("crypt_read() failed: "); print_ssl_error(received));
 				return SOCKET_ERROR;
 			}
 			if(received == 0)
@@ -272,7 +272,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 			if ((rv = crypt_write(cp, data, bytes_read)) < 0) {
 				if (bytes_written == POLARSSL_ERR_NET_WANT_WRITE)
 					continue;
-				DLX(3, printf("crypt_write() error, returned -0x%04x\n", rv));
+				DLX(3, printf("crypt_write() failed:"); print_ssl_error(rv));
 				goto Error;
 			}
 			bytes_written += rv;
@@ -472,7 +472,7 @@ unsigned long StartClientSession( int sock )
 		{
 			if (r == POLARSSL_ERR_NET_WANT_READ)
 				continue;
-			DLX(4, printf("\tERROR: crypt_read(): ret = -0x%04x\n", -r));
+			DLX(4, printf("crypt_read() failed: "); print_ssl_error(r));
 		}
 		alarm( 0 );
 
