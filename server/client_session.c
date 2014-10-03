@@ -468,11 +468,11 @@ unsigned long StartClientSession( int sock )
 		// this timeout is reset each time a command is received.
 		alarm( SESSION_TIMEOUT );
 
-		if ( (r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 )
+		if ((r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 )
 		{
-			DLX(4, printf("\tERROR: crypt_read(): ret = %d\n", r));
 			if (r == POLARSSL_ERR_NET_WANT_READ)
 				continue;
+			DLX(4, printf("\tERROR: crypt_read(): ret = -0x%04x\n", -r));
 		}
 		alarm( 0 );
 

@@ -27,8 +27,9 @@ char *my_dhm_P = (char *) my_dhm_P_String;	// The values of these strings are lo
 char *my_dhm_G = (char *) my_dhm_G_String;
 unsigned char shared_key[AES_KEY_SIZE];
 
-static int my_set_session(ssl_context * ssl);
-static int my_get_session(ssl_context * ssl);
+static int	my_set_session(ssl_context * ssl);
+static int	my_get_session(ssl_context * ssl);
+static void	print_ssl_error(int error);
 
 //*******************************************************
 #ifndef DEBUG
@@ -134,7 +135,7 @@ int aes_init(crypt_context *ioc) {
 
 	// Extract shared key from DHM context
     if ((ret = mpi_write_binary(&dhm->K, shared_key, AES_KEY_SIZE)) < 0) {
-    	DLX(4, printf("mpi_write_binary() failed, returned: -0x%04x\n", ret));;
+    	DLX(4, printf("mpi_write_binary() failed:"); print_ssl_error(ret));
     	return 0;
     }
     DPB(4, "Shared Key", shared_key, AES_KEY_SIZE);
@@ -173,7 +174,7 @@ int crypt_handshake(crypt_context *ioc) {
 
 		while ((ret = ssl_handshake(ioc->ssl)) != 0) {
 			if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
-				DLX(4, printf("TLS handshake failed, returned: -0x%04x\n", -ret));
+				DLX(4, printf("TLS handshake failed"); print_ssl_error(ret));
 				return -1;
 			}
 		}
@@ -220,7 +221,7 @@ int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size) {
 		DLX(9, printf("ioc->aes->nr = %d\n", ioc->aes->nr));
 		aes_setkey_enc(ioc->aes, shared_key, AES_KEY_SIZE);		// Set key for encryption
 		if (( ret = aes_crypt_cbc(ioc->aes, AES_ENCRYPT, bufsize, iv, encbuf, encbuf)) < 0) {	// Encrypt the block
-			DLX(4, printf("aes_crypt_cbd() failed, returned: -0x%04x\n", -ret));
+			DLX(4, printf("aes_crypt_cbd() failed: "); print_ssl_error(ret));
 			return ret;
 		}
 		DPB(8, "Buffer after encryption", encbuf, bufsize);
@@ -247,7 +248,7 @@ int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size) {
 				break;
 			}
 
-			DLX(4, printf("ssl_write() failed, returned: -0x%04x\n", -ret));
+			DLX(4, printf("ssl_write() failed: "); print_ssl_error(ret));
 			break;
 
 		} else
@@ -319,7 +320,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 
 			default:
 				if (received < 0) {
-					DLX(4, printf("ERROR: crypt_read() failed. ssl_read returned -0x%04x\n", -received));
+					DLX(4, printf("ERROR: crypt_read() failed: "); print_ssl_error(received));
 					ret = received;
 					goto Exception;
 				} else
@@ -338,7 +339,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 		DPB(9, "Initialization Vector", iv, sizeof(iv));
 		aes_setkey_dec(ioc->aes, shared_key, AES_KEY_SIZE);		// Set key for decryption
 		if (( ret = aes_crypt_cbc(ioc->aes, AES_DECRYPT, received, iv, encbuf, encbuf)) < 0) {	// Decrypt the block
-			DLX(4, printf("aes_crypt_cbc() failed, returned: -0x%04x\n", -ret));
+			DLX(4, printf("aes_crypt_cbc() failed: "); print_ssl_error(ret));
 			return ret;
 		}
 		DPB(8, "Buffer after decryption", encbuf, received);
@@ -397,7 +398,7 @@ crypt_context *crypt_setup_client(int *sockfd) {
 
 	DLX(4, printf("\tInitializing the TLS structure...\n"));
 	if ((ret = ssl_init(ioc->ssl)) != 0) {
-		DLX(4, printf(" failed, ssl_init returned: -0x%04x\n", -ret));
+		DLX(4, print_ssl_error(ret));
 		return NULL;
 	}
 	DLX(4, printf("\tSSL Initialized\n"));
@@ -455,21 +456,21 @@ crypt_context *crypt_setup_server(int *sockfd) {
 	ret = x509parse_crtfile(&srvcert, SRV_CERT_FILE);
 	if (ret != 0) {
 		printf("\t> Error: Invalid or missing server certificate (%s).\n", SRV_CERT_FILE);
-		print_ssl_errors(ret);
+		print_ssl_error(ret);
 		return NULL;
 	}
 
 	ret = x509parse_crtfile(&ca_chain, CA_CERT_FILE);
 	if (ret != 0) {
 		printf("\t> Error: Invalid or missing CA certificate (%s).\n", CA_CERT_FILE);
-		print_ssl_errors(ret);
+		print_ssl_error(ret);
 		return NULL;
 	}
 
 	ret = x509parse_keyfile(&rsa, SRV_KEY_FILE, NULL);
 	if (ret != 0) {
 		printf("\t> Error: Invalid or missing server key (%s).\n", SRV_KEY_FILE);
-		print_ssl_errors(ret);
+		print_ssl_error(ret);
 		return NULL;
 	}
 
@@ -500,7 +501,7 @@ crypt_context *crypt_setup_server(int *sockfd) {
 	ioc->aes = aes;
 
 	if ((ret = ssl_init(ioc->ssl)) != 0) {
-		DLX(4, printf(" failed, ssl_init() returned -0x%04x\n\n", -ret));
+		DLX(4, print_ssl_error(ret));
 		return NULL;
 	}
 
@@ -614,32 +615,62 @@ void crypt_cleanup(crypt_context *ioc) {
 #endif
 
 //*******************************************************
-void print_ssl_errors(int error)
+void print_ssl_error(int error)
 {
 	switch(error) {
 
-	case POLARSSL_ERR_X509_FEATURE_UNAVAILABLE:		printf("X509 Error: Feature not available\n");						break;
-	case POLARSSL_ERR_X509_CERT_INVALID_PEM:		printf("X509 Certificate Error: Invalid PEM format\n");				break;
-	case POLARSSL_ERR_X509_CERT_INVALID_FORMAT:		printf("X509 Certificate Error: Invalid format\n");					break;
-	case POLARSSL_ERR_X509_CERT_INVALID_VERSION:	printf("X509 Certificate Error: Invalid version\n");				break;
-	case POLARSSL_ERR_X509_CERT_INVALID_SERIAL:		printf("X509 Certificate Error: Invalid serial number\n");			break;
+	case POLARSSL_ERR_X509_FEATURE_UNAVAILABLE:				printf("X509 Error: Feature not available\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_PEM:				printf("X509 Certificate Error: Invalid PEM format\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_FORMAT:				printf("X509 Certificate Error: Invalid format\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_VERSION:			printf("X509 Certificate Error: Invalid version\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_SERIAL:				printf("X509 Certificate Error: Invalid serial number\n");	break;
 
-	case POLARSSL_ERR_X509_CERT_INVALID_ALG:		printf("X509 Certificate Error: Invalid algorithm\n");				break;
-	case POLARSSL_ERR_X509_CERT_INVALID_NAME:		printf("X509 Certificate Error: Invalid name\n");					break;
-	case POLARSSL_ERR_X509_CERT_INVALID_DATE:		printf("X509 Certificate Error: Invalid date\n");					break;
-	case POLARSSL_ERR_X509_CERT_INVALID_PUBKEY:		printf("X509 Certificate Error: Invalid public key\n");				break;
-	case POLARSSL_ERR_X509_CERT_INVALID_SIGNATURE:	printf("X509 Certificate Error: Invalid signature\n");				break;
+	case POLARSSL_ERR_X509_CERT_INVALID_ALG:				printf("X509 Certificate Error: Invalid algorithm\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_NAME:				printf("X509 Certificate Error: Invalid name\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_DATE:				printf("X509 Certificate Error: Invalid date\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_PUBKEY:				printf("X509 Certificate Error: Invalid public key\n");	break;
+	case POLARSSL_ERR_X509_CERT_INVALID_SIGNATURE:			printf("X509 Certificate Error: Invalid signature\n");	break;
 
-	case POLARSSL_ERR_X509_CERT_INVALID_EXTENSIONS:	printf("X509 Certificate Error: Invalid extensions\n");				break;
-	case POLARSSL_ERR_X509_CERT_UNKNOWN_VERSION:	printf("X509 Certificate Error: Unknown version\n");				break;
-	case POLARSSL_ERR_X509_CERT_UNKNOWN_SIG_ALG:	printf("X509 Certificate Error: Unknown signature algorithm\n");	break;
-	case POLARSSL_ERR_X509_UNKNOWN_PK_ALG:			printf("X509 Error: Unknown algorithm\n");							break;
-	case POLARSSL_ERR_X509_CERT_SIG_MISMATCH:		printf("X509 Certificate Error: Signature mismatch\n");				break;
+	case POLARSSL_ERR_X509_CERT_INVALID_EXTENSIONS:			printf("X509 Certificate Error: Invalid extensions\n");	break;
+	case POLARSSL_ERR_X509_CERT_UNKNOWN_VERSION:			printf("X509 Certificate Error: Unknown version\n");	break;
+	case POLARSSL_ERR_X509_CERT_UNKNOWN_SIG_ALG:			printf("X509 Certificate Error: Unknown signature algorithm\n");	break;
+	case POLARSSL_ERR_X509_UNKNOWN_PK_ALG:					printf("X509 Error: Unknown algorithm\n");	break;
+	case POLARSSL_ERR_X509_CERT_SIG_MISMATCH:				printf("X509 Certificate Error: Signature mismatch\n");	break;
 
-	case POLARSSL_ERR_X509_CERT_VERIFY_FAILED:		printf("X509 Certificate Error: Verify failed\n");					break;
-	case POLARSSL_ERR_X509_KEY_INVALID_VERSION:		printf("X509 Key Error: Invalid version\n");						break;
-	case POLARSSL_ERR_X509_KEY_INVALID_FORMAT:		printf("X509 Key Error: Invalid format\n");							break;
+	case POLARSSL_ERR_X509_CERT_VERIFY_FAILED:				printf("X509 Certificate Error: Verify failed\n");	break;
+	case POLARSSL_ERR_X509_KEY_INVALID_VERSION:				printf("X509 Key Error: Invalid version\n");	break;
+	case POLARSSL_ERR_X509_KEY_INVALID_FORMAT:				printf("X509 Key Error: Invalid format\n");	break;
+	case POLARSSL_ERR_SSL_FEATURE_UNAVAILABLE:				printf("The requested feature is not available.\n\n");	break;
+	case POLARSSL_ERR_SSL_BAD_INPUT_DATA:                   printf("Bad input parameters to function.\n\n");	break;
+	case POLARSSL_ERR_SSL_INVALID_MAC:                      printf("Verification of the message MAC failed.\n");	break;
+	case POLARSSL_ERR_SSL_INVALID_RECORD:                   printf("An invalid SSL record was received.\n");	break;
+	case POLARSSL_ERR_SSL_CONN_EOF:                         printf("The connection indicated an EOF.\n");	break;
+	case POLARSSL_ERR_SSL_UNKNOWN_CIPHER:                   printf("An unknown cipher was received.\n");	break;
+	case POLARSSL_ERR_SSL_NO_CIPHER_CHOSEN:                 printf("The server has no ciphersuites in common with the client.\n");	break;
+	case POLARSSL_ERR_SSL_NO_SESSION_FOUND:                 printf("No session to recover was found.\n");	break;
+	case POLARSSL_ERR_SSL_NO_CLIENT_CERTIFICATE:            printf("No client certification received from the client, but required by the authentication mode.\n");	break;
+	case POLARSSL_ERR_SSL_CERTIFICATE_TOO_LARGE:            printf("Our own certificate(s) is/are too large to send in an SSL message.\n");	break;
+	case POLARSSL_ERR_SSL_CERTIFICATE_REQUIRED:             printf("The own certificate is not set, but needed by the server.\n");	break;
+	case POLARSSL_ERR_SSL_PRIVATE_KEY_REQUIRED:             printf("The own private key is not set, but needed.\n");	break;
+	case POLARSSL_ERR_SSL_CA_CHAIN_REQUIRED:                printf("No CA Chain is set, but required to operate.\n");	break;
+	case POLARSSL_ERR_SSL_UNEXPECTED_MESSAGE:               printf("An unexpected message was received from our peer.\n");	break;
+	case POLARSSL_ERR_SSL_FATAL_ALERT_MESSAGE:              printf("A fatal alert message was received from our peer.\n");	break;
+	case POLARSSL_ERR_SSL_PEER_VERIFY_FAILED:               printf("Verification of our peer failed.\n");	break;
+	case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:                printf("The peer notified us that the connection is going to be closed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CLIENT_HELLO:              printf("Processing of the ClientHello handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_SERVER_HELLO:              printf("Processing of the ServerHello handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CERTIFICATE:               printf("Processing of the Certificate handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CERTIFICATE_REQUEST:       printf("Processing of the CertificateRequest handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_SERVER_KEY_EXCHANGE:       printf("Processing of the ServerKeyExchange handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_SERVER_HELLO_DONE:         printf("Processing of the ServerHelloDone handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CLIENT_KEY_EXCHANGE:       printf("Processing of the ClientKeyExchange handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CLIENT_KEY_EXCHANGE_DHM_RP:printf("Processing of the ClientKeyExchange handshake message failed in DHM Read Public.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CLIENT_KEY_EXCHANGE_DHM_CS:printf("Processing of the ClientKeyExchange handshake message failed in DHM Calculate Secret.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CERTIFICATE_VERIFY:        printf("Processing of the CertificateVerify handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_CHANGE_CIPHER_SPEC:        printf("Processing of the ChangeCipherSpec handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_BAD_HS_FINISHED:                  printf("Processing of the Finished handshake message failed.\n");	break;
+	case POLARSSL_ERR_SSL_MALLOC_FAILED:                    printf("Memory allocation failed.\n");	break;
 
-	default:										printf("SSL Error -0x%04x\n", -error);								break;
+	default:												printf("SSL Error -0x%04x\n", -error);	break;
 	}
 }

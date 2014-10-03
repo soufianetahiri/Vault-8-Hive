@@ -13,7 +13,7 @@ endif
 
 SHELL := $(shell which bash)
 CC := $(shell which gcc)
-GCCVERSION_GT_4.6 = $(shell expr `gcc -dumpversion | cut -f1,2 -d.` \>= 4.6)
+GCCVERSION_GT_4.6 = $(shell expr `${CC} -dumpversion | cut -f1,2 -d.` \>= 4.6)
 MD5SUM := $(shell which md5sum)
 STRIP := $(shell which strip)
 
@@ -164,21 +164,21 @@ debug: strings $(LIBSSL) $(LIBCRYPTO) $(OBJS) $(LIBDEBUG)
 	md5sum ${BINARY}-dbg > ${BINARY}-dbg.md5
 
 library: strings
-	gcc $(CFLAGS) -c $(LIBFILES)
+	${CC} $(CFLAGS) -c $(LIBFILES)
 	ar rv libhclient.a *.o
 	ranlib libhclient.a
 	echo "ARCH_BUILD_CLIENTLIB=$(TARGET)" >> ARCH_BUILD
 
 libcryptcat: cryptcat/farm9crypt.o cryptcat/twofish2.o
-	gcc -c $(CRYPTCAT) 
+	${CC} -c $(CFLAGS) $(CRYPTCAT) 
 	ar rv libcryptcat.a netcat.o farm9crypt.o twofish2.o
 	ranlib libcryptcat.a
 
 cryptcat/farm9crypt.o: cryptcat/farm9crypt.cc cryptcat/farm9crypt.h
-	gcc -c cryptcat/farm9crypt.cc
+	${CC} -c $(CFLAGS) cryptcat/farm9crypt.cc
 
 cryptcat/twofish2.o: cryptcat/twofish2.cc cryptcat/twofish2.h
-	gcc -c cryptcat/twofish2.cc
+	${CC} -c $(CFLAGS) cryptcat/twofish2.cc
 
 .PHONY: strings
 strings: init_strings.o $(STRINGS)/string_utils.o 
