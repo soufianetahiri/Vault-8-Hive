@@ -8,22 +8,20 @@
 
 crypt_context *cc;		// Command and control network connection context
 
-/* ******************************************************************************************************************************
- *
- * CommandToFunction(char** argv, struct proc_vars* info)
- * Description -- function maps the user's command to the correct function
- * Parameters  -- argv = string vector that holds the command (field1), file/application (field2), and/or file (field3)
- *                info = pointer to the process data structure
- * Return      -- returns zero (0) if successful and negative one (-1) on error/failure
- *
- * **************************************************************************************************************************** */
+/*!
+ * int CommandToFunction(char **argv, struct proc_vars *info, crypt_context *ioc)
+ * @brief maps the user's command to the correct function
+ * @param argv - string vector that holds the command (field1), file/application (field2), and/or file (field3)
+ * @param info - pointer to the process data structure
+ * @param ioc - I/O connection context
+ * @return - returns zero (0) if successful and negative one (-1) on error/failure
+ */
 
 int CommandToFunction(char **argv, struct proc_vars *info, crypt_context *ioc)
 {
 	int retval = 0;
 
-	// set command and control context variable that is global to this file
-	cc = ioc;
+	cc = ioc;	// set command and control context variable that is global to this file
 
 // May want to reconsider comparisons here, had to add strlen(argv[0]) to exec and ex to discriminate or change name from ex to q for quit.
 

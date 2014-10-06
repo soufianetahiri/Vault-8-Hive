@@ -622,7 +622,8 @@ void crypt_cleanup(crypt_context *ioc) {
 #endif
 
 //*******************************************************
-void print_ssl_error(int error)
+D(
+		void print_ssl_error(int error)
 {
 	switch(error) {
 
@@ -681,3 +682,5 @@ void print_ssl_error(int error)
 	default:												printf("SSL Error -0x%04x\n", -error);	break;
 	}
 }
+)
+

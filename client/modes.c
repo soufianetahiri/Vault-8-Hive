@@ -10,6 +10,7 @@
 #include <pthread.h>
 
 //**************************************************************
+
 pthread_mutex_t		tlock;
 
 //**************************************************************
@@ -99,6 +100,7 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 }
 
 //**************************************************************
+// TODO: Incorporate this code into the Run function above.
 void InteractiveMode(struct proc_vars* info, crypt_context *ioc)
 {
    char cline[525];
