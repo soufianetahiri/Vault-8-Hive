@@ -36,6 +36,9 @@ extern "C"
 
 	void displaySha1Hash(char *label, unsigned char *sha1Hash);
 
+	#ifdef DEBUG
+		int dbug_level_ = 2;	// debug level
+	#endif
 }
 
 using namespace InterfaceLibrary;
@@ -53,11 +56,6 @@ extern Ilm::Trigger		*myTrigger;
 uint16_t	lport = 0;
 int			do_trigger_listen = 0;
 int			parse_config_only = 0;
-
-#ifdef DEBUG
-int dbug_level_ = 2;	// debug level
-#endif
-//***************************************************************************************
 
 //**************************************************************************************
 // LISTENER

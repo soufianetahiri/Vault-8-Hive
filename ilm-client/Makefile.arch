@@ -27,6 +27,7 @@ LIBSSL_INCLUDES = $(SSL)/include
 LIBSSL = $(SSL)/library/libpolarssl.a
 LIBCRYPTO = $(CRYPTO)/libcrypto.a
 STRINGS = $(COMMON)/strings
+LIBDEBUG = $(COMMON)/debug/libdebug.a
 #===============================================================================
 .PHONY: force-rebuild
 $(info )
@@ -123,13 +124,13 @@ OUTFILE = hive
 
 # Debug Configuration
 ifdef DEBUG
-  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  CXXFLAGS += -DDEBUG -D_DEBUG -g -O0
   LIBS += $(LIBDEBUG)
   ifeq ("$(DEBUG)", "2")	
-    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
+    CXXFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
   endif
 else
-  CFLAGS += -Os
+  CXXFLAGS += -Os
   LIBDEBUG :=
 endif
 
