@@ -28,12 +28,13 @@ using namespace InterfaceLibrary::Primitive;
 
 //*****************************************************************************************
 
-crypt_context	*target_io;			// Command and control context for target communication
+//crypt_context	*target_io;			// Command and control context for target communication
 extern HiveILM	*myILMInstance;
 
 //*****************************************************************************************
 Connection::Connection()
 {
+	DL(6);
 	state = NOCONNECTION;
 	return;
 }
@@ -41,7 +42,8 @@ Connection::Connection()
 //*****************************************************************************************
 Connection::~Connection()
 {
-	crypt_close_notify(target_io);
+	DL(6);
+	crypt_close_notify(ioc);
 	close( acceptfd );
 	close( listenfd );
 	state = NOCONNECTION;
@@ -51,6 +53,7 @@ Connection::~Connection()
 //*****************************************************************************************
 int Connection::Close( void )
 {
+	DL(6);
 	return close( listenfd );
 }
 
@@ -59,6 +62,7 @@ int Connection::Listen( uint16_t lport )
 {
 	int		n = 1;
 
+	DL(6);
 	local.sin_family = AF_INET;
 	local.sin_addr.s_addr = htonl( INADDR_ANY );
 	local.sin_port = htons( lport );
@@ -127,6 +131,7 @@ int Connection::Accept( std::string& ip )
 {
 	socklen_t	len;
 
+	DL(6);
 	len = sizeof( local );
 
 	if ( ( acceptfd = accept( listenfd, ( struct sockaddr * )&remote, &len ) ) == ERROR )
@@ -139,7 +144,7 @@ int Connection::Accept( std::string& ip )
 	}
 
 	close( listenfd );
-	
+	DL(6);
 	len = sizeof( local );
 
 	if ( getsockname( acceptfd, ( struct sockaddr *)&local, &len ) == ERROR )
@@ -172,7 +177,7 @@ int Connection::Accept( std::string& ip )
 	cout << endl << " Enabling encrypted communications:" << endl;
 
     // from a SSL/TLS perspective, the client acts like a SSL server
-    if ((target_io = crypt_setup_server(&acceptfd)) == NULL) {
+    if ((ioc = crypt_setup_server(&acceptfd)) == NULL) {
 		state = CONNERROR;
         D( printf( " * ERROR: crypt_setup_server() failed\n" ); )
         //printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
@@ -182,7 +187,7 @@ int Connection::Accept( std::string& ip )
     }
 
     // start TLS handshake
-    if ( crypt_handshake(target_io) != SUCCESS )
+    if ( crypt_handshake(ioc) != SUCCESS )
     {
 		state = CONNERROR;
         //printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
@@ -193,7 +198,7 @@ int Connection::Accept( std::string& ip )
 
 	cout << "  . TLS handshake complete." << endl;
 
-	if ((aes_init(target_io)) == 0) {
+	if ((aes_init(ioc)) == 0) {
 		cout << "  * Error: AES initialization failed." << endl;
 		return ERROR;
 	}
@@ -213,6 +218,7 @@ int Connection::TxCommand( struct send_buf* sbuf, REPLY *rbuf, unsigned char com
 {
 	int len = strlen( sbuf->path ) + 1;
 
+	DL(6);
 	if ( state != CONNECTED )
 	{
 		state = NOCONNECTION;
@@ -255,7 +261,7 @@ int Connection::TxCommand( struct send_buf* sbuf, REPLY *rbuf, unsigned char com
 	}
 
 // crypt_write() returns the detailed error code, but we return ERROR for all errors
-	if ( crypt_write(target_io, (unsigned char *)sbuf, 264) < 0 )
+	if ( crypt_write(ioc, (unsigned char *)sbuf, 264) < 0 )
 	{
 		//fprintf(stderr, "\tSendCommand(): failure sending request to the remote computer\n");
 //		printf( " * %s", sendCommand1String );
@@ -264,7 +270,7 @@ int Connection::TxCommand( struct send_buf* sbuf, REPLY *rbuf, unsigned char com
 	}
 
 // crypt_read() returns the detailed error code, but we return ERROR for all errors
-	if (crypt_read(target_io, (unsigned char *)rbuf, sizeof(REPLY)) < 0 )
+	if (crypt_read(ioc, (unsigned char *)rbuf, sizeof(REPLY)) < 0 )
 	{
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 //		printf( " * %s", sendCommand2String );
@@ -289,7 +295,7 @@ int Connection::RecvFile( int fd, int size )
     unsigned char	buffer[4096];
     REPLY			rbuf;
 
-
+	DL(6);
 	if ( state != CONNECTED )
 	{
 		return -1;
@@ -299,7 +305,7 @@ int Connection::RecvFile( int fd, int size )
     {
         memset( buffer, 0, 4096 );
 
-        if ((rbytes = crypt_read(target_io, buffer, 4096) ) <= 0 )
+        if ((rbytes = crypt_read(ioc, buffer, 4096) ) <= 0 )
         {
             //fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
             printf( " * %s", recvFile1String );
@@ -326,7 +332,7 @@ int Connection::RecvFile( int fd, int size )
         size -= rbytes;
     }
 
-    if ((rbytes = crypt_read(target_io, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
+    if ((rbytes = crypt_read(ioc, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
     {
         //fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
         printf( " * %s", recvFile2String );
@@ -344,7 +350,7 @@ int Connection::SendFile( int fd, int size )
     unsigned char	buffer[4096];
     REPLY			rbuf;
 
-
+	DL(6);
 	if ( state != CONNECTED )
 	{
 		return -1;
@@ -365,7 +371,7 @@ int Connection::SendFile( int fd, int size )
             Utilities::GenRandomBytes( (char *)&buffer[ rbytes ], ( 4096 - rbytes ), NULL, 0 );
         }
 
-        if (crypt_write(target_io, buffer, 4096) <= 0 )
+        if (crypt_write(ioc, buffer, 4096) <= 0 )
         {
             //fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
             printf( " * %s", sendFile1String );
@@ -375,7 +381,7 @@ int Connection::SendFile( int fd, int size )
         size -= rbytes;
     }
 
-    if ((rbytes = crypt_read(target_io, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
+    if ((rbytes = crypt_read(ioc, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
     {
         //fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
         printf( " * %s", sendFile2String );

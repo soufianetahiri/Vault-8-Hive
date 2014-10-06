@@ -38,12 +38,13 @@ class Connection
 	// properties
 
 	private:
-		int			state;
-		ctr_drbg_context 	ctr_drbg;
-		ssl_context		ssl;
-		ssl_session		ssn;
-		int			listenfd;
-		int			acceptfd;
+		int					state;
+		ctr_drbg_context	ctr_drbg;
+		crypt_context		*ioc;
+//		ssl_context			ssl;
+//		ssl_session			ssn;
+		int					listenfd;
+		int					acceptfd;
 		struct sockaddr_in	local;
 		struct sockaddr_in	remote;
 };

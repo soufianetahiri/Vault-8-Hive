@@ -37,7 +37,7 @@ extern "C"
 	void displaySha1Hash(char *label, unsigned char *sha1Hash);
 
 	#ifdef DEBUG
-		int dbug_level_ = 2;	// debug level
+		int dbug_level_ = 8;	// debug level
 	#endif
 }
 

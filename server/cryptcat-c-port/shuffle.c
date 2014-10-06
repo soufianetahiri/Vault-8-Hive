@@ -21,8 +21,8 @@ int shuffle( int localfd, int netfd )
 
 	if( netfd > FD_SETSIZE )
 	{
-		D( printf( " ! Invalid file descriptor %d\n", netfd ); )
-		return ( 1 );
+		DLX(2, printf( "Invalid file descriptor %d\n", netfd));
+		return 1;
 	}
 
 	for( ;; )
@@ -42,7 +42,7 @@ int shuffle( int localfd, int netfd )
 
 		if( rv < 0 )
 		{
-			D( perror( " ! select()" ); )
+			DLX(2, perror("select()"));
 			return -1;
 		}
 
@@ -55,12 +55,12 @@ int shuffle( int localfd, int netfd )
 			rv = farm9crypt_read( netfd, buffer, 8196 );
 			if( rv == 0 )
 			{
-				D( printf( " . socket closed. %i\n", __LINE__ ); )
+				DLX(2, printf("socket closed.n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( perror( " ! read() from socket" ); )
+				DLX(2, perror("read() from socket"));
 				return -1;
 			}
 
@@ -68,12 +68,12 @@ int shuffle( int localfd, int netfd )
 			rv = write( localfd, buffer, rv );
 			if( rv == 0 )
 			{
-				D( printf( " . stdout closed.\n" ); )
+				DLX(2, printf("stdout closed.\n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( perror( " ! write() to localfd" ); )
+				DLX(2, perror("write() to localfd"));
 				return -1;
 			}
 		}
@@ -87,12 +87,12 @@ int shuffle( int localfd, int netfd )
 			rv = read( localfd, buffer, 8196 );
 			if( rv == 0 )
 			{
-				D( printf( " . localfd closed\n" ); )
+				DLX(2, printf("localfd closed\n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( perror( " ! read() from socket" ); )
+				DLX(2, perror("read() from socket"));
 				return -1;
 			}
 
@@ -100,12 +100,12 @@ int shuffle( int localfd, int netfd )
 			rv = farm9crypt_write( netfd, buffer, rv );
 			if( rv == 0 )
 			{
-				D( printf( " . socket closed. %i\n", __LINE__ ); )
+				DLX(2, printf("socket closed.\n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( printf( " ! write() to socket" ); )
+				DLX(2, printf("write() to socket\n"));
 				return -1;
 			}
 		}
