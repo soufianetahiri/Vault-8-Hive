@@ -459,21 +459,21 @@ crypt_context *crypt_setup_server(int *sockfd) {
 	ret = x509parse_crtfile(&srvcert, SRV_CERT_FILE);
 	if (ret != 0) {
 		printf("\t> Error: Invalid or missing server certificate (%s).\n", SRV_CERT_FILE);
-		print_ssl_error(ret);
+		DLX(4, print_ssl_error(ret));
 		return NULL;
 	}
 
 	ret = x509parse_crtfile(&ca_chain, CA_CERT_FILE);
 	if (ret != 0) {
 		printf("\t> Error: Invalid or missing CA certificate (%s).\n", CA_CERT_FILE);
-		print_ssl_error(ret);
+		DLX(4, print_ssl_error(ret));
 		return NULL;
 	}
 
 	ret = x509parse_keyfile(&rsa, SRV_KEY_FILE, NULL);
 	if (ret != 0) {
 		printf("\t> Error: Invalid or missing server key (%s).\n", SRV_KEY_FILE);
-		print_ssl_error(ret);
+		DLX(4, print_ssl_error(ret));
 		return NULL;
 	}
 
