@@ -309,7 +309,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	unsigned char* netstat_an_data = NULL;
 	unsigned char* next_beacon_data = NULL;
 	
-	crypt_context *beacon_io;		// Command and control I/O connection context
+	crypt_context *beacon_io = NULL;		// Command and control I/O connection context
 
 	memset(temp, 0, 1024);
 
@@ -701,11 +701,12 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 EXIT:
 	//cleanup
-	if( beacon_io->ssl->major_ver >= 1 )
-	{
-		crypt_close_notify(beacon_io);
-		crypt_cleanup(beacon_io);
-	}
+
+	if (beacon_io)
+		if (beacon_io->ssl->major_ver >= 1 ) {
+			crypt_close_notify(beacon_io);
+			crypt_cleanup(beacon_io);
+		}
 
 	if(mac_data != NULL)
 	{
