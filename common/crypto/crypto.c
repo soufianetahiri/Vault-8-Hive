@@ -7,7 +7,13 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#if defined SOLARIS
+#define UINT16_MAX (65535U)
+#else
 #include <stdint.h>
+#endif      //SOLARIS
+
 #include "crypto_proj_strings.h"
 #include "polarssl/x509.h"
 #include "polarssl/aes.h"

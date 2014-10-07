@@ -5,7 +5,12 @@
 
 #include <string.h>
 #include <stdio.h>
+
+#if defined LINUX
 #include <stdint.h>
+#else
+#endif
+
 #include <stdlib.h>
 
 #include "polarssl/config.h"
