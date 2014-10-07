@@ -35,6 +35,7 @@ extern HiveILM	*myILMInstance;
 Connection::Connection()
 {
 	DL(6);
+	ioc = NULL;
 	state = NOCONNECTION;
 	return;
 }

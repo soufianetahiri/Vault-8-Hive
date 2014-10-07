@@ -491,35 +491,34 @@ unsigned long StartClientSession( int sock )
 		{
 			case EXIT:
 				DLX(2, printf("EXIT command received.\n"));
-					fQuit = 1;
+				fQuit = 1;
 				ret.reply = 0;
 				break;
 
 			case UPLOAD:
 				DLX(2, printf("UPLOAD command received.\n"));
-					ret.reply = UploadFile(commandpath, ntohl(cmd.size),sock);
+				ret.reply = UploadFile(commandpath, ntohl(cmd.size),sock);
 				break;
 
 			case DOWNLOAD:
 				DLX(2, printf("DOWNLOAD command received.\n"));
-					ret.reply = DownloadFile(commandpath, ntohl(cmd.size), sock);
+				ret.reply = DownloadFile(commandpath, ntohl(cmd.size), sock);
 				break;
 
 			case EXECUTE:
 				DLX(2, printf("EXECUTE command received.\n"));
-					memset((unsigned char *)&ret, '\0', sizeof(REPLY));    //Clear up the reply...
+				memset((unsigned char *)&ret, '\0', sizeof(REPLY));    //Clear up the reply...
 				ret.reply = Execute( commandpath );
 				break;
 
 			case DELETE:
 				DLX(2, printf("DELETE command received, attempting SECURE DELETE...\n"));
-					ret.reply = SecureDelete(commandpath);
+				ret.reply = SecureDelete(commandpath);
 
 				//If SecureDelete failed, ret.reply is not 0 so try to use DelFile function
-				if (ret.reply != 0)
-				{
+				if (ret.reply != 0) {
 					DLX(2, printf("Now attempting to UNLINK the file: %s\n", commandpath));
-						ret.reply = DelFile(commandpath);
+					ret.reply = DelFile(commandpath);
 				}
 				break;
 
@@ -529,7 +528,7 @@ unsigned long StartClientSession( int sock )
 				fQuit = 1;
 				ret.reply = 0;
 				crypt_write(cp, (unsigned char*)&ret, sizeof(ret));
-				//			send(sock, (const char*)&ret, sizeof(ret),0);
+				crypt_cleanup(cp);
 				closesocket(sock);
 				sock = INVALID_SOCKET;
 				retval = SHUTDOWN;
@@ -553,9 +552,7 @@ unsigned long StartClientSession( int sock )
 		}
 
 		// Send reply
-		//		if( SOCKET_ERROR == send(sock, (const char*)&ret, sizeof(ret),0))
-		if (crypt_write(cp, (unsigned char*)&ret, sizeof(ret)) < 0)
-		{
+		if (crypt_write(cp, (unsigned char*)&ret, sizeof(ret)) < 0) {
 			closesocket(sock);
 			goto Exit;
 		}
@@ -565,10 +562,10 @@ unsigned long StartClientSession( int sock )
 		// retval == SHUTDOWN is processed, why not process it here?  it might eliminate some tracing
 		// back and forth.
 Exit:
-	if( commandpath != 0 ) free( commandpath );
-	crypt_cleanup(cp);
+	if( commandpath != 0 )
+		free( commandpath );
 	aes_terminate(cp);
-
+	crypt_cleanup(cp);
 	return retval;
 }
 

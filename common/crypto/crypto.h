@@ -43,7 +43,6 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t bufsize );
 int crypt_write(crypt_context *ioc, unsigned char *buf, size_t bufsize );
 int	crypt_close_notify(crypt_context *ioc);
 void crypt_cleanup(crypt_context *ioc);
-void print_ssl_errors(int error);
 int gen_random(unsigned char *output, size_t output_len);
 int aes_init(crypt_context *ioc);
 int aes_terminate(crypt_context *ioc);

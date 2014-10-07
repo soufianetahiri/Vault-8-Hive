@@ -41,8 +41,6 @@ class Connection
 		int					state;
 		ctr_drbg_context	ctr_drbg;
 		crypt_context		*ioc;
-//		ssl_context			ssl;
-//		ssl_session			ssn;
 		int					listenfd;
 		int					acceptfd;
 		struct sockaddr_in	local;

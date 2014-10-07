@@ -62,6 +62,7 @@ int			parse_config_only = 0;
 //**************************************************************************************
 Listener::Listener()
 {
+	DL(6);
 	this->connection = new Connection();
 
 	if (this->connection == 0)
@@ -72,6 +73,7 @@ Listener::Listener()
 
 Listener::~Listener()
 {
+	DL(6);
 	delete this->connection;
 }
 
@@ -80,6 +82,7 @@ void Listener::Listen( Primitive::Activation& actvn, ProcessCmdAccumulator& acc,
 	string		ipaddr;
 	String		*argPtr = (String *)(actvn.arguments);
 
+	DL(6);
 	// see discussion of this global variable in Trigger::triggerImplant()
 	parse_config_only = NO;
 
@@ -171,17 +174,20 @@ void Listener::Listen( Primitive::Activation& actvn, ProcessCmdAccumulator& acc,
 
 Connection* Listener::getConnection()
 {
+	DL(6);
 	return this->connection;
 }
 
 void Listener::setConnection( Connection *newConnection)
 {
+	DL(6);
 	std::cout << "\n\n Did you call Listener::getConnection and delete that connection first?\n" << endl;
 	this->connection = newConnection;
 }
 
 void Listener::TriggerAndListen( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
 {
+	DL(6);
 	// set the global variable checked by triggerImplant() and Listen()
 	do_trigger_listen = YES;
 
@@ -214,6 +220,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 	int			checkRawPort = NO;
 	int			checkRootPermissions = NO;
 
+	DL(6);
    //See if the desired trigger file exists...
 	triggerFile.open(triggerFileName.c_str());
 
@@ -494,6 +501,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	Payload       	p;		//Payload for transmission....
 	int		rv = 0;
 
+	DL(6);
 	//Initialize status for triggering
 	resp.type = ProcessCmdResponse::TYPE_Local_Failure;
 

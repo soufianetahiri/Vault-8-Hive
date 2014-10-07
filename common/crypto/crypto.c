@@ -369,9 +369,12 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 
 //*******************************************************
 int crypt_close_notify(crypt_context *ioc) {
-	if (ioc)
-		if (ioc->ssl)
+	DL(6);
+	if (ioc) {
+		if (ioc->ssl) {
 			return ssl_close_notify(ioc->ssl);
+		}
+	}
 	return 0;
 }
 
@@ -387,6 +390,7 @@ crypt_context *crypt_setup_client(int *sockfd) {
 		rng_init();
 
 	ioc = (crypt_context *)calloc(1, sizeof(crypt_context));
+	DLX(6, printf("ioc = %p\n", ioc));
 	ssl = (ssl_context *)calloc(1, sizeof(ssl_context));
 	ssn = (ssl_session *)calloc(1, sizeof(ssl_session));
 	aes = (aes_context *)calloc(1, sizeof(aes_context));
@@ -491,6 +495,7 @@ crypt_context *crypt_setup_server(int *sockfd) {
 		rng_init();
 
 	ioc = (crypt_context *)calloc(1, sizeof(crypt_context));
+	DLX(6, printf("ioc = %p\n", ioc));
 	ssl = (ssl_context *)calloc(1, sizeof(ssl_context));
 	ssn = (ssl_session *)calloc(1, sizeof(ssl_session));
 	aes = (aes_context *)calloc(1, sizeof(aes_context));
@@ -609,10 +614,15 @@ void crypt_cleanup(crypt_context *ioc) {
 			ssl_free(ioc->ssl);
 			free(ioc->ssn);
 			free(ioc->ssl);
+			ioc->ssn = NULL;
+			ioc->ssl = NULL;
 		}
-		if (ioc->aes)
+		if (ioc->aes) {
 			free(ioc->aes);
+			ioc->aes = NULL;
+		}
 		free(ioc);
+		ioc = NULL;
 	}
 	return;
 }

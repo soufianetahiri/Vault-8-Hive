@@ -33,16 +33,19 @@ Connection			*myConn;
 
 void ListenWrapper(Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp)
 {
+	DL(6);
 	myListener->Listen( actvn, acc, resp);
 }
 
 void TriggerWrapper(Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp)
 {
+	DL(6);
 	myTrigger->triggerImplant( actvn, acc, resp);
 }
 
 void TriggerListenWrapper(Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp)
 {
+	DL(6);
 //	myTrigger->triggerImplantAndListen( actvn, acc, resp);
 	myListener->TriggerAndListen( actvn, acc, resp);
 }
@@ -59,6 +62,7 @@ HiveILM::HiveILM()
 	init_strings();
 	init_crypto_strings();
 
+	DL(6);
 	srand((unsigned int)time(NULL));
 
 	//Instantiate the Trigger+Listener (i.e. Connect)...
@@ -102,6 +106,7 @@ HiveILM::HiveILM()
 
 HiveILM::~HiveILM()
 {
+	DL(6);
    //cout << "\n\nWho will delete Hive's Listener and Trigger?   ...\n" << endl;
    //delete &myListener;
 }
@@ -109,12 +114,14 @@ HiveILM::~HiveILM()
 
 void HiveILM::RemoveCustomCmds( void )
 {
+	DL(6);
 	RemoveCmdShutDown();
 	RemoveCmdShell();
 }
 
 void HiveILM::AddCustomCmds( void )
 {
+	DL(6);
 	AddCmdShutDown();
 	AddCmdShell();
 }
@@ -122,12 +129,14 @@ void HiveILM::AddCustomCmds( void )
 void HiveILM::RemoveCmdShutDown( void )
 {
 //	cout << " * RemoveCmdShutDown()" << endl;
+	DL(6);
 	cGroup.Remove( 33 );
 	return;
 }
 
 void HiveILM::AddCmdShutDown( void )
 {
+	DL(6);
 //	cout << " * AddCmdShutDown()" << endl;
 	cGroup.push_back( shutdownCmd2 );
 	customCommands.push_back( cGroup );
@@ -136,12 +145,14 @@ void HiveILM::AddCmdShutDown( void )
 
 void HiveILM::RemoveCmdShell( void )
 {
+	DL(6);
 	cGroup_shell.Remove( 34 );
 	return;
 }
 
 void HiveILM::AddCmdShell( void )
 {
+	DL(6);
 	cGroup_shell.push_back( trueshell );
 	customCommands.push_back( cGroup_shell );
 	return;
@@ -152,6 +163,7 @@ void HiveILM::AddCmdShell( void )
 CONSTRUCT_DECL ILMConstructor()
 {
 //	LibraryModuleBase * myILMInstance = new HiveILM();
+	DL(6);
 	myILMInstance = new HiveILM();
 	myTrigger = new Ilm::Trigger();
 	myListener = new Ilm::Listener();
@@ -164,6 +176,7 @@ CONSTRUCT_DECL ILMConstructor()
 /// executable object.
 DESTRUCT_DECL ILMDestructor()
 {
+	DL(6);
 	delete LibraryModuleBase::GetHandlerObject();
 }
 
