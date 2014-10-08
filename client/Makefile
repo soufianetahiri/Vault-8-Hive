@@ -25,7 +25,7 @@ all:
 	printf "\n\t\tmake linux-x86\n"
 #	printf "\t\tmake linux-x86_64\n"
 	printf "\n\tTo make the patcher use:\n"
-	printf "\n\t\tmake linux-x86 patcher\n"
+	printf "\n\t\tmake patcher\n"
 	printf "\n\t\tNOTE: Make will produce an error if all binaries are not present.\n"
 	printf "\n\tTo make a debug version use:\n"
 	printf "\n\t\tmake DEBUG=1 <target>\n"
@@ -38,6 +38,9 @@ linux-x86:
 
 linux-x86_64:
 	$(MAKE) -f Makefile.arch TARGET=linux-x86_64
+
+patcher:
+	$(MAKE) -f Makefile.arch TARGET=linux-x86 $@
 
 library: clean
 	$(MAKE) -f Makefile.arch TARGET=$(TARGET) $@
