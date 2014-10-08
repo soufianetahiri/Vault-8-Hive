@@ -22,6 +22,7 @@ int CommandToFunction(char **argv, struct proc_vars *info, crypt_context *ioc)
 	int retval = 0;
 
 	cc = ioc;	// set command and control context variable that is global to this file
+	DLX(8, printf("crypt_context cc = %p\n", cc));
 
 // May want to reconsider comparisons here, had to add strlen(argv[0]) to exec and ex to discriminate or change name from ex to q for quit.
 
@@ -237,6 +238,7 @@ int Download(char **argv, struct proc_vars *info)
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
+	DLX(6, printf("Reply code from remote: 0x%lx - 0x%lx\n", rbuf.reply, rbuf.padding));
 	if (rbuf.reply == 0) {
 		DLX(6, printf("Receiving file, size: %lu\n", (unsigned long)ntohl(rbuf.padding)));
 		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding))) == 0) {
@@ -362,6 +364,7 @@ int Execute(char **argv, struct proc_vars *info)
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
 	SendCommand(&sbuf, &rbuf, info);
+	DLX(6, printf("Reply code from remote: %lu\n", rbuf.reply));
 	if (rbuf.reply == 0) {
 		//(void) asprintf(&message, "successful execution of remote application \"%s\"\n", rfile);
 		(void) asprintf(&message, "%s \"%s\"\n", execute3String, rfile);
@@ -597,7 +600,7 @@ int RecvFile(int fd, int size)
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
-		DL(8);
+		DLX(8, printf("crypt_context: %p\n", cc));
 		if ((rbytes = crypt_read(cc, buffer, MAX(size,4096))) < 0) {
 			//fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
 			fprintf(stderr, "%s", recvFile1String);
@@ -627,17 +630,15 @@ int RecvFile(int fd, int size)
 	return (rbuf.reply);
 }
 
-/* ******************************************************************************************************************************
- *
- * SendCommand(struct send_buf* sbuf, struct recv_buf* rbuf, struct proc_vars* info)
- * Description -- function sends the user's command to the remote computer for processing
- * Parameters  -- sbuf = the buffered data that will be sent to the remote computer for processing
- *                rbuf = the buffered data that will receive the remote computer's response to the sent command
- *                info = pointer to the process data structure
- * Return      -- void
- *
- * **************************************************************************************************************************** */
+// ******************************************************************************************************************************
 
+/*!
+ * void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
+ * @brief Sends the user's command to the remote computer for processing
+ * @param sbuf - the buffered data that will be sent to the remote computer for processing
+ * @param rbuf - the buffered data that will receive the remote computer's response to the sent command
+ * @param info - pointer to the process data structure
+ */
 void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
 {
 	int len = strlen(sbuf->path) + 1;
@@ -672,6 +673,6 @@ void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
 		rbuf->reply = htonl(ERROR);
 		return;
 	}
-
+	DLX(8, printf("Reply: 0x%lx, padding = 0x%lu\n", rbuf->reply, rbuf->padding));
 	return;
 }

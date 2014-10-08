@@ -247,7 +247,7 @@ int DownloadFile(char *path, unsigned long size, int sock)
 	ret.padding = htonl(size);
 
 	// Send reply with the file size so the client knows
-	DLX(4, printf("Sending reply\n"));
+	DLX(4, printf("Sending reply: reply = %lu, length = 0x%lx\n", ret.reply, ret.padding));
 	if (crypt_write(cp, (unsigned char*)&ret, sizeof(REPLY)) < 0)
 	{
 		DLX(2, printf("crypt_write() error\n"));
