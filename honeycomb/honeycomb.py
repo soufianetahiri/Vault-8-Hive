@@ -258,13 +258,15 @@ def parse_beacon_data(decrypted_data):
 			elif str(beacon_hdr.os) == '31':
 				beacon_data['os'] = "Solaris-x86"
 			elif str(beacon_hdr.os) == '40':
-				beacon_data['os'] = "MikroTik-MIPSBE"
+				beacon_data['os'] = "MikroTik-MIPS"
 			elif str(beacon_hdr.os) == '41':
-				beacon_data['os'] = "MikroTik-MIPSLE"
+				beacon_data['os'] = "MikroTik-MIPSEL"
 			elif str(beacon_hdr.os) == '42':
 				beacon_data['os'] = "MikroTik-x86"
 			elif str(beacon_hdr.os) == '43':
 				beacon_data['os'] = "MikroTik-PPC"
+			elif str(beacon_hdr.os) == '50':
+				beacon_data['os'] = "Ubiquiti-MIPS"
 			# support for legacy v2.3 beacon codes. NFI = No Further Information
 			elif str(beacon_hdr.os) == '1':
 				#os = "Windows"
