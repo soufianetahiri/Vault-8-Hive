@@ -13,7 +13,7 @@ extern "C" {
 #include "polarssl/entropy.h"
 #include "polarssl/ctr_drbg.h"
 #include "crypto_proj_strings.h"
-
+#include "dhExchange.h"
 #include "debug.h"
 
 #define SRV_CERT_FILE	"./server.crt"

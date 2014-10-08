@@ -462,12 +462,11 @@ unsigned long StartClientSession( int sock )
 		// Fill reply buffer with random bytes
 		GenRandomBytes((unsigned char *)&ret, sizeof(REPLY));
 
-		// Get command struct. Willing to wait 5 minutes between commands
-
-		// set timeout.  if we don't receive a command within this timeframe, assume we are hung and exit
-		// this timeout is reset each time a command is received.
+		// Get command, waiting up to SESSION_TIMEOUT seconds between commands.
+		// If a command is not received before the timeout expires, exit.
+		// This timeout is reset each time a command is received.
 		alarm( SESSION_TIMEOUT );
-
+		bzero(&cmd, sizeof(COMMAND));		// Clear any previous commands
 		if ((r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 )
 		{
 			if (r == POLARSSL_ERR_NET_WANT_READ)

@@ -98,7 +98,7 @@ int shuffle( int localfd, int netfd )
 			}
 			else if( rv < 0 )
 			{
-				DLX(4, perror("read() from socket"));
+				DLX(4, perror("read() from socket\n"));
 				return -1;
 			}
 

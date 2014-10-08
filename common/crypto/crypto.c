@@ -2,24 +2,20 @@
 extern "C" {
 #endif
 
-#include "crypto.h"
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "crypto_proj_strings.h"
+#include "polarssl/x509.h"
+#include "polarssl/aes.h"
+#include "crypto.h"
 
 #if defined SOLARIS
 #define UINT16_MAX (65535U)
 #else
 #include <stdint.h>
 #endif      //SOLARIS
-
-#include "crypto_proj_strings.h"
-#include "polarssl/x509.h"
-#include "polarssl/aes.h"
-#include "dhExchange.h"
-
-//#include "dhExchange.c"
 
 entropy_context entropy;				// Entropy context
 ctr_drbg_context ctr_drbg;				// Counter mode deterministic random byte generator context
@@ -285,7 +281,6 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 	size_t bufsize;
 	unsigned char *encbuf = NULL;
 
-	memset(buf, 0, size);
 	DLX(6, printf("New read request for %lu bytes\n", (unsigned long)size));
 	if (ioc->encrypt) {																// Allocate encryption buffer -- multiple of 16 bytes
 		bufsize = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);	// Buffer size needed must account for 2-byte size field
@@ -615,6 +610,7 @@ static int my_set_session(ssl_context * ssl) {
 
 //*******************************************************
 void crypt_cleanup(crypt_context *ioc) {
+	DL(6);
 	if (ioc) {
 		if (ioc->ssl) {
 			ssl_free(ioc->ssl);
