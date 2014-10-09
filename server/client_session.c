@@ -466,7 +466,7 @@ unsigned long StartClientSession( int sock )
 		// If a command is not received before the timeout expires, exit.
 		// This timeout is reset each time a command is received.
 		alarm( SESSION_TIMEOUT );
-		bzero(&cmd, sizeof(COMMAND));		// Clear any previous commands
+		memset(&cmd, 0, sizeof(COMMAND));		// Clear any previous commands
 		if ((r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 )
 		{
 			if (r == POLARSSL_ERR_NET_WANT_READ)
