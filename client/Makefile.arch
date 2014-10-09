@@ -197,8 +197,18 @@ $(STRINGS)/string_utils.o:  $(STRINGS_REBUILD) $(STRINGS)/string_utils.h
 	printf "\tCC\t\t$<\n"
 	cd $(STRINGS) && $(MAKE) TARGET=$(TARGET)
 
+.PHONY: bin-links
+bin-links:	# Install symbolic links to binaries in the server directory
+	for l in $(UNPATCHED_BINS); do \
+		if ! test -L $$l; then \
+			printf "Adding symlink to binary $${l%%-unpatched}\n"; \
+			ln -s $${l%%-unpatched} $$l; \
+		fi; \
+	done; \
+	printf "\n";
+
 .PHONY: patcher
-patcher: $(UNPATCHED_BINS) $(LIBSSL)
+patcher: bin-links $(UNPATCHED_BINS) $(LIBSSL)
 	printf "=========================================================================\n"
 	printf "\tBUILDING PATCHER\n"
 	printf "=========================================================================\n"
