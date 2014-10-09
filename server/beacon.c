@@ -345,7 +345,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 #endif
 
 	//TODO: Change this number whenever the version changes.
-	bhdr.version = htons(27);
+	bhdr.version = htons(28);
 
 	//Populate Additional Headers
 	//mac address
