@@ -202,7 +202,7 @@ bin-links:	# Install symbolic links to binaries in the server directory
 	for l in $(UNPATCHED_BINS); do \
 		if ! test -L $$l; then \
 			printf "Adding symlink to binary $${l%%-unpatched}\n"; \
-			ln -s $${l%%-unpatched} $$l; \
+			ln -s ../server/$${l%%-unpatched} $$l; \
 		fi; \
 	done; \
 	printf "\n";
