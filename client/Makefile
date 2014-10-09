@@ -39,9 +39,11 @@ linux-x86:
 linux-x86_64:
 	$(MAKE) -f Makefile.arch TARGET=linux-x86_64
 
+.PHONY:	patcher
 patcher:
 	$(MAKE) -f Makefile.arch TARGET=linux-x86 $@
 
+.PHONY: library
 library: clean
 	$(MAKE) -f Makefile.arch TARGET=$(TARGET) $@
 
