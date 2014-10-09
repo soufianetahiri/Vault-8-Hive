@@ -129,7 +129,7 @@ $(info )
 .SILENT:
 
 .PHONY: all
-all: $(LIBSSL) hclient debug patcher library
+all: $(LIBSSL) hclient debug
 
 .PHONY: release
 release: hclient
@@ -147,7 +147,7 @@ hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBSSL) $(LIBCRYPTO) $(OBJS) $(LIBDE
 		${MD5SUM} ${BINARY}-dbg > ${BINARY}-dbg.md5; \
 	fi
 	echo "ARCH_BUILD_CLIENT=$(TARGET)" > ARCH_BUILD
-	printf "\n\tCLIENT BUILD COMPLETE\n\n"; \
+	printf "\n\tCLIENT BUILD COMPLETE\n\n"
 
 $(LIBSSL): $(SSL_REBUILD)
 	cd $(SSL) && $(MAKE) DEBUG=$(DEBUG) TARGET=$(TARGET)
@@ -205,7 +205,7 @@ bin-links:	# Install symbolic links to binaries in the server directory
 			ln -s ../server/$${l%%-unpatched} $$l; \
 		fi; \
 	done; \
-	printf "\n";
+	printf "\n"
 
 .PHONY: patcher
 patcher: bin-links $(UNPATCHED_BINS) $(LIBSSL)
