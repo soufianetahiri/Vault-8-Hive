@@ -1,5 +1,5 @@
 #------------------------------------------------
-# Makefile include for mikrotik-mipsel
+# Makefile include for mikrotik-mipsel (little endian)
 #------------------------------------------------
 BUILDROOT=/opt/buildroot/buildroot-2010.11-mipsle/output/staging/usr
 ARCH=mipsel

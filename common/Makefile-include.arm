@@ -1,5 +1,5 @@
 #------------------------------------------------
-# Makefile for arm
+# Makefile include for ARM
 #------------------------------------------------
 ARCH=arm
 TOOLCHAIN=/opt/arm-devel/usr
