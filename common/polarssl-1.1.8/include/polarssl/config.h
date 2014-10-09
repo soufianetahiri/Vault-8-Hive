@@ -214,8 +214,8 @@
  * \def POLARSSL_SELF_TEST
  *
  * Enable the checkup functions (*_self_test).
- */
 #define POLARSSL_SELF_TEST
+ */
 
 /**
  * \def POLARSSL_SSL_DEBUG_ALL
@@ -334,8 +334,8 @@
  *      SSL_RSA_CAMELLIA_128_SHA
  *      SSL_RSA_CAMELLIA_256_SHA
  *      SSL_EDH_RSA_CAMELLIA_256_SHA
- */
 #define POLARSSL_CAMELLIA_C
+ */
 
 /**
  * \def POLARSSL_CERTS_C
@@ -346,8 +346,8 @@
  * Caller:
  *
  * This module is used for testing (ssl_client/server).
- */
 #define POLARSSL_CERTS_C
+ */
 
 /**
  * \def POLARSSL_CIPHER_C
@@ -404,8 +404,8 @@
  *      SSL_EDH_RSA_DES_168_SHA
  *
  * PEM uses DES/3DES for decrypting encrypted keys.
- */
 #define POLARSSL_DES_C
+ */
 
 /**
  * \def POLARSSL_DHM_C
@@ -546,8 +546,8 @@
  * Caller:  library/aes.c
  *
  * This modules adds support for the VIA PadLock on x86.
- */
 #define POLARSSL_PADLOCK_C
+ */
 
 /**
  * \def POLARSSL_PEM_C
