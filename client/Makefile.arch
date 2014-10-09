@@ -208,7 +208,7 @@ bin-links:	# Install symbolic links to binaries in the server directory
 	printf "\n"
 
 .PHONY: patcher
-patcher: bin-links $(UNPATCHED_BINS) $(LIBSSL)
+patcher: bin-links $(UNPATCHED_BINS)
 	printf "=========================================================================\n"
 	printf "\tBUILDING PATCHER\n"
 	printf "=========================================================================\n"
