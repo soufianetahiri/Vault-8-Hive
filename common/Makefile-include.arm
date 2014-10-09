@@ -11,6 +11,6 @@ AR=${BIN}/ar
 RANLIB=${BIN}/ranlib
 
 CFLAGS += -I$(HEADERS)
-CFLAGS += -DLINUX -DARM
+CFLAGS += -DLINUX -DARM -static
 
 LDFLAGS += -L$(LIBX) -lpthread -lutil

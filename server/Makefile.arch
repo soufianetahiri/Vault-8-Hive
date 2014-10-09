@@ -23,7 +23,7 @@ LIBDEBUG = $(COMMON)/debug/libdebug.a
 INCLUDES = -I. -I$(BZIP2) -I$(CRYPTO) -I$(BZIP2) -I$(COMMON)/ssl/include -I$(COMMON)/debug
 
 #Default FLAGS
-CFLAGS := -Wall -Wextra -ansi -std=gnu99 -static
+CFLAGS := -Wall -Wextra -ansi -std=gnu99
 CFLAGS += $(INCLUDES)
 CFLAGS += -D_USE_BASH
 
