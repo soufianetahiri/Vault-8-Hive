@@ -545,8 +545,9 @@ unsigned long StartClientSession( int sock )
 
 			default:
 				DLX(2, printf("Command not recognized.\n"));
-				fQuit = 1;
-				break;
+				continue;
+			//	fQuit = 1;
+			//	break;
 
 		}
 

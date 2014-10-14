@@ -322,8 +322,12 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 		DLX(6, printf("Forking...\n"));
 		forkret = fork();
 		if (forkret == 0) {
+			int ret;
+
 			DLX(6, printf("Child process executing shell command (\"%s\")...\n", gnomeTerminalCommand));
-			system( gnomeTerminalCommand );
+			ret = system( gnomeTerminalCommand );
+			if (ret == -1)
+				printf("ERROR: Could not  open terminal\n");
 			DLX(6, printf("Shell terminated, associated child exiting in 5 seconds\n"));
 			sleep( 5 );
 			unlink( cryptcat_path );

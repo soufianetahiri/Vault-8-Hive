@@ -208,12 +208,11 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 
 		memset( packet_buffer, 0, MAX_PKT );
 #if defined SOLARIS
-	//	D( printf( " DEBUG: Listening on solaris raw socket\n" ); )
+		// DLX(6, printf( "Listening on solaris raw socket\n"));
 		packet_length = sniff_read_solaris( socket_fd, packet_buffer, MAX_PKT );
-	//	D( printf( " DEBUG: Packet received with length %d bytes\n", packet_length ); )
+		// DLX(8, printf( "Packet received with length %d bytes\n", packet_length));
 
-		if ( packet_length == FAILURE )
-		{
+		if ( packet_length == FAILURE ) {
 			// not sure what to do upon recv error
 			DLX(5, printf(" ERROR: sniff_read_solaris() returned FAILURE\n"));
 			continue;

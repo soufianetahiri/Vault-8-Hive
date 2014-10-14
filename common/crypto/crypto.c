@@ -113,7 +113,7 @@ int gen_random(unsigned char *output, size_t output_len)
 //*******************************************************
 /*!
  *
- * @param ssl -- SSL context
+ * @param ioc -- I/O context
  * @return
  * @retval 0 -- error
  * @retval 1 -- success
@@ -148,6 +148,7 @@ int aes_init(crypt_context *ioc) {
 
 int aes_terminate(crypt_context *ioc)
 {
+	DLX(6, printf("Terminating AES. I/O context: 0x%p\n", ioc));
 	if (ioc->aes->nr == 0) {
 		DLX(4, printf("failed, AES context is invalid.\n"));
 		return 0;
@@ -163,7 +164,7 @@ int aes_terminate(crypt_context *ioc)
 /*!
  * int crypt_handshake(crypt_context *ioc)
  * @brief Establish an SSL connection
- * @param ssl -- SSL context
+ * @param ioc -- I/O context
  * @return
  * @retval 0 -- error
  * @retval 1 -- success
@@ -179,7 +180,7 @@ int crypt_handshake(crypt_context *ioc) {
 				return -1;
 			}
 		}
-		DLX(4, printf("\tTLS handshake complete\n"));
+		DLX(4, printf("\tTLS handshake complete. I/O context: 0x%p, socket: %d\n", ioc, *ioc->socket));
 
 		return 0;
 	}
@@ -188,7 +189,7 @@ int crypt_handshake(crypt_context *ioc) {
 /*!
  * int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size)
  * @brief Write data to the encrypted network connection
- * @param ssl -- SSL context
+ * @param ioc -- I/O context
  * @param buf -- buffer to transmit
  * @param size -- size of buffer (<= 65,535 bytes)
  * @return
@@ -267,7 +268,7 @@ int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size) {
 /*!
  * int crypt_read(ssl_context *ssl, unsigned char *buf, size_t size)
  * @brief Read data from the encrypted network connection
- * @param ssl - SSL context
+ * @param ioc - I/O context
  * @param buf - read buffer of at least size bytes
  * @param size - maximum size to read
  * @return
@@ -315,6 +316,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 				break;
 
 			case 0: // EOF
+				DLX(6, printf("EOF\n"));
 				ret = received;
 				goto Exception;
 				break;
@@ -334,6 +336,8 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 		DPB(8, "Buffer before decryption", encbuf, received);
 		if ((received % 16) != 0) {
 			DLX(6, printf("WARNING: Received data is not a multiple of 16\n"));
+			ret = -1;
+			goto Exception;
 		}
 		DLX(8, printf("AES decrypting read buffer\n"));
 		DLX(9, printf("ioc->aes->nr = %d\n", ioc->aes->nr));
@@ -370,7 +374,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 
 //*******************************************************
 int crypt_close_notify(crypt_context *ioc) {
-	DL(6);
+	DLX(6, printf("I/O context: 0x%p, socket: %d\n", ioc, *ioc->socket));
 	if (ioc) {
 		if (ioc->ssl) {
 			return ssl_close_notify(ioc->ssl);
@@ -380,6 +384,12 @@ int crypt_close_notify(crypt_context *ioc) {
 }
 
 //*******************************************************
+/*!
+ * crypt_context *crypt_setup_client(int *sockfd)
+ * @brief - Create a client crypt context
+ * @param sockfd
+ * @return - Pointer to the crypt_contex or NULL otherwise
+ */
 crypt_context *crypt_setup_client(int *sockfd) {
 	crypt_context	*ioc;
 	ssl_context		*ssl;
@@ -391,7 +401,7 @@ crypt_context *crypt_setup_client(int *sockfd) {
 		rng_init();
 
 	ioc = (crypt_context *)calloc(1, sizeof(crypt_context));
-	DLX(6, printf("ioc = %p\n", ioc));
+	DLX(6, printf("I/O context: 0x%p\n", ioc));
 	ssl = (ssl_context *)calloc(1, sizeof(ssl_context));
 	ssn = (ssl_session *)calloc(1, sizeof(ssl_session));
 	aes = (aes_context *)calloc(1, sizeof(aes_context));
@@ -610,7 +620,7 @@ static int my_set_session(ssl_context * ssl) {
 
 //*******************************************************
 void crypt_cleanup(crypt_context *ioc) {
-	DL(6);
+	DLX(6, printf("Cleanup I/O context: 0x%p\n", ioc));
 	if (ioc) {
 		if (ioc->ssl) {
 			ssl_free(ioc->ssl);

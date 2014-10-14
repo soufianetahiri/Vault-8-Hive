@@ -29,15 +29,15 @@
 #define ERROR             -1
 
 /* FOLLOWING DEFINITIONS FOR EXIT THROUGH HELP ARE ALSO IN servers Shell.h file */
-#define EXIT              0                                /* command = ex for exit */
-#define UPLOAD            1                                /* command = ul for upload */
-#define EXECUTE           2                                /* command = exec for execute */
-#define UPLOADEXECUTE     3                                /* not implemented */
-#define DOWNLOAD          4                                /* command = dl for download */
-#define DELETE            5                                /* command = del for delete */
-#define SHUTDOWNBOTH	  6				   /* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
-#define HELP              7                                /* command = help */
+#define UPLOAD				1			/* command = ul for upload */
+#define EXECUTE				2			/* command = exec for execute */
+#define UPLOADEXECUTE		3			/* not implemented */
+#define DOWNLOAD			4			/* command = dl for download */
+#define DELETE				5			/* command = del for delete */
+#define SHUTDOWNBOTH		6			/* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
+#define HELP				7			/* command = help */
 #define LAUNCHTRUESHELL		8
+#define EXIT              	10			/* command = ex for exit */
 
 #ifndef SUCCESS
 #define SUCCESS	0

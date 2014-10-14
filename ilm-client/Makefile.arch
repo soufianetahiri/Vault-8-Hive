@@ -126,6 +126,7 @@ OUTFILE = hive
 ifdef DEBUG
   CXXFLAGS += -DDEBUG -D_DEBUG -g -O0
   LIBS += $(LIBDEBUG)
+  OUTFILE = hive-dbg
   ifeq ("$(DEBUG)", "2")	
     CXXFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
   endif

@@ -11,6 +11,7 @@
 
 int launchShell( char *charinput )
 {
+	pid_t cpid;
 	DLX(1, printf("Calling jshell with parameters: %s\n", charinput));
 
 // fork_process could be used, but would work best if some refactoring
@@ -27,10 +28,9 @@ int launchShell( char *charinput )
 	}
 */
 
-	if ( fork() == 0 )
-	{
+	if ((cpid = fork()) == 0) {
 		// CHILD
-		DLX(2, printf("This the child process\n"));
+		DLX(2, printf("This is the child process\n"));
 
 		// by calling setsid(), if the parent hive process is killed,
 		// the shell connection will stay active.  if not using daemonize()
@@ -57,7 +57,7 @@ int launchShell( char *charinput )
 	else
 	{
 		// PARENT
-		DLX(2, printf("This is the parent process\n"));
+		DLX(2, printf("This is the parent process; PID of child: %u\n", (unsigned int)cpid));
 
 		// parent connection continues to handle the connection with the Hive ILM client
 	}

@@ -61,7 +61,6 @@ typedef struct _DATA {
 } DATA;
 
 /* FOLLOWING DEFINITIONS FOR EXIT THROUGH HELP ARE ALSO IN servers Shell.h file */
-#define EXIT              0     /* command = ex for exit */
 #define UPLOAD            1     /* command = ul for upload */
 #define EXECUTE           2     /* command = exec for execute */
 #define UPLOADEXECUTE     3     /* not implemented att */
@@ -70,6 +69,7 @@ typedef struct _DATA {
 #define SHUTDOWNBOTH	  6		/* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
 #define HELP              7     /* command = help */
 #define LAUNCHTRUESHELL   8
+#define EXIT              10    /* command = ex for exit */
 
 unsigned long StartClientSession( int sock );
 
