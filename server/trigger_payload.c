@@ -191,7 +191,7 @@ raw_check (uint8_t *data, uint16_t pktlen, Payload *p)
 	DL(6);
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	netcrc = ntohs(uint16buf);
-	DLX(6, printf ("CRC is at 0x%0x into data, \n\tNET CRC = 0x%2.2x\n", (unsigned int)(fieldPtr - data), netcrc));
+	DLX(6, printf ("CRC is 0x%0x into data, NET CRC = 0x%2.2x\n", (unsigned int)(fieldPtr - data), netcrc));
 
 	if (crc != netcrc) {
 		DLX(6, printf ("CRC = 0x%2.2x, CRC check failed\n", crc));

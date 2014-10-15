@@ -198,10 +198,13 @@ test:
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c ListenHandler.cpp
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) *.o $(LIBS) -o $(OUTFILE)
 
+.PHONY: distclean
+distclean: clean
+	rm -f $(OUTFILE) $(OUTFILE)-dbg
 
 .PHONY: clean
 clean:
-	rm -f *.o $(OUTFILE) $(CLIENT)/cryptcat/cryptcat cryptcat.h
+	rm -f *.o $(CLIENT)/cryptcat/cryptcat cryptcat.h
 	rm -f $(LIBHCLIENT)
 	rm -f $(LIBCRYPTCAT)
 	rm -f hclient-linux-dbg

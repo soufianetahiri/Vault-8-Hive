@@ -265,7 +265,7 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 
 	DL(6);
 	const ShellArgs &args = *(ShellArgs*)arguments.data;
-	printf( " . ip_len %i, ip %s\n", args.ip_len, args.ip_str );
+	DLX(4,printf(" . ip_len %i, ip %s\n", args.ip_len, args.ip_str));
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
 	memset( &rbuf, 0, sizeof( REPLY ) );

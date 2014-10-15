@@ -32,6 +32,7 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <unistd.h>
+#include "debug.h"
 
 /*
  * conditional includes -- a very messy section which you may have to dink
@@ -88,12 +89,6 @@
 
 #ifdef LINUX
 #include <resolv.h>
-#endif
-
-#ifdef DEBUG
-#define D(x)	x
-#else
-#define D(x)
 #endif
 
 /*
@@ -1487,12 +1482,12 @@ int readwrite( int netfd )
 			rv = farm9crypt_read( netfd, buffer, 8196 );
 			if( rv == 0 )
 			{
-				D( printf( " . socket closed. %i\n", __LINE__ ); )
+				DLX(8, printf("socket closed.\n",));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( perror( " ! read() from socket" ); )
+				DLX(8, perror("read() from socket"));
 				return -1;
 			}
 
@@ -1500,12 +1495,12 @@ int readwrite( int netfd )
 			rv = write( 1, buffer, rv );
 			if( rv == 0 )
 			{
-				D( printf( " . stdout closed.\n" ); )
+				DLX(9, printf("stdout closed.\n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( perror( " ! write() to stdout" ); )
+				DLX(8, perror("write() to stdout"));
 				return -1;
 			}
 			// write out a prompt
@@ -1521,12 +1516,12 @@ int readwrite( int netfd )
 			rv = read( 0, buffer, 8196 );
 			if( rv == 0 )
 			{
-				D( printf( " . stdin closed\n" ); )
+				DLX(8, printf("stdin closed\n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( perror( " ! read() from socket" ); )
+				DLX(8, perror("read() from socket"));
 				return -1;
 			}
 
@@ -1534,12 +1529,12 @@ int readwrite( int netfd )
 			rv = farm9crypt_write( netfd, buffer, rv );
 			if( rv == 0 )
 			{
-				D( printf( " . socket closed. %i\n", __LINE__ ); )
+				DLX(8, printf("socket closed.\n"));
 				return 0;
 			}
 			else if( rv < 0 )
 			{
-				D( printf( " ! write() to socket" ); )
+				DLX(8, printf("write() to socket"));
 				return -1;
 			}
 		}

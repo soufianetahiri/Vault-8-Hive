@@ -148,7 +148,7 @@ int aes_init(crypt_context *ioc) {
 
 int aes_terminate(crypt_context *ioc)
 {
-	DLX(6, printf("Terminating AES. I/O context: 0x%p\n", ioc));
+	DLX(6, printf("Terminating AES. I/O context: %p\n", ioc));
 	if (ioc->aes->nr == 0) {
 		DLX(4, printf("failed, AES context is invalid.\n"));
 		return 0;
@@ -180,7 +180,7 @@ int crypt_handshake(crypt_context *ioc) {
 				return -1;
 			}
 		}
-		DLX(4, printf("\tTLS handshake complete. I/O context: 0x%p, socket: %d\n", ioc, *ioc->socket));
+		DLX(4, printf("\tTLS handshake complete. I/O context: %p, socket: %d\n", ioc, *ioc->socket));
 
 		return 0;
 	}
@@ -296,11 +296,18 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 	}
 
 	do {
+#ifdef SOLARIS		// "re_read / goto re_read" necessary for Solaris, as the compiler
+					// apparently doesn't do the right thing for "continue" statement.
+		re_read:
+#endif
 		// Read data from network
 		received = ssl_read(ioc->ssl, encbuf, bufsize);
 		switch (received) {		// Process any exceptions
 			case POLARSSL_ERR_NET_WANT_READ:
 				DLX(4, printf("POLARSSL_ERR_NET_WANT_READ\n"));
+#ifdef SOLARIS
+				goto re_read;
+#endif
 				continue;
 
 			case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:
@@ -317,8 +324,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 
 			case 0: // EOF
 				DLX(6, printf("EOF\n"));
-				ret = received;
-				goto Exception;
+				return 0;
 				break;
 
 			default:
@@ -374,7 +380,7 @@ int crypt_read(crypt_context *ioc, unsigned char *buf, size_t size) {
 
 //*******************************************************
 int crypt_close_notify(crypt_context *ioc) {
-	DLX(6, printf("I/O context: 0x%p, socket: %d\n", ioc, *ioc->socket));
+	DLX(6, printf("I/O context: %p, socket: %d\n", ioc, *ioc->socket));
 	if (ioc) {
 		if (ioc->ssl) {
 			return ssl_close_notify(ioc->ssl);
@@ -401,7 +407,7 @@ crypt_context *crypt_setup_client(int *sockfd) {
 		rng_init();
 
 	ioc = (crypt_context *)calloc(1, sizeof(crypt_context));
-	DLX(6, printf("I/O context: 0x%p\n", ioc));
+	DLX(6, printf("I/O context: %p\n", ioc));
 	ssl = (ssl_context *)calloc(1, sizeof(ssl_context));
 	ssn = (ssl_session *)calloc(1, sizeof(ssl_session));
 	aes = (aes_context *)calloc(1, sizeof(aes_context));
@@ -620,7 +626,7 @@ static int my_set_session(ssl_context * ssl) {
 
 //*******************************************************
 void crypt_cleanup(crypt_context *ioc) {
-	DLX(6, printf("Cleanup I/O context: 0x%p\n", ioc));
+	DLX(6, printf("Cleanup I/O context: %p\n", ioc));
 	if (ioc) {
 		if (ioc->ssl) {
 			ssl_free(ioc->ssl);

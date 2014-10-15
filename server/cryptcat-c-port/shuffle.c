@@ -55,7 +55,7 @@ int shuffle( int localfd, int netfd )
 			rv = farm9crypt_read( netfd, buffer, 8196 );
 			if( rv == 0 )
 			{
-				DLX(2, printf("socket closed.n"));
+				DLX(2, printf("socket closed.\n"));
 				return 0;
 			}
 			else if( rv < 0 )

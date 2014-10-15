@@ -18,29 +18,16 @@
  *  jeff@wwti.com -- 9 Feb 2001, added string.h include for yet more linux brokenness
  */
 
-#ifndef WIN32
 #include <string.h>
 #include <sys/types.h>    // suggested by several people -- for OpenBSD, FreeBSD compiles
 #include <sys/socket.h>		/* basics, SO_ and AF_ defs, sockaddr, ... */
 #include <stdlib.h>	
 #include <unistd.h>
-#else
-#include <fcntl.h>
-#include <io.h>
-#include <conio.h>
-#include <winsock.h>
-#include <time.h>
-#endif
 
 #include "farm9crypt.h"
 #include "twofish.h"
 #include "port.h"
-
-#ifdef DEBUG
-#define D(x)	x
-#else
-#define D(x)
-#endif
+#include "debug.h"
 
 static int debug = false;
 static int initialized = false;
@@ -74,14 +61,11 @@ int farm9crypt_initialized( void ) {
 
 void farm9crypt_init( char* keystr ) {
 
-	D( printf( " . farm9crypt_init: %s\n", keystr ); )
+	DLX(8, printf("keystr: %s\n", keystr));
 
 	tf_init( &encryptor, generateKey( keystr ), false, NULL, NULL );
-
 	tf_init( &decryptor, generateKey( keystr ), true, NULL, NULL );
-
 	initialized = true;
-
 	srand( 1000 );
 
 	return;
@@ -127,9 +111,8 @@ int farm9crypt_read( int sockfd, char* buf, int size ) {
 		int result = recv( sockfd, buf + total, 32 - total, 0 );
 		if ( result > 0 ) {
 			total += result;
-			//D( printf( " . DEBUG: %i bytes read, %i bytes total. %i\n", result, total, __LINE__ ); )
 		} else {
-			//D( printf( " . DEBUG: %i bytes read, %i bytes total. %i\n", result, total, __LINE__ ); )
+			DLX(8, printf("recv() returned: %i, total bytes read: %i\n", result, total));
 			return(0);
 		}
 	}
@@ -145,15 +128,13 @@ int farm9crypt_read( int sockfd, char* buf, int size ) {
 	total = 0;
 	char* inbuf = &inBuffer[0];
 	
-	D( printf( " . DEBUG: expecting %i bytes\n", limit ); )
-
+	DLX(8, printf("expecting %i bytes\n", limit));
 	while ( total < limit ) {
 		int result = recv( sockfd, inbuf + total, limit - total, 0 );
 		if ( result > 0 ) {
 			total += result;
-			//D( printf( " . DEBUG: %i bytes read, %i bytes total of %i bytes. %i\n", result, total, limit,  __LINE__ ); )
 		} else {
-			//D( printf( " . DEBUG: %i bytes read, %i bytes total of %i bytes. %i\n", result, total, limit,  __LINE__ ); )
+			DLX(8, printf("recv() returned: %i, total bytes read: %i\n", result, total));
 			break;
 		}
 	}
@@ -161,7 +142,7 @@ int farm9crypt_read( int sockfd, char* buf, int size ) {
 	int loc = 0;
 	char* obuf = &outBuffer[0];
 
-	D( printf( " . DEBUG: line %i\n", __LINE__ ); )
+	DL(8);
 	while ( total > 0 ) {
 		int amount = 16;
 		if ( total < amount ) {

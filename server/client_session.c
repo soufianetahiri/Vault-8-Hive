@@ -467,11 +467,26 @@ unsigned long StartClientSession( int sock )
 		// This timeout is reset each time a command is received.
 		alarm( SESSION_TIMEOUT );
 		memset(&cmd, 0, sizeof(COMMAND));		// Clear any previous commands
-		if ((r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 )
-		{
-			if (r == POLARSSL_ERR_NET_WANT_READ)
+		if ((r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 ) {
+			switch(r) {
+			case POLARSSL_ERR_NET_WANT_READ:
+				DLX(4, printf("crypt_read() POLARSSL_ERR_NET_WANT_READ, continue reading"));
 				continue;
-			DLX(4, printf("crypt_read() failed: "); print_ssl_error(r));
+				break;
+			case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:
+				DLX(4, printf("crypt_read() POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY, exiting"));
+				goto Exit;
+				break;
+
+			default:
+				if (r < 0) {
+					DLX(4, printf("crypt_read() failed: "); print_ssl_error(r));
+					goto Exit;
+				}
+				DLX(4, printf("crypt_read() returned: %d (0x%x)", r, r));
+				break;
+			}
+
 		}
 		alarm( 0 );
 
@@ -486,8 +501,9 @@ unsigned long StartClientSession( int sock )
 		DLX(2, printf ("\tExecuting command: 0x%0x\n", cmd.command));
 
 		//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
-		switch(cmd.command)
-		{
+		switch(cmd.command) {
+
+			case 0:
 			case EXIT:
 				DLX(2, printf("EXIT command received.\n"));
 				fQuit = 1;
