@@ -305,36 +305,28 @@ int Connection::RecvFile( int fd, int size )
     while ( size > 0 )
     {
         memset( buffer, 0, 4096 );
-
-        if ((rbytes = crypt_read(ioc, buffer, 4096) ) <= 0 )
-        {
+        if ((rbytes = crypt_read(ioc, buffer, 4096) ) <= 0 ) {
             //fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
             printf( " * %s", recvFile1String );
             return ERROR;
         }
 
-        if ( size < rbytes )
-        {
+        if ( size < rbytes ) {
             if ( write( fd, buffer, size ) == ERROR )
             {
                 perror( " * write()" );
                 return ERROR;
             }
-        }
-        else
-        {
-            if ( write( fd, buffer, rbytes ) == ERROR )
-            {
+        } else {
+            if ( write( fd, buffer, rbytes ) == ERROR ) {
                 perror( " * write()" );
                 return ERROR;
             }
         }
-
         size -= rbytes;
     }
 
-    if ((rbytes = crypt_read(ioc, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
-    {
+    if ((rbytes = crypt_read(ioc, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 ) {
         //fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
         printf( " * %s", recvFile2String );
         return ERROR;
@@ -352,38 +344,26 @@ int Connection::SendFile( int fd, int size )
     REPLY			rbuf;
 
 	DL(6);
-	if ( state != CONNECTED )
-	{
+	if ( state != CONNECTED ) {
 		return -1;
 	}
 
-    while (size > 0)
-    {
+    while (size > 0) {
         memset(buffer, 0, 4096);
-
-        if ( ( rbytes = read( fd, buffer, 4096 ) ) == ERROR )
-        {
+        if ((rbytes = read(fd, buffer, 4096)) == ERROR ) {
             perror( " * read()" );
             return ERROR;
         }
 
-        if ( rbytes < 4096 )
-        {
-            Utilities::GenRandomBytes( (char *)&buffer[ rbytes ], ( 4096 - rbytes ), NULL, 0 );
-        }
-
-        if (crypt_write(ioc, buffer, 4096) <= 0 )
-        {
+        if (crypt_write(ioc, buffer, rbytes) <= 0 ) {
             //fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
             printf( " * %s", sendFile1String );
             return ERROR;
         }
-
         size -= rbytes;
     }
 
-    if ((rbytes = crypt_read(ioc, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 )
-    {
+    if ((rbytes = crypt_read(ioc, (unsigned char *)&rbuf, sizeof(REPLY))) <= 0 ) {
         //fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
         printf( " * %s", sendFile2String );
         return ERROR;
