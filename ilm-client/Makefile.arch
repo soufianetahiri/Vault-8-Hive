@@ -5,7 +5,7 @@ CXXFLAGS := -Wall -Wextra -ansi -fPIC
 LDFLAGS = -lpthread -lc
 
 ifeq ("$(TARGET)", "linux-x86")
-include ../common/Makefile-include.linux-client-x86
+include ../common/Makefile-include.linux-x86-client
 else ifeq ("$(TARGET)", "linux-x86_64")
 include ../common/Makefile-include.linux-x86_64
 endif
