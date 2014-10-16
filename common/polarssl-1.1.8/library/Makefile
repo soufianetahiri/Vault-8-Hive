@@ -23,7 +23,9 @@ ifdef TARGET
     $(info .  Building SSL library for $(TARGET))
   endif
   
-  ifeq ("$(TARGET)", "linux-x86")
+  ifeq ("$(TARGET)", "linux-x86-client")
+    include ../../Makefile-include.linux-x86-client
+  else ifeq ("$(TARGET)", "linux-x86")
     include ../../Makefile-include.linux-x86
   else ifeq ("$(TARGET)", "linux-x86_64")
     include ../../Makefile-include.linux-x86_64

@@ -34,7 +34,10 @@ all:
 	printf "\t\tmake distclean\n"
 
 linux-x86:
-	$(MAKE) -f Makefile.arch TARGET=linux-x86
+	$(MAKE) -f Makefile.arch TARGET=linux-x86-client
+
+linux-x86-client:
+	$(MAKE) -f Makefile.arch TARGET=linux-x86-client
 
 linux-x86_64:
 	$(MAKE) -f Makefile.arch TARGET=linux-x86_64
