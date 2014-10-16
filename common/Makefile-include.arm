@@ -12,5 +12,6 @@ RANLIB=${BIN}/ranlib
 
 CFLAGS += -I$(HEADERS)
 CFLAGS += -DLINUX -DARM -static
+CFLAGS += UCLIBC
 
 LDFLAGS += -L$(LIBX) -lpthread -lutil

@@ -13,6 +13,7 @@ STRIP=${BUILDTOOLS}/$(ARCH)-linux-sstrip
 
 CFLAGS += -I$(UCLIBC_HDRS)
 CFLAGS += -DLINUX -D_X86 -m32 -static
+CFLAGS += -DUCLIBC
 
 LDFLAGS += -lutil -L$(UCLIBC_LIBS) 
 
