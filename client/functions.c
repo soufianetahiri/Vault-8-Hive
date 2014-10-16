@@ -143,6 +143,7 @@ int Upload(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s %s %s %s %s %ld\n", uploadString, lfile, upload5String, rfile, upload6String, (long int)st.st_size);
 
 	DLX(6, printf("Sending command: command: %d, path: %s, size: %lu\n", sbuf.command, sbuf.path, (long unsigned int)st.st_size));
+	sbuf.command = UPLOAD;
 	SendCommand(&sbuf, &rbuf, info);
 
 	if (rbuf.reply == 0) {
@@ -237,6 +238,7 @@ int Download(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
+	sbuf.command = DOWNLOAD;
 	SendCommand(&sbuf, &rbuf, info);
 	DLX(6, printf("Reply code from remote: 0x%lx - 0x%lx\n", rbuf.reply, rbuf.padding));
 	if (rbuf.reply == 0) {
@@ -305,6 +307,7 @@ int Remove(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
+	sbuf.command = DELETE;
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
 		//(void) asprintf(&message, "successful deletion of remote file %s\n", rfile);
@@ -363,6 +366,7 @@ int Execute(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
+	sbuf.command = EXECUTE;
 	SendCommand(&sbuf, &rbuf, info);
 	DLX(6, printf("Reply code from remote: %lu\n", rbuf.reply));
 	if (rbuf.reply == 0) {
@@ -452,11 +456,9 @@ int StopSession(struct proc_vars *info)
 	}
 
 	fprintf(stdout, "\n\t%s", message);
-
 	free(message);
 
 	sbuf.command = info->command;
-
 	SendCommand(&sbuf, &rbuf, info);
 
 	if (rbuf.reply == 0) {
@@ -641,23 +643,7 @@ int RecvFile(int fd, int size)
  */
 void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
 {
-	int len = strlen(sbuf->path) + 1;
-
-	sbuf->command = info->command;
-
-	if (sbuf->command != UPLOAD) {
-		if (len < 255) {
-			GenRandomBytes(&sbuf->path[len], (255 - len), (char *) &sbuf->size, 8);
-		} else {
-			GenRandomBytes((char *) &sbuf->size, 8, NULL, 0);
-		}
-	} else {
-		if (len < 255) {
-			GenRandomBytes(&sbuf->path[len], (255 - len), (char *) &sbuf->padding, 4);
-		} else {
-			GenRandomBytes((char *) &sbuf->padding, 4, NULL, 0);
-		}
-	}
+	info = info;	// Silence compiler warning about this unused parameter
 
 	DLX(4, printf("Sending command\n"));
 	if (crypt_write(cc, (unsigned char *) sbuf, 264) <= 0) {

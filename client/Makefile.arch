@@ -236,4 +236,5 @@ patcher: bin-links $(UNPATCHED_BINS)
 .PHONY: clean
 clean:
 	rm -f $(OBJS)
+	rm -f proj_strings.h
 	>ARCH_BUILD

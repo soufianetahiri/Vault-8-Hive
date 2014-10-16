@@ -73,27 +73,26 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	}
 	DL(2);
 	// start TLS handshake
-	if (crypt_handshake(cp) != SUCCESS)
-	{
+	if (crypt_handshake(cp) != SUCCESS) {
 		// TODO: encode this string(s)
 		//printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
-		printf( "%s", run2String ); 
+		printf("\t%s", run1Error);
 		return;
 	}
-	DLX(2, printf( " TLS handshake complete.\n"));
-	printf( "\n" );
+	printf("\t%s", run2String);
+	DLX(2, printf(" TLS handshake complete.\n"));
 
 	if ((aes_init(cp)) == 0) {
 		DLX(4, printf("AES initialization failed"));
+		printf("\t%s", run2Error);
 		return;
 	}
-
+	printf("\t%s", run3String);
+	printf("\n");
 	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
-	if ( info->interactive == YES )
-	{
+	if ( info->interactive == YES ) {
 		InteractiveMode(info, cp);
 	}
-
 	crypt_close_notify(cp);
 
 	return;

@@ -80,7 +80,7 @@ trigger_start (void *arg)
 
 
 	//printf( "    %sSending trigger ...%s", BLUE, RESET );
-	printf ("    %s%s%s", BLUE, triggerStart1String, RESET);
+	printf ("%s%s%s", BLUE, triggerStart1String, RESET);
 	fflush (NULL);
 
 	// find and send the correct trigger
