@@ -22,7 +22,7 @@
 extern "C"
 {
 	#include "proj_strings.h"
-	#include "ssl/crypto.h"
+	#include "crypto.h"
 	#include "trigger_protocols.h"
 	#include "trigger_network.h"
 	#include "trigger_utils.h"
@@ -36,6 +36,9 @@ extern "C"
 
 	void displaySha1Hash(char *label, unsigned char *sha1Hash);
 
+	#ifdef DEBUG
+		int dbug_level_ = 8;	// debug level
+	#endif
 }
 
 using namespace InterfaceLibrary;
@@ -53,13 +56,13 @@ extern Ilm::Trigger		*myTrigger;
 uint16_t	lport = 0;
 int			do_trigger_listen = 0;
 int			parse_config_only = 0;
-//***************************************************************************************
 
 //**************************************************************************************
 // LISTENER
 //**************************************************************************************
 Listener::Listener()
 {
+	DL(6);
 	this->connection = new Connection();
 
 	if (this->connection == 0)
@@ -70,6 +73,7 @@ Listener::Listener()
 
 Listener::~Listener()
 {
+	DL(6);
 	delete this->connection;
 }
 
@@ -78,6 +82,7 @@ void Listener::Listen( Primitive::Activation& actvn, ProcessCmdAccumulator& acc,
 	string		ipaddr;
 	String		*argPtr = (String *)(actvn.arguments);
 
+	DL(6);
 	// see discussion of this global variable in Trigger::triggerImplant()
 	parse_config_only = NO;
 
@@ -169,17 +174,20 @@ void Listener::Listen( Primitive::Activation& actvn, ProcessCmdAccumulator& acc,
 
 Connection* Listener::getConnection()
 {
+	DL(6);
 	return this->connection;
 }
 
 void Listener::setConnection( Connection *newConnection)
 {
+	DL(6);
 	std::cout << "\n\n Did you call Listener::getConnection and delete that connection first?\n" << endl;
 	this->connection = newConnection;
 }
 
 void Listener::TriggerAndListen( Primitive::Activation& actvn, ProcessCmdAccumulator& acc, ProcessCmdResponse& resp )
 {
+	DL(6);
 	// set the global variable checked by triggerImplant() and Listen()
 	do_trigger_listen = YES;
 
@@ -212,6 +220,7 @@ int Trigger::parse_prompt_config_file( std::string triggerFileName, params *t_pa
 	int			checkRawPort = NO;
 	int			checkRootPermissions = NO;
 
+	DL(6);
    //See if the desired trigger file exists...
 	triggerFile.open(triggerFileName.c_str());
 
@@ -490,8 +499,9 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 
 	trigger_info  	ti;             //Trigger information Structure used for building and sending the trigger...
 	Payload       	p;		//Payload for transmission....
-	int		rv;
+	int		rv = 0;
 
+	DL(6);
 	//Initialize status for triggering
 	resp.type = ProcessCmdResponse::TYPE_Local_Failure;
 
@@ -604,7 +614,7 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 	//Finalize payloads and send the triggers...
 	switch (ti.trigger_type)
 	{
-#if 0
+#if 0 // These triggers no longer supported
 		case T_PING_REQUEST:
 		case T_PING_REPLY:
 			//cout << "\n\n\n Calling trigger_icmp_ping...\n" << endl;
@@ -631,6 +641,9 @@ void Trigger::triggerImplant( Primitive::Activation& actvn, ProcessCmdAccumulato
 			//cout << "\n\n\n Calling trigger_raw...\n" << endl;
 			rv = trigger_raw( &p, &ti );
 			break;
+
+		default:
+			return;
 
 	}
 

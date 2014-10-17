@@ -1,0 +1,45 @@
+#!/bin/bash
+#Saves a copy of the last executables built so into a snapshot directory...
+
+timeStamp=`date +"%Y%m%d-%H%M"`
+#echo ${timeStamp}
+
+#Create Snapshot Directory
+rm -rf ../snapshot_${timeStamp}
+mkdir ../snapshot_${timeStamp}
+
+#Change permisions of unpatched executables to 755 and save a copy
+chmod 755 ../server/hived-mikrotik-mipsbe
+chmod 755 ../server/hived-mikrotik-mipsbe-dbg
+chmod 755 ../server/hived-mikrotik-mipsle
+chmod 755 ../server/hived-mikrotik-mipsle-dbg
+chmod 755 ../server/hived-linux-i686
+chmod 755 ../server/hived-linux-i686-dbg
+chmod 755 ../server/hived-mikrotik-ppc
+chmod 755 ../server/hived-mikrotik-ppc-dbg
+chmod 755 ../server/hived-solaris-i386
+chmod 755 ../server/hived-solaris-i386-dbg
+chmod 755 ../server/hived-solaris-sparc
+chmod 755 ../server/hived-solaris-sparc-dbg
+mkdir ../snapshot_${timeStamp}/server_unpatchedDirectory/
+cp ../server/hived* ../snapshot_${timeStamp}/server_unpatchedDirectory/
+
+#Create hive-patcher and save everything for the client
+make all 
+mkdir ../snapshot_${timeStamp}/clientDirectory/
+cp hive-patcher* ../snapshot_${timeStamp}/clientDirectory/
+cp hclient-linux* ../snapshot_${timeStamp}/clientDirectory/
+
+#Create hive library and save all cutthroat files
+cd ../ilm-client
+make all
+mkdir ../snapshot_${timeStamp}/ctDirectory/
+cp ./CCS* ../snapshot_${timeStamp}/ctDirectory/
+cp ./cutthroat* ../snapshot_${timeStamp}/ctDirectory/
+cp ./hive ../snapshot_${timeStamp}/ctDirectory/
+cp ./hive.md5 ../snapshot_${timeStamp}/ctDirectory/
+cp ./server* ../snapshot_${timeStamp}/ctDirectory/
+cp ./ca.crt ../snapshot_${timeStamp}/ctDirectory/
+cd ../client
+
+

@@ -26,24 +26,14 @@
 #include "farm9crypt.h"
 #include "twofish.h"
 #include "port.h"
+#include "debug.h"
 
-#ifdef DEBUG
-#define D(x)	x
-#else
-#define D(x)
-#endif
-
-static int debug = false;
 static int initialized = false;
 
 //String Obfuscation
 #define encryptor hsdfkwrthadsrg7wq
 #define decryptor jadubtbacd2dhf
 struct tf_context encryptor, decryptor;
-
-void farm9crypt_debug( void ) {
-	debug = true;
-}
 
 /*
  *  farm9crypt_initialized
@@ -69,7 +59,7 @@ int farm9crypt_initialized( void ) {
 
 void farm9crypt_init( char* keystr ) {
 
-	D( printf( " . farm9crypt_init: %s\n", keystr ); )
+	DLX(4, printf("key string: %s\n", keystr));
 
 	tf_init( &encryptor, generateKey( keystr ), false, NULL, NULL );
 
@@ -103,7 +93,7 @@ int farm9crypt_read( int sockfd, char* buf, int size ) {
 
 	if ( initialized != true )
 	{
-		D( printf( " ! cipher not initialized\n" ); )
+		DLX(4, printf("cipher not initialized\n"));
 		return -1;
 	}
 
@@ -140,7 +130,7 @@ int farm9crypt_read( int sockfd, char* buf, int size ) {
 	total = 0;
 	char* inbuf = &inBuffer[0];
 	
-	D( printf( " . DEBUG: %s expecting %i bytes\n", __FILE__, limit ); )
+	DLX(4, printf("expecting %i bytes\n", limit));
 
 	while ( total < limit ) {
 		int result = recv( sockfd, inbuf + total, limit - total, 0 );
@@ -180,7 +170,7 @@ int farm9crypt_write( int sockfd, char* buf, int size ) {
 
 	if ( initialized != true )
 	{
-		D( printf( " ! cipher not initialized\n" ); )
+		DLX(4, printf("cipher not initialized\n"));
 		return -1;
 	}
 

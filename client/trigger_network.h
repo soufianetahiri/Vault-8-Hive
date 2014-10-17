@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "debug.h"
 
 typedef struct udpHDR_type {
 	uint16_t sPort;

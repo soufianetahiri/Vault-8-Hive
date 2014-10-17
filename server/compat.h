@@ -1,6 +1,10 @@
 #ifndef __COMPAT_H
 #define __COMPAT_H
 
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 // LINUX & SOLARIS include files
 #if defined LINUX || defined SOLARIS
 #include "function_strings.h"
@@ -13,40 +17,18 @@
 #include <inttypes.h>
 #include <signal.h>
 
+#ifdef LINUX
+#include <getopt.h>
+#endif
+
+#endif
+
 #define closesocket(x) close(x)
 #define Sleep(x) sleep(x/1000)
 #define sprintf_s(x, ...) snprintf(x, __VA_ARGS__)
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET ~0
 #define USHORT	unsigned short
-
-// LINUX-only include files
-#if defined LINUX
-#include <getopt.h>
-#endif
-
-// WIN32 include files
-#elif WIN32
-
-#include <winsock2.h>
-#include <windows.h>
-#include <Pdh.h>
-#include <IPHlpApi.h>
-#include <process.h>
-#include "stdint.h"
-
-#define sleep(x) Sleep(x)
-//#define _LITTLE_ENDIAN
-#define unlink(x) _unlink(x)
-#define fileno(x) _fileno(x)
-
-#endif	// OS SPECIFIC
-
-// COMMON include files
-
-#include <errno.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 #define UPTIME_STR_LEN 256
 #define DEFAULT_INITIAL_DELAY	3 * 60 * 1000	// 3 minutes
@@ -69,9 +51,6 @@
 #ifndef FAILURE
 #define FAILURE -1
 #endif
-
-#define MAX(a,b)	( ((a)>(b)) ? (a) : (b) )
-#define MIN(a,b)	( ((a)>(b)) ? (b) : (a) )
 
 #if defined SOLARIS || defined WIN32
 char exe_path[256];

@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "b64.h"
-#include "trigger_debug.h"
 
 static void b64_decodeblock(unsigned char in[4], unsigned char out[3]);
 
@@ -89,8 +88,8 @@ int b64_decode_message(const uint8_t * message, uint8_t * output, int message_le
 	int message_index = 0;
 	int output_index = 0;
 
-	info("IN DECODE MESSAGE, %s", message);
-	info("LENGTH, %d", message_length);
+	DLX(2, printf("IN DECODE MESSAGE, %s", message));
+	DLX(2, printf("LENGTH, %d", message_length));
 
 	if (message == NULL || output == NULL || message_length <= 0) {
 		return FAILURE;

@@ -8,8 +8,7 @@
 #include "ProcessCmdResponse.h"
 #include "LibraryModuleBase.h"
 
-#include "../client/ssl/crypto.h"
-#include "../client/ssl/polarssl/include/polarssl/ssl.h"
+#include "crypto.h"
 #include "ilm-client.h"
 
 //*****************************************************************************************
@@ -32,7 +31,7 @@ class Connection
 		int Close( void );
 		int Listen( uint16_t port );
 		int Accept( std::string& ip );
-		int TxCommand( struct send_buf* sbuf, struct recv_buf* rbuf, unsigned char command_code );
+		int TxCommand( struct send_buf* sbuf, REPLY* rbuf, unsigned char command_code );
 		int RecvFile( int fd, int size );
 		int SendFile( int fd, int size );
 
@@ -40,14 +39,12 @@ class Connection
 
 	private:
 		int					state;
-		havege_state		hs;
-		ssl_context			ssl;
-		ssl_session			ssn;
+		ctr_drbg_context	ctr_drbg;
+		crypt_context		*ioc;
 		int					listenfd;
 		int					acceptfd;
 		struct sockaddr_in	local;
 		struct sockaddr_in	remote;
-		
 };
 
 #endif

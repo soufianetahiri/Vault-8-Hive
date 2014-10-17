@@ -188,37 +188,37 @@ raw_check (uint8_t *data, uint16_t pktlen, Payload *p)
 	if (fieldPtr == 0 || (fieldPtr > (data + pktlen)))		// Make sure it's within bounds
 		return FAILURE;
 
-	DL(5);
+	DL(6);
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	netcrc = ntohs(uint16buf);
-	DLX(5, printf ("CRC is at 0x%0x into data, \n\tNET CRC = 0x%2.2x\n", (unsigned int)(fieldPtr - data), netcrc));
+	DLX(6, printf ("CRC is 0x%0x into data, NET CRC = 0x%2.2x\n", (unsigned int)(fieldPtr - data), netcrc));
 
 	if (crc != netcrc) {
-		DLX(5, printf ("CRC = 0x%2.2x, CRC check failed\n", crc));
+		DLX(6, printf ("CRC = 0x%2.2x, CRC check failed\n", crc));
 		return FAILURE;			// Check 1 failure: CRCs don't match
 	}
 
 	fieldPtr += sizeof(crc);
 	memcpy(&uint16buf, fieldPtr, sizeof(uint16_t));
 	validator = ntohs(uint16buf);
-	DLX(5, printf ("Validator location: 0x%0x, Trigger validator = %d\n", (unsigned int)(fieldPtr - data), validator));
+	DLX(6, printf ("Validator location: 0x%0x, Trigger validator = %d\n", (unsigned int)(fieldPtr - data), validator));
 	if ( (validator % 127) != 0) {
-		DLX(5, printf ("Validator check failed: validator = 0x%2.2x\n", validator));
+		DLX(6, printf ("Validator check failed: validator = 0x%2.2x\n", validator));
 		return FAILURE;			// Check 2 failure: integer not divisible by 127
 	}
 
 	fieldPtr += sizeof(validator) + PAD1;		// Update field pointer to point to trigger payload.
 	payloadIndex = fieldPtr;
 	payloadKeyIndex = (uint8_t *)(data + START_PAD + (crc % (CRC_DATA_LENGTH - sizeof(Payload))));	// Compute the start of the payload key
-	DLX(5, printf("Encoded Payload offset\t0x%0x, Payload key offset: 0x%0x\tPayload follows:\n", (unsigned int)(fieldPtr - data), (unsigned int)(payloadKeyIndex - (uint8_t *)data)));
+	DLX(6, printf("Encoded Payload offset\t0x%0x, Payload key offset: 0x%0x\tPayload follows:\n", (unsigned int)(fieldPtr - data), (unsigned int)(payloadKeyIndex - (uint8_t *)data)));
 	for (i = 0; i < (int)sizeof(Payload); i++) {
 		uint8_t trigger;
 
 		trigger = payloadKeyIndex[i] ^ payloadIndex[i];			// XOR the trigger payload with the key
-		DLX(5, printf ("\tByte[%2.2d]: encoded payload = 0x%2.2x,  payloadKey= 0x%2.2x, decoded payload = 0x%2.2x\n", i, payloadIndex[i], payloadKeyIndex[i], trigger));
+		DLX(6, printf ("\tByte[%2.2d]: encoded payload = 0x%2.2x,  payloadKey= 0x%2.2x, decoded payload = 0x%2.2x\n", i, payloadIndex[i], payloadKeyIndex[i], trigger));
 		memcpy((void *)(pp + i), (void *)&trigger, sizeof(uint8_t));
 	}
-	DLX(5, printf ("\n"));
+	DLX(6, printf ("\n"));
 	return SUCCESS;
 }
 

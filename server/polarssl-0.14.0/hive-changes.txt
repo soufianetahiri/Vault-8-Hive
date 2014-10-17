@@ -1,8 +1,0 @@
-
-changes to polarssl-0.14.0 source code for Hive:
-
-* Makefile
-* library/Makefile
-* library/net.c
-* include/polarssl/config.h
-* programs/Makefile
