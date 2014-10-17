@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 #endif
 
 #include <string.h>

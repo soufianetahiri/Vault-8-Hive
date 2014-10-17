@@ -227,10 +227,7 @@ void *jshell( void *input ) {
 	else
 	{
 		// this is the parent
-		DLX(3, printf("\tpre shuffle\n"));
-		shuffle( pty, netfd );
-		DLX(3, printf("\tpost shuffle\n"));
-
+		shuffle(pty, netfd);
 		DLX(3, printf ("Returning from jshell()\n"));
 		return (void *)0;
 	}

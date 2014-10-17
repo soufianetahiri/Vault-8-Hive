@@ -3,6 +3,7 @@
 
 #include "trigger_protocols.h"
 #include "trigger_utils.h"
+#include "debug.h"
 
 struct trigger_params 
 {

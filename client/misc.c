@@ -80,6 +80,9 @@ void Usage(char* progname) {
 
    //fprintf(stdout, "    [-h ]          - print this usage\n\n");
    fprintf(stdout, "%s", usageOption12String);
+#ifdef DEBUG
+   fprintf(stdout, "    [-D <debug level>]      - debug level\n");
+#endif
 }
 
 /* ******************************************************************************************************************************
@@ -210,7 +213,7 @@ int TcpInit( struct proc_vars* info )
 	}
 
 	//fprintf( stdout, " %s... connection established%s\n", BLUE, RESET );
-	fprintf( stdout, " %s%s%s\n", BLUE, connectionEstString, RESET );
+	fprintf( stdout, "%s%s%s\n", BLUE, connectionEstString, RESET );
 
 	return 0;
 }
@@ -279,7 +282,7 @@ void DisplayStatus(struct proc_vars* info) {
 
    if (info->interactive == YES) {
       //fprintf(stdout, "  . Interactive mode established\n");
-      fprintf(stdout, "%s", interactiveModeString);
+//      fprintf(stdout, "%s", interactiveModeString);
    } else {
       if (info->ignore == NO) {
          //fprintf(stdout, "   Automatic mode established (not ignoring errors)\n");

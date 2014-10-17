@@ -1,46 +1,46 @@
 #include "hclient.h"
 #include "debug.h"
 #include "threads.h"
-#include "ssl/crypto.h"
+#include "crypto.h"
 #include "colors.h"
 
-#include "proj_strings.h"     //Required for strings...
+#include "proj_strings.h"
+#include "dhExchange.h"
 
 #include <pthread.h>
 
 //**************************************************************
+
 pthread_mutex_t		tlock;
 
 //**************************************************************
 void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 {
-	havege_state	hs;
-	ssl_context		ssl;
-	ssl_session		ssn;
- 
+	crypt_context		*cp;		// Command post connection context pointer
+
 	pthread_mutex_init( &tlock, NULL );
 
 	// if we aren't listening, then we don't need to take the lock.
 	// taking the lock allows us to set-up the listening socket before sending the trigger packet(s)
 	if ( info->listen == YES )
 	{
-		D( printf( " DEBUG: %s requesting pthread_mutex_lock \n", __FILE__ ); )
+		DLX(2, printf( " Requesting pthread_mutex_lock \n"));
 		pthread_mutex_lock( &tlock );
-		D( printf( " DEBUG: %s pthread_mutex_lock locked\n", __FILE__ ); )
+		DLX(2, printf( " pthread_mutex_lock locked\n"));
 	}
 
 	// to avoid race condition where main thread exits before trigger is set,
 	// don't call tigger_start() as a thread
 	if ( info->trigger == YES && info->listen == NO )
 	{
-		D( printf( " DEBUG: trigger mode set\n" ); )
+		DLX(2, printf( " Trigger mode set\n"));
 		trigger_start ( (void *) trigger_args );
 		return;
 	}
 
 	if ( info->trigger == YES && info->listen == YES )
 	{
-		D( printf( " DEBUG: trigger mode set\n" ); )
+		DLX(2, printf( " Trigger mode set\n"));
 		make_thread( trigger_start, (void *) trigger_args );
 	}
 
@@ -51,13 +51,11 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 		return;
 	}
 
-
-	D( printf( " DEBUG: listen mode set\n" ); )
-
+	DLX(2, printf( " Listen mode set\n"));
 	// listen for and establish TCP connection. returns with accept() returns success
 	if ( TcpInit( info ) == ERROR )
 	{
-		D( printf( " ERROR: TcpInit() returned error.\n" ); )
+		DLX(2, printf( " ERROR: TcpInit() returned error.\n"));
 		return;
 	}
 
@@ -68,36 +66,41 @@ void Run( struct proc_vars* info, struct trigger_params *trigger_args )
 	printf( "\n %s%s:%s\n", BLUE, run1String, RESET );
 
 	// from a SSL/TLS perspective, the client acts like a SSL server
-	if ( crypt_setup_server( &hs, &ssl, &ssn, &(info->tcpfd) ) != SUCCESS )
+	if ((cp = crypt_setup_server(&info->tcpfd)) == NULL )
 	{
-		D( printf( " ERROR: crypt_setup_server() failed\n" ); )
+		DLX(2, printf( " ERROR: crypt_setup_server() failed\n"));
 		return;
 	}
-
+	DL(2);
 	// start TLS handshake
-	if ( crypt_handshake( &ssl ) != SUCCESS )
-	{
+	if (crypt_handshake(cp) != SUCCESS) {
 		// TODO: encode this string(s)
 		//printf( " ERROR: TLS connection with TLS client failed to initialize.\n" ); 
-		printf( "%s", run2String ); 
+		printf("\t%s", run1Error);
 		return;
 	}
-	D( printf( " DEBUG: TLS handshake complete.\n" ); )
-	printf( "\n" );
+	printf("\t%s", run2String);
+	DLX(2, printf(" TLS handshake complete.\n"));
 
-	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
-	if ( info->interactive == YES )
-	{
-		InteractiveMode( info, &ssl );
+	if ((aes_init(cp)) == 0) {
+		DLX(4, printf("AES initialization failed"));
+		printf("\t%s", run2Error);
+		return;
 	}
-
-	crypt_close_notify( &ssl );
+	printf("\t%s", run3String);
+	printf("\n");
+	// The following if statement used to have an else clause to call AutomaticMode() which did nothing.
+	if ( info->interactive == YES ) {
+		InteractiveMode(info, cp);
+	}
+	crypt_close_notify(cp);
 
 	return;
 }
 
 //**************************************************************
-void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
+// TODO: Incorporate this code into the Run function above.
+void InteractiveMode(struct proc_vars* info, crypt_context *ioc)
 {
    char cline[525];
    char** argv;
@@ -110,7 +113,7 @@ void InteractiveMode( struct proc_vars* info, ssl_context *ssl )
       cline[strlen(cline) - 1] = '\0';
       argv = BuildArgv(cline);
       if ((argv != NULL) && (argv[0] != '\0')) {
-         CommandToFunction(argv, info, ssl );
+         CommandToFunction(argv, info, ioc);
       }
       FreeArgv(argv);
    }

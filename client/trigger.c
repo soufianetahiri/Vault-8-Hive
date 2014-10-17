@@ -8,6 +8,7 @@
  * @author Matt Bravo
  *
  */
+#include "debug.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -22,9 +23,7 @@
 #include "trigger_network.h"
 #include "trigger_protocols.h"
 #include "trigger_utils.h"
-#include "trigger_debug.h"
 #include "trigger.h"
-#include "debug.h"
 #include "colors.h"
 
 #include "proj_strings.h"
@@ -58,16 +57,16 @@ trigger_start (void *arg)
 
 	// Try to take the lock. Lock will be released when the socket is ready for callback.
 	// This is to ensure the socket is ready before the trigger is sent.
-	D (printf (" DEBUG: %s requesting pthread_mutex_lock\n", __FILE__);)
+	DLX(6, printf ("Requesting pthread_mutex_lock\n"));
 	pthread_mutex_lock (&tlock);
-	D (printf (" DEBUG: %s pthread_mutex_lock locked\n", __FILE__);)
+	DLX(6, printf ("pthread_mutex_lock locked\n"));
 
 	fd = open ((char *) dieselt_udev_rand, O_RDONLY);	// Open /dev/urandom
 
 	// Fill payload structure with random data
 	if ((rv = read (fd, &p, sizeof (Payload))) != sizeof (Payload)) {
 		perror (" read()");
-		debug (" buffer not filled from /dev/urandom\n");
+		DLX (4, printf(" buffer not filled from /dev/urandom\n"));
 		exit (-1);
 	}
 
@@ -81,7 +80,7 @@ trigger_start (void *arg)
 
 
 	//printf( "    %sSending trigger ...%s", BLUE, RESET );
-	printf ("    %s%s%s", BLUE, triggerStart1String, RESET);
+	printf ("%s%s%s", BLUE, triggerStart1String, RESET);
 	fflush (NULL);
 
 	// find and send the correct trigger
@@ -112,7 +111,7 @@ trigger_start (void *arg)
 			printf ("    %s%s%s\n\n", RED, triggerStart3String, RESET);
 			// we can release the lock because output is sent in above call
 			pthread_mutex_unlock (&tlock);
-			D (printf("%s, %4d: pthread_mutex_lock unlocked\n", __FILE__, __LINE__);)
+			DLX(6, printf("pthread_mutex_lock unlocked\n"));
 
 				exit (-1);									// *** Exit or return? ***
 			return (void *) FAILURE;	//good exit!!
@@ -133,7 +132,7 @@ trigger_start (void *arg)
 	printf ("%sok.%s\n\n", BLUE, RESET);
 	// we can release the lock because output is sent in above call
 	pthread_mutex_unlock (&tlock);
-	D (printf ("%s, %4d: pthread_mutex_lock unlocked\n", __FILE__, __LINE__);)
+	DLX(6, printf ("pthread_mutex_lock unlocked\n"));
 
 		return (void *) SUCCESS;	//good exit!!
 }

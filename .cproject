@@ -29,6 +29,10 @@
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.512384146" languageId="org.eclipse.cdt.core.parser.upc.upc" languageName="UPC" sourceContentType="org.eclipse.cdt.core.parser.upc.upcSource" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>
 							<tool id="org.eclipse.cdt.build.core.settings.holder.2143978033" name="GNU C++" superClass="org.eclipse.cdt.build.core.settings.holder">
+								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.2145345997" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/include"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hive}&quot;"/>
+								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.1992721509" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>
 							<tool id="org.eclipse.cdt.build.core.settings.holder.1383360650" name="GNU C" superClass="org.eclipse.cdt.build.core.settings.holder">
@@ -47,10 +51,17 @@
 						<tool id="org.eclipse.cdt.build.core.settings.holder.2143978033.1671779245" name="GNU C++" superClass="org.eclipse.cdt.build.core.settings.holder.499907776">
 							<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.1162835131" name="Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
 								<listOptionValue builtIn="false" value="/usr/include"/>
+								<listOptionValue builtIn="false" value="&quot;${workspace_loc:/hive}&quot;"/>
 							</option>
 							<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.722568606" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 						</tool>
 					</fileInfo>
+					<sourceEntries>
+						<entry excluding="server|client|common" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="client"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="common"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="server"/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>

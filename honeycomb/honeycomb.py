@@ -12,6 +12,8 @@ import bz2
 import fileinput
 from ctypes import *
 from xml.etree.ElementTree import *
+from processRSI import processRSIFile
+
 
 class BTHP_HDR(Structure):
 	_field_ = [("version", c_ubyte), 
@@ -53,7 +55,8 @@ class Logger:
 
 	def write(self, message, loglevel):
 		if loglevel == logging.DEBUG:
-			logging.debug('%s \n %s' % (time.strftime("%Y-%m-%d-%H:%M:%S", time.gmtime()) , message))
+#			logging.debug('%s \n %s' % (time.strftime("%Y-%m-%d-%H:%M:%S", time.gmtime()) , message))
+			logging.debug('%s \n %s')
 		elif loglevel == logging.INFO:
 			logging.info('%s %s' % (time.strftime("%Y-%m-%d-%H:%M:%S", time.gmtime()) , message))
 		elif loglevel == logging.WARNING:
@@ -258,13 +261,15 @@ def parse_beacon_data(decrypted_data):
 			elif str(beacon_hdr.os) == '31':
 				beacon_data['os'] = "Solaris-x86"
 			elif str(beacon_hdr.os) == '40':
-				beacon_data['os'] = "MikroTik-MIPSBE"
+				beacon_data['os'] = "MikroTik-MIPS"
 			elif str(beacon_hdr.os) == '41':
-				beacon_data['os'] = "MikroTik-MIPSLE"
+				beacon_data['os'] = "MikroTik-MIPSEL"
 			elif str(beacon_hdr.os) == '42':
 				beacon_data['os'] = "MikroTik-x86"
 			elif str(beacon_hdr.os) == '43':
 				beacon_data['os'] = "MikroTik-PPC"
+			elif str(beacon_hdr.os) == '50':
+				beacon_data['os'] = "Ubiquiti-MIPS"
 			# support for legacy v2.3 beacon codes. NFI = No Further Information
 			elif str(beacon_hdr.os) == '1':
 				#os = "Windows"
@@ -379,7 +384,7 @@ def write_rsi_file(beacon_data):
 	#write xml document to a file
 	indent(root)
 	ElementTree(root).write(filename, encoding="utf-8")
-
+	processRSIFile(filename)
 
 def process_ver1_beacon(conn,key):
 	global log
@@ -495,9 +500,9 @@ def main(argv):
 	for opt, arg in opts:
 		if opt == '-h':
 			print 'usage:'
-			print '-p <port> - the port to listen for proxy coonnections on'
+			print '-p <port> - the port to listen for proxy connections on'
 			print '-f <rsi_file_path> - file path to write the rsi beacon files out to [default = beacons/]'
-			print '-l <beacon_log_file_path> - file path to write the beacon logs out to [default = beacon_logs/]'
+			print '-l <beacon_log_file_path> - file path to write the beacon logs out to [default = p_beacon_logs/]'
 			sys.exit()
 		elif opt in '-p':
 			port = arg
@@ -507,7 +512,7 @@ def main(argv):
 			log_path = arg
 
 	if(rsi_file_path == None):
-		rsi_file_path = 'beacons/'
+		rsi_file_path = 'p_beacons/'
 	if(port == None):
 		port = 4098
 	if(log_path == None):

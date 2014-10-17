@@ -1,6 +1,6 @@
 #include "launchshell.h"
 #include "compat.h"
-#include "bzip/bzlib.h"
+#include "bzlib.h"
 #include "proj_strings.h"
 #include "debug.h"
 
@@ -11,7 +11,8 @@
 
 int launchShell( char *charinput )
 {
-	D (printf ("%s, %4d:\tCalling jshell with parameters: %s\n", __FILE__, __LINE__, charinput); )
+	pid_t cpid;
+	DLX(1, printf("Calling jshell with parameters: %s\n", charinput));
 
 // fork_process could be used, but would work best if some refactoring
 // where done. fork_process() tries to keep the same function prototype
@@ -27,10 +28,9 @@ int launchShell( char *charinput )
 	}
 */
 
-	if ( fork() == 0 )
-	{
+	if ((cpid = fork()) == 0) {
 		// CHILD
-		D( printf( " . DEBUG: I am the child\n" ); )
+		DLX(2, printf("This is the child process\n"));
 
 		// by calling setsid(), if the parent hive process is killed,
 		// the shell connection will stay active.  if not using daemonize()
@@ -51,13 +51,13 @@ int launchShell( char *charinput )
 
 		// shell process needs to exit.  the caller is not expecting
 		// to handle a return after the shell is finished.
-		D( printf( " . DEBUG: exiting the shell process\n" ); )
+		DLX(2, printf("Exiting the shell process\n"));
 		exit( 0 );
 	}
 	else
 	{
 		// PARENT
-		D( printf( " . DEBUG: I am the parent\n" ); )
+		DLX(2, printf("This is the parent process; PID of child: %u\n", (unsigned int)cpid));
 
 		// parent connection continues to handle the connection with the Hive ILM client
 	}

@@ -1,6 +1,8 @@
 #ifndef _dt_b64_h
 #define _dt_b64_h
 
+#include "debug.h"
+
 #ifndef SUCCESS
 #define SUCCESS 0
 #endif

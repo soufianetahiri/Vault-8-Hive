@@ -61,15 +61,15 @@
 #define n reuseTcpPortString " Cannot reuse TCP port.  Use another or wait until this port is released.\n"
 #define n listeningString "Listening for a connection on port"
 #define n tcpInitFailString " TcpInit(): failure accepting the TCP/IP connection\n"
-#define n connectionEstString "... connection established"
+#define n connectionEstString " Connection established"
 #define n sessionConfigParamString "Session configuration parameters"
-#define n interactiveModeString "  . Interactive mode established\n"
-#define n automaticMode1String "   Automatic mode established (not ignoring errors)\n"
-#define n automaticMode2String "   Automatic mode established (ignoring errors)\n"
+#define n interactiveModeString "\tInteractive mode established\n"
+#define n automaticMode1String "\tAutomatic mode established (not ignoring errors)\n"
+#define n automaticMode2String "\tAutomatic mode established (ignoring errors)\n"
 #define n commandString "      Command string"
-#define n remoteIPAddressString "  . Remote IP address"
+#define n remoteIPAddressString "\tRemote IP address"
 #define n onPortString "on port"
-#define n localIPAddressString "  . Local IP address"
+#define n localIPAddressString "\tLocal IP address"
 
 //functions.c
 #define n ulString "ul"
@@ -144,7 +144,10 @@
 
 //modes.c
 #define n run1String "Enabling encrypted communications"
-#define n run2String " ERROR: TLS connection with TLS client failed to initialize.\n"
+#define n run1Error " ERROR: TLS connection with TLS client failed to initialize.\n"
+#define n run2String "TLS connection established.\n"
+#define n run2Error "TLS connection failed.\n"
+#define n run3String "AES encrypted tunnel established.\n"
 
 //parser.c
 #define n buildArgv1String "BuildArgv(): failure to allocate memory for the copy buffer\n"
@@ -152,7 +155,7 @@
 
 //trigger.c
 #define n triggerParseOptions "Trigger parameter error."
-#define n triggerStart1String "Sending trigger ..."
+#define n triggerStart1String " Sending trigger ..."
 #define n triggerStart2String "failed."
 #define n triggerStart3String "Could not create TCP socket connection with remote host."
 #define n triggerStart4String "Could not create UDP socket connection with remote host."
