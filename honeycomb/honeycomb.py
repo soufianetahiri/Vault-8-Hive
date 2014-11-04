@@ -263,7 +263,7 @@ def parse_beacon_data(decrypted_data):
 			elif str(beacon_hdr.os) == '40':
 				beacon_data['os'] = "MikroTik-MIPS"
 			elif str(beacon_hdr.os) == '41':
-				beacon_data['os'] = "MikroTik-MIPSEL"
+				beacon_data['os'] = "MikroTik-MIPSel"
 			elif str(beacon_hdr.os) == '42':
 				beacon_data['os'] = "MikroTik-x86"
 			elif str(beacon_hdr.os) == '43':
