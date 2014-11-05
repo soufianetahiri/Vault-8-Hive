@@ -48,6 +48,8 @@
 
 #define CREAT_MODE	S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 
+#define OPTMATCH(o, s) ( strlen((o))==strlen((s)) && (strcmp((o),(s))== 0) )
+
 //********************************************************************************
 //rsa_context           rsa;
 struct cl_args {
@@ -325,46 +327,30 @@ int main(int argc, char **argv)
 			break;
 
 		case 'm':	// operating system: valid linux, solaris, all, or raw
-			if (strncmp(optarg, "mt-p", 4) == 0) {
-				// mikrotik powerpc
-				mikrotik_ppc = 1;
-			} else if ((strncmp(optarg, "mt-mips", 8) == 0) || (strncmp(optarg, "mt-mipsbe", 8) == 0)) {
-				// mikrotik MIPS big endian
-				mikrotik_mips = 1;
-			} else if ((strncmp(optarg, "mt-mipsel", 8) == 0) || (strncmp(optarg, "mt-mipsle", 8) == 0)) {
-				// mikrotik MIPS little endian
-				mikrotik_mipsel = 1;
-			} else if (strncmp(optarg, "mt-x", 4) == 0) {
-				// mikrotik x86
-				mikrotik_x86 = 1;
-			} else if (strncmp(optarg, "sol-x", 5) == 0) {
-				// solaris x86
-				solaris_x86 = 1;
-			} else if (strncmp(optarg, "sol-s", 5) == 0) {
-				// solaris sparc
-				solaris_sparc = 1;
-			} else if (strncmp(optarg, "l", 1) == 0) {
-				// linux
-				linux_x86 = 1;
-			} else if (strncmp(optarg, "a", 1) == 0) {
-				solaris_sparc = 1;
-				linux_x86 = 1;
-				solaris_x86 = 1;
-				mikrotik_x86 = 1;
-				mikrotik_mips = 1;
-				mikrotik_mipsel = 1;
-				mikrotik_ppc = 1;
-			} else if (strncmp(optarg, "r", 1) == 0) {
-				// all
-				raw = 1;
-			} else {
-				// error
-				printf(" ERROR: unspecified error\n");
+
+			do {
+				if (OPTMATCH(optarg, "mt-ppc"))		{mikrotik_ppc = 1;		break;}
+				if (OPTMATCH(optarg, "mt-mips"))	{mikrotik_mips = 1;		break;}
+				if (OPTMATCH(optarg, "mt-mipsbe"))	{mikrotik_mips = 1;		break;}
+				if (OPTMATCH(optarg, "mt-x86"))		{mikrotik_x86 = 1;		break;}
+				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
+				if (OPTMATCH(optarg, "sol-sparc"))	{solaris_sparc = 1;		break;}
+				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
+				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
+				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
+				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
+
+				if (OPTMATCH(optarg, "all"))		{solaris_sparc = 1,
+													linux_x86 = 1,
+													solaris_x86 = 1,
+													mikrotik_x86 = 1,
+													mikrotik_mips = 1,
+													mikrotik_mipsel = 1,
+													mikrotik_ppc = 1;		break;}
+				printf(" ERROR: Invalid architecture specified\n");
 				return -1;
-			}
-
+			} while (0);
 			break;
-
 
 		case 'p':	// beacon port
 			args.beacon_port = (unsigned int) atoi(optarg);
