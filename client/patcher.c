@@ -114,10 +114,9 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-m <OS>%s            - (optional) target OS [default: 'all'].  options:\n", GREEN, RESET);
 	fprintf(stdout, "                             * 'all' - default\n");
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
-	fprintf(stdout, "                             * 'win'\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
-	fprintf(stdout, "                             * 'mt-mips'\n");
-	fprintf(stdout, "                             * 'mt-mipsel'\n");
+	fprintf(stdout, "                             * 'mt-mips' (or 'mt-mipsbe' (deprecated) )\n");
+	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
 	fprintf(stdout, "                             * 'sol-x86'\n");
@@ -329,10 +328,10 @@ int main(int argc, char **argv)
 			if (strncmp(optarg, "mt-p", 4) == 0) {
 				// mikrotik powerpc
 				mikrotik_ppc = 1;
-			} else if (strncmp(optarg, "mt-mips", 8) == 0) {
+			} else if ((strncmp(optarg, "mt-mips", 8) == 0) || (strncmp(optarg, "mt-mipsbe", 8) == 0)) {
 				// mikrotik MIPS big endian
 				mikrotik_mips = 1;
-			} else if (strncmp(optarg, "mt-mipsel", 8) == 0) {
+			} else if ((strncmp(optarg, "mt-mipsel", 8) == 0) || (strncmp(optarg, "mt-mipsle", 8) == 0)) {
 				// mikrotik MIPS little endian
 				mikrotik_mipsel = 1;
 			} else if (strncmp(optarg, "mt-x", 4) == 0) {
