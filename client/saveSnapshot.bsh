@@ -9,16 +9,16 @@ rm -rf ../snapshot_${timeStamp}
 mkdir ../snapshot_${timeStamp}
 
 #Change permisions of unpatched executables to 755 and save a copy
-chmod 755 ../server/hived-mikrotik-mipsbe
-chmod 755 ../server/hived-mikrotik-mipsbe-dbg
-chmod 755 ../server/hived-mikrotik-mipsle
-chmod 755 ../server/hived-mikrotik-mipsle-dbg
-chmod 755 ../server/hived-linux-i686
-chmod 755 ../server/hived-linux-i686-dbg
+chmod 755 ../server/hived-mikrotik-mips
+chmod 755 ../server/hived-mikrotik-mips-dbg
+chmod 755 ../server/hived-mikrotik-mipsel
+chmod 755 ../server/hived-mikrotik-mipsel-dbg
+chmod 755 ../server/hived-linux-x86
+chmod 755 ../server/hived-linux-x86-dbg
 chmod 755 ../server/hived-mikrotik-ppc
 chmod 755 ../server/hived-mikrotik-ppc-dbg
-chmod 755 ../server/hived-solaris-i386
-chmod 755 ../server/hived-solaris-i386-dbg
+chmod 755 ../server/hived-solaris-x86
+chmod 755 ../server/hived-solaris-x86-dbg
 chmod 755 ../server/hived-solaris-sparc
 chmod 755 ../server/hived-solaris-sparc-dbg
 mkdir ../snapshot_${timeStamp}/server_unpatchedDirectory/
