@@ -25,14 +25,14 @@ mkdir ../snapshot_${timeStamp}/server_unpatchedDirectory/
 cp ../server/hived* ../snapshot_${timeStamp}/server_unpatchedDirectory/
 
 #Create hive-patcher and save everything for the client
-make all 
+#make all 
 mkdir ../snapshot_${timeStamp}/clientDirectory/
 cp hive-patcher* ../snapshot_${timeStamp}/clientDirectory/
 cp hclient-linux* ../snapshot_${timeStamp}/clientDirectory/
 
 #Create hive library and save all cutthroat files
 cd ../ilm-client
-make all
+#make all
 mkdir ../snapshot_${timeStamp}/ctDirectory/
 cp ./CCS* ../snapshot_${timeStamp}/ctDirectory/
 cp ./cutthroat* ../snapshot_${timeStamp}/ctDirectory/
