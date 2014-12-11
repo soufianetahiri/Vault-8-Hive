@@ -64,9 +64,7 @@ void printSha1Hash(char *label, unsigned char *sha1Hash)
 //
 //RETURN: SUCCESS if generated a variance
 //        variance will hold the returned variance
-entropy_context entropy;
-ctr_drbg_context ctr_drbg;
-int rng_state_init;
+
 void CalcVariance( signed int* variance, int range )
 {
 

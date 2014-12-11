@@ -1,14 +1,11 @@
 #include "loki_utils.h"
-#include "polarssl/config.h"
 #include <string.h>
 #include <stdlib.h>
 
 //unsigned int Q[HISTORY];
 //unsigned int C;
 int Index = 1023;
-int Initialized = 0;
-entropy_context entropy;	// Entropy context
-ctr_drbg_context ctr_drbg;	// Counter mode deterministic random byte generator context
+
 //const char *pers = "ssl";	// Custom data to add uniqueness
 
 static unsigned int GenerateRandIntBetween( unsigned int lower, unsigned int upper );
@@ -101,17 +98,11 @@ unsigned long long my_time64()
  */
 unsigned int irand()
 {
-	unsigned int seed;
-
-	if(!Initialized)
-	{
-		entropy_init(&entropy);
-		if (ctr_drbg_init(&ctr_drbg, entropy_func, &entropy,0, 0) != 0 ) {
+	if (!rng_initialized) {
+		if (rng_init() < 0) {
+			DLX(4, printf( "Failed to initialize random number generator\n"));
 			return 0;
 		}
-		ctr_drbg_random(&ctr_drbg, (unsigned char *)&seed, sizeof(seed));
-		srand(seed);
-		Initialized = 1;
 	}
 	return ((unsigned int) rand());
 }

@@ -8,6 +8,7 @@ extern "C" {
 //*******************************************************
 // used by client and server
 #include "function_strings.h"
+#include "polarssl/config.h"
 #include "polarssl/net.h"
 #include "polarssl/ssl.h"
 #include "polarssl/entropy.h"
@@ -27,6 +28,10 @@ extern "C" {
 #define MIN(a,b)	(((a) < (b)) ? (a) : (b))
 
 enum flag {FALSE = 0, TRUE};
+extern entropy_context entropy;				// Entropy context
+extern ctr_drbg_context ctr_drbg;			// Counter mode deterministic random byte generator context
+extern dhm_context *dhm;					// Diffie-Hellman context
+extern enum flag rng_initialized;			// Random number generator initialization flag
 
 typedef struct _crypt_context {
 	ssl_context	*ssl;
@@ -38,6 +43,7 @@ typedef struct _crypt_context {
 
 crypt_context *crypt_setup_client(int *sockfd );
 crypt_context *crypt_setup_server(int *sockfd );
+int rng_init();
 int crypt_handshake(crypt_context *ioc);
 int crypt_read(crypt_context *ioc, unsigned char *buf, size_t bufsize );
 int crypt_write(crypt_context *ioc, unsigned char *buf, size_t bufsize );

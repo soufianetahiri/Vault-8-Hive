@@ -145,22 +145,16 @@ dhm_context *dhClientExchange( ssl_context *ssl )
 
     unsigned char		*p, *end;
     unsigned char		buf[1024];
-    char 				*pers = "dh_client";
-
-    entropy_context		entropy;
-    ctr_drbg_context	ctr_drbg;
-    dhm_context			*dhm;
 
     if ( (dhm = calloc(1, sizeof(dhm_context)) ) == NULL)
     		return NULL;
 
-	//Setup the RNG
-    DLX(6, printf("Seeding the random number generator\n"));
-    entropy_init(&entropy);
-    if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)  {
-        DLX(4, printf("ctr_drbg_init failed, returned -0x%04x\n", -ret));
-        goto exit;
-    }
+	if (!rng_initialized) {	// Verify that RNG has been initialized
+		if (rng_init() < 0) {
+			DLX(4, printf( "Failed to initialize random number generator\n"));
+			return 0;
+		}
+	}
 
 	// First get the buffer length
 
@@ -325,27 +319,22 @@ dhm_context *dhServerExchange( ssl_context *ssl )
     int			ret;
     size_t		n, buflen;
 
-	unsigned char buf[1024];
-	unsigned char buf2[2];
-	unsigned char hash[20];
-	char *pers = "dh_server";
+	unsigned char	buf[1024];
+	unsigned char	buf2[2];
+	unsigned char	hash[20];
+    rsa_context		rsa;
 
-    entropy_context		entropy;
-    ctr_drbg_context	ctr_drbg;
-    dhm_context			*dhm;
-    rsa_context			rsa;
-
-    if ( (dhm = calloc(1, sizeof(dhm_context)) ) == NULL)
-    		return NULL;
-
-	//	Setup the RNG
-    DLX(6, printf("Seeding the random number generator\n"));
-    entropy_init(&entropy);
-
-    if ((ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0)  {
-        DLX(4, printf("ctr_drbg_init() failed: "); print_ssl_error(ret));
-        goto exit;
+    if (dhm == NULL) {
+		if ( (dhm = calloc(1, sizeof(dhm_context)) ) == NULL)
+				return NULL;
     }
+
+	if (!rng_initialized) {	// Verify that RNG has been initialized
+		if (rng_init() < 0) {
+			DLX(4, printf( "Failed to initialize random number generator\n"));
+			return 0;
+		}
+	}
 
 	rsa_init( &rsa, RSA_PKCS_V15, 0 );
 	if ((ret = x509parse_keyfile(&rsa, "server.key", NULL)) != 0) {

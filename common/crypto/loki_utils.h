@@ -1,9 +1,7 @@
 #ifndef LOKI_UTILS_H
 #define LOKI_UTILS_H
 
-#include "polarssl/config.h"
-#include "polarssl/entropy.h"
-#include "polarssl/ctr_drbg.h"
+#include "crypto.h"
 
 #ifdef WIN32
 #include <Windows.h>

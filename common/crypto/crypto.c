@@ -21,8 +21,7 @@ entropy_context entropy;				// Entropy context
 ctr_drbg_context ctr_drbg;				// Counter mode deterministic random byte generator context
 dhm_context *dhm;						// Diffie-Hellman context
 unsigned char iv[16];					// Initialization vector
-
-enum flag rng_initialized = FALSE;		// Random number generator initialization flag
+enum flag rng_initialized = FALSE;		// RNG initialization flag
 
 const char *personalization = "7ddc11c4-5789-44d4-8de4-88c0d23d4029";	// Custom data to add uniqueness
 char *my_dhm_P = (char *) my_dhm_P_String;	// The values of these strings are located in crypto_strings.txt
@@ -59,8 +58,10 @@ void my_debug(void *ctx, int level, const char *str) {
 int rng_init()
 {
 	int ret = 1;
+	unsigned int seed;
 
 	DLX(6, printf( "Initializing RNG.\n"));
+	entropy_init(&entropy);
 	if ( (ret = ctr_drbg_init(&ctr_drbg, entropy_func, &entropy, (unsigned const char *)personalization, strlen(personalization))) != 0 ) {
 		DLX(4, switch (ret) {
 					case POLARSSL_ERR_CTR_DRBG_ENTROPY_SOURCE_FAILED:	printf("The entropy source failed.\n"); break;
@@ -82,6 +83,8 @@ int rng_init()
 	}
 	ret = ret < 0 ? ret : 1;
 	ctr_drbg_set_prediction_resistance(&ctr_drbg, CTR_DRBG_PR_OFF);	// Turn off prediction resistance
+	ctr_drbg_random(&ctr_drbg, (unsigned char *)&seed, sizeof(seed));
+	srand(seed);		// Seed system's pseudo random number generator
 	rng_initialized = TRUE;
 	return ret;
 }
