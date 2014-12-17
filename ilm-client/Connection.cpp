@@ -16,7 +16,6 @@
 extern "C" {
 #include "crypto.h"
 #include "proj_strings.h"
-#include "crypto_proj_strings.h"
 #include "colors.h"
 #include "debug.h"
 }

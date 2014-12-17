@@ -52,7 +52,7 @@ CFLAGS += -I../../debug -I../../crypto -I../include -I../ssl/include
 ifdef DEBUG
   CFLAGS += -DDEBUG -D_DEBUG -g -O0 
   ifeq ("$(DEBUG)", "2")        
-    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DPOLARSSL_SSL_DEBUG_ALL
+    CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG -DPOLARSSL_SSL_DEBUG_ALL -DPOLARSSL_SELF_TEST
   endif
 else
   CFLAGS += -Os

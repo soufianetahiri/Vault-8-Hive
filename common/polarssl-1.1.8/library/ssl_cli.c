@@ -759,7 +759,6 @@ int ssl_handshake_client( ssl_context *ssl )
     while( ssl->state != SSL_HANDSHAKE_OVER )
     {
         SSL_DEBUG_MSG( 2, ( "client state: %d", ssl->state ) );
-        DLX(5, printf("client state: %d\n", ssl->state));
 
         if( ( ret = ssl_flush_output( ssl ) ) != 0 )
             break;

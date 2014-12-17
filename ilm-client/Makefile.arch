@@ -29,7 +29,7 @@ LIBCRYPTO = $(CRYPTO)/libcrypto.a
 STRINGS = $(COMMON)/strings
 LIBDEBUG = $(COMMON)/debug/libdebug.a
 #===============================================================================
-.PHONY: force-rebuild
+
 $(info )
 $(info )
 $(info =========================================================================)
@@ -41,14 +41,14 @@ include $(CRYPTO)/ARCH_BUILD
 
 ifdef $(ARCH_BUILD_ILMCLIENT)
   ifneq ("$(ARCH_BUILD_ILMCLIENT)", "$(TARGET)")
-    ILMCLIENT_REBUILD:=clean
+    ILMCLIENT_REBUILD:=force-rebuild
     $(info .       Rebuilding ILMCLIENT))
   else
     ILMCLIENT_REBUILD:=
     $(info .       ILMCLIENT for $(TARGET) previously built.)
   endif
 else
-  ILMCLIENT_REBUILD:=clean
+  ILMCLIENT_REBUILD:=force-rebuild
     $(info .       Building ILMCLIENT)
 endif
 
@@ -145,12 +145,13 @@ $(info )
 
 .SILENT:
 .PHONY: all
-all: $(ILMCLIENT_REBUILD) $(LIBSSL) $(LIBHCLIENT) cryptcat $(LIBCRYPTO) $(OBJS) $(LIBDEBUG)
+all: $(ILMCLIENT_REBUILD) $(LIBHCLIENT) $(LIBCRYPTO) $(LIBSSL) cryptcat $(OBJS) $(LIBDEBUG)
+	printf "\tLINKING ILM CLIENT...\n"
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
 	${MD5SUM} $(OUTFILE) > $(OUTFILE).md5
 	echo "ARCH_BUILD_ILMCLIENT=$(TARGET)" > ARCH_BUILD
 	printf "\n=========================================================================\n"
-	printf "\tBUILDING ILM CLIENT COMPLETE\n"
+	printf "\tBUILD OF ILM CLIENT COMPLETE\n"
 	printf "=========================================================================\n"
 #	rm -f cryptcat.h
 
@@ -161,8 +162,6 @@ $(LIBSSL): $(SSL_REBUILD)
 $(HCLIENT)-$(TARGET):
 	cd $(CLIENT) && $(MAKE) TARGET=$(TARGET)
 	cp $(CLIENT)/HCLIENT) .
-
-libhclient: $(LIBHCLIENT)
 
 $(LIBHCLIENT): $(CLIENTLIB_REBUILD)
 	cd $(CLIENT) && $(MAKE) TARGET=$(TARGET) library
@@ -204,17 +203,18 @@ distclean: clean
 
 .PHONY: clean
 clean:
+	printf "\n\tCLEANING...\n\n"
 	rm -f *.o $(CLIENT)/cryptcat/cryptcat cryptcat.h
 	rm -f $(LIBHCLIENT)
 	rm -f $(LIBCRYPTCAT)
 	rm -f hclient-linux-dbg
 	rm -f $(OUTFILE).md5
-	$(MAKE) -C $(SSL)/library clean
-	$(MAKE) -C $(CLIENT) clean
-	$(MAKE) -C $(CRYPTO) clean
-	$(MAKE) -C $(STRINGS) clean
+#	$(MAKE) -C $(CLIENT) clean
 	>ARCH_BUILD
 
 .cpp.o:
 	printf "\tC++\t$<\n"
 	$(CXX) $(CXXFLAGS) -c $<
+
+.PHONY: force-rebuild
+force-rebuild:	;

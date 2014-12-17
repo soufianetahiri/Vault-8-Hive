@@ -27,9 +27,6 @@ library: clean
 .PHONY: clean
 clean:
 	make -f Makefile.arch $@
-#	rm -f *.o
-#	cd $(CRYPTO) && $(MAKE) clean
-#	cd $(SSL) && $(MAKE) clean
 
 .PHONY: dist-clean
 dist-clean:	clean

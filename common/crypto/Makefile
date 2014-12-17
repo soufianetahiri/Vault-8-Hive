@@ -61,8 +61,6 @@ endif
 
 .SILENT:
 .PHONY: $(CRYPTO_BUILD_OPTS)
-.PHONY: all
-
 $(info )
 $(info =========================================================================)
 ifdef TARGET
@@ -88,7 +86,7 @@ ifdef TARGET
   $(info )
 endif
 
-$(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) crypto_strings $(CRYPTO_OBJS)
+$(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) crypto_proj_strings.h init_crypto_strings.o $(CRYPTO_OBJS)
 	printf "\tAR\t$@\n"
 	$(AR) $(ARFLAGS) $@ $(CRYPTO_OBJS)
 	echo "ARCH_BUILD_CRYPTO=$(TARGET)" > ARCH_BUILD
@@ -97,7 +95,6 @@ $(LIBCRYPTO): $(CRYPTO_BUILD_OPTS) crypto_strings $(CRYPTO_OBJS)
 	printf "=========================================================================\n"
 
 .PHONY: crypto_strings
-crypto_strings: init_crypto_strings.o crypto_proj_strings.h
 crypto_proj_strings.h: init_crypto_strings.c
 init_crypto_strings.o: init_crypto_strings.c 
 init_crypto_strings.c: crypto_strings.txt 

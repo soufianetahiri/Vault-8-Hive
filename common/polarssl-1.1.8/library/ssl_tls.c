@@ -558,6 +558,7 @@ static int ssl_encrypt_buf( ssl_context *ssl )
         unsigned char *enc_msg;
         size_t enc_msglen;
 
+        SSL_DEBUG_MSG( 3, ("Checkpoint") );
         padlen = ssl->ivlen - ( ssl->out_msglen + 1 ) % ssl->ivlen;
         if( padlen == ssl->ivlen )
             padlen = 0;
@@ -580,9 +581,10 @@ static int ssl_encrypt_buf( ssl_context *ssl )
              * Generate IV
              */
             int ret = ssl->f_rng( ssl->p_rng, ssl->iv_enc, ssl->ivlen );
-            if( ret != 0 )
+            if( ret != 0 ) {
+            	SSL_DEBUG_MSG( 3, ("Error generating IV. ret = %x", ret) );
                 return( ret );
-
+            }
             /*
              * Shift message for ivlen bytes and prepend IV
              */

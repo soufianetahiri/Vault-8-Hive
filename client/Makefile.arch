@@ -129,13 +129,13 @@ $(info )
 .SILENT:
 
 .PHONY: all
-all: $(LIBSSL) hclient debug
+all: hclient debug
 
 .PHONY: release
 release: hclient
 
 .PHONY: hclient
-hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBSSL) $(LIBCRYPTO) $(OBJS) $(LIBDEBUG)
+hclient: $(CLIENT_REBUILD) proj_strings.h $(LIBCRYPTO) $(LIBSSL) $(OBJS) $(LIBDEBUG)
 	if ! test $(DEBUG); then \
 		${CC} ${CFLAGS} -o ${BINARY} ${OBJS} $(LIBS) ${LDFLAGS}; \
 		${STRIP} ${BINARY};	\
