@@ -145,7 +145,22 @@ $(info )
 
 .SILENT:
 .PHONY: all
-all: $(ILMCLIENT_REBUILD) $(LIBHCLIENT) $(LIBCRYPTO) $(LIBSSL) cryptcat $(OBJS) $(LIBDEBUG)
+
+all:	$(OUTFILE)
+
+hive: $(ILMCLIENT_REBUILD) $(LIBHCLIENT) $(LIBCRYPTO) $(LIBSSL) cryptcat $(OBJS) $(LIBDEBUG)
+	printf "\tLINKING ILM CLIENT...\n"
+	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
+	printf "\tSTRIPPING ILM CLIENT...\n"
+	$(STRIP) $(OUTFILE)
+	${MD5SUM} $(OUTFILE) > $(OUTFILE).md5
+	echo "ARCH_BUILD_ILMCLIENT=$(TARGET)" > ARCH_BUILD
+	printf "\n=========================================================================\n"
+	printf "\tBUILD OF ILM CLIENT COMPLETE\n"
+	printf "=========================================================================\n"
+#	rm -f cryptcat.h
+
+hive-dbg: $(ILMCLIENT_REBUILD) $(LIBHCLIENT) $(LIBCRYPTO) $(LIBSSL) cryptcat $(OBJS) $(LIBDEBUG)
 	printf "\tLINKING ILM CLIENT...\n"
 	$(CXX) $(CXXFLAGS) -shared $(INCLUDES) $(OBJS) $(LDFLAGS) $(LIBS) -o $(OUTFILE)
 	${MD5SUM} $(OUTFILE) > $(OUTFILE).md5
