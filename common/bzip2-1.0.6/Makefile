@@ -55,6 +55,8 @@ ifdef TARGET
     include ../Makefile-include.mikrotik-x86
   else ifeq ("$(TARGET)", "mikrotik-ppc")
     include ../Makefile-include.mikrotik-ppc
+  else ifeq ("$(TARGET)", "ubiquiti-mips")
+    include ../Makefile-include.ubiquiti-mips
   else ifeq ("$(TARGET)", "arm")
     include ../Makefile-include.arm
   else ifeq ("$(TARGET)", "solaris-sparc")

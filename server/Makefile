@@ -41,6 +41,7 @@ all:
 	printf "\tmake mikrotik-mips\n"
 	printf "\tmake mikrotik-mipsel\n"
 	printf "\tmake mikrotik-ppc\n"
+	printf "\tmake ubiquiti\n"
 	printf "\tmake arm\n\n"
 	printf "To build a debug version use:\n"
 	printf "\t make DEBUG=1 <target>\n\n"
@@ -71,6 +72,9 @@ mikrotik-mips:
 
 mikrotik-ppc:
 	@make -f Makefile.arch TARGET=mikrotik-ppc
+
+ubiquiti-mips:
+	@make -f Makefile.arch TARGET=ubiquiti-mips
 
 arm:
 	@make -f Makefile.arch TARGET=arm

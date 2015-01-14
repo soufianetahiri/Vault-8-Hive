@@ -2,19 +2,19 @@
 #define __BEACON_H
 
 #include "function_strings.h"
-#include "compat.h"			//NEW
+#include "compat.h"
 
 #define MAC_ADDR_LEN			6
-#define MAC_ADDR_LEN_FORMATTED		18
+#define MAC_ADDR_LEN_FORMATTED	18
 #define MAX_SSL_PACKET_SIZE		4052
-#define TOOL_ID				0x65ae82c7
+#define TOOL_ID					0x65ae82c7
 #define TOOL_ID_XOR_KEY			3
-#define XOR_KEY				5
+#define XOR_KEY					5
 #define DEFAULT_BEACON_PORT		443		// HTTPS
 
 //Flag defines
 // OS
-#define	BH_WINDOWS		10
+#define	BH_WINDOWS			10	// No longer supported
 #define BH_LINUX_X86		20
 #define BH_LINUX_X86_64		21
 #define BH_SOLARIS_SPARC	30
@@ -23,15 +23,16 @@
 #define BH_MIKROTIK_MIPSEL	41	// MIPS (Little Endian)
 #define BH_MIKROTIK_X86		42
 #define BH_MIKROTIK_PPC		43
-#define BH_ARM			50
+#define BH_UBIQUITI_MIPS	50	// MIPS (Big Endian)
+#define BH_ARM				60
 
 //Header types
-#define MAC			1
-#define UPTIME			2
+#define MAC					1
+#define UPTIME				2
 #define PROCESS_LIST		3
-#define IPCONFIG		4
-#define NETSTAT_RN		5
-#define NETSTAT_AN		6
+#define IPCONFIG			4
+#define NETSTAT_RN			5
+#define NETSTAT_AN			6
 #define NEXT_BEACON_TIME 	7
 
 /*!

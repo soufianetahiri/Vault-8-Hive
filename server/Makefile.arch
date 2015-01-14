@@ -25,7 +25,6 @@ INCLUDES = -I. -I$(BZIP2) -I$(CRYPTO) -I$(BZIP2) -I$(COMMON)/ssl/include -I$(COM
 #Default FLAGS
 CFLAGS := -Wall -Wextra -ansi -std=gnu99
 CFLAGS += $(INCLUDES)
-CFLAGS += -D_USE_BASH
 
 LDFLAGS = -lpthread
 
@@ -42,6 +41,8 @@ else ifeq ("$(TARGET)", "mikrotik-x86")
   include $(COMMON)/Makefile-include.mikrotik-x86
 else ifeq ("$(TARGET)", "mikrotik-ppc")
   include $(COMMON)/Makefile-include.mikrotik-ppc
+else ifeq ("$(TARGET)", "ubiquiti-mips")
+  include $(COMMON)/Makefile-include.ubiquiti-mips
 else ifeq ("$(TARGET)", "arm")
   include $(COMMON)/Makefile-include.arm
 else ifeq ("$(TARGET)", "solaris-sparc")
