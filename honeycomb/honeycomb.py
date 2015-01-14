@@ -184,7 +184,7 @@ def remove_bthp_addl_hdr(data):
 
 
 def get_packet_size(data):
-	print "Packet size: ", len(data)
+#	print "Packet size: ", len(data)	# Debug
 	if len(data) == 0:
 		message = "Received zero-length packet"
 		log.write(message, logging.INFO)
