@@ -7,17 +7,38 @@ all:
 	@echo "  .  make patcher"
 	@echo
 	
+.PHONY: clean
 clean:
 	make -C server clean
 	make -C client clean
 	rm -rf *.tar Logs
 
+.PHONY: tarball
 tarball:
-	tar --exclude=.svn --exclude=HiveServer.sdf --exclude=*.gz --exclude=*.tar --exclude=*.tgz --exclude=documentation/html/* -cvf hive.tar * >/dev/null
+	printf "\nCreating $@ ...\n"
+	tar	--exclude=.svn \
+		--exclude=HiveServer.sdf \
+		--exclude=client/patchedHives/* \
+		--exclude=client/hived-*-upatched \
+		--exclude=client/hclient--*-upatched \
+		--exclude=server/hived-* \
+		--exclude=*.gz \
+		--exclude=*.tar \
+		--exclude=*.tgz \
+		--exclude=*.o \
+		--exclude=*.a \
+		--exclude=*.md5 \
+		--exclude=documentation/html/* \
+		--exclude=snapshot_* \
+		--exclude=.*.swp \
+		--exclude=ARCH_BUILD \
+		-cvf hive.tar * >/dev/null
 
+.PHONY: ilm-tar
 ilm-tar:
 	tar --exclude .svn --exclude HiveServer.sdf --exclude *.gz --exclude *.tar --exclude *.tgz -czvf hive-ilm-1.1.tgz client/ libs/ ilm-client/
 
+.PHONY: patcher
 patcher:
 	printf "\n\nRun the Hive patcher only on hive-builder\n\n"
 	sleep 2
@@ -26,19 +47,16 @@ patcher:
 	cd server && make mikrotik-ppc
 	cd server && make mikrotik-mips
 	cd server && make mikrotik-mipsel
-#	cp server/hived-linux-i686 client/hived-linux-i386-unpatched
-#	cp server/hived-mikrotik-i386 client/hived-mikrotik-i386-unpatched
-#	cp server/hived-mikrotik-ppc client/hived-mikrotik-ppc-unpatched
-#	cp server/hived-mikrotik-mipsbe client/hived-mikrotik-mipsbe-unpatched
-#	cp server/hived-mikrotik-mipsle client/hived-mikrotik-mipsle-unpatched
 	cd client && make clean && make patcher
 
+.PHONY: linux-x86
 linux-x86:
 	@make -C server $@
 	@echo $@
 
-deliverables:	tarball
-	rm -rf deliverables/*
+.PHONY: deliverables
+deliverables:	remove-deliverables tarball
+	printf "Packaging Deliverables, please wait ...\n"
 	mkdir -p deliverables/BIN
 	mkdir -p deliverables/DOC
 	mkdir -p deliverables/SRC
@@ -57,5 +75,10 @@ deliverables:	tarball
 	cp -a honeycomb/honeycomb.py deliverables/BIN
 	md5sum honeycomb/honeycomb.py > deliverables/BIN/honeycomb.py.md5
 	mkdir -p deliverables/BIN/unpatched
-	cp -a client/hived-*-*-unpatched deliverables/BIN/unpatched
+	cp -aL client/hived-*-*-unpatched deliverables/BIN/unpatched
+	(cd deliverables/BIN/unpatched;for i in *; do md5sum $$i > $$i.md5;done)
 	cp -a documentation/UsersGuide/* deliverables/DOC/
+
+.PHONY: remove-deliverables
+remove-deliverables:
+	rm -rf deliverables
