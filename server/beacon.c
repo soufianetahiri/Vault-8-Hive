@@ -237,7 +237,7 @@ void *beacon(void* param)
 		DLX(4, printf( "\tSending beacon data\n"));
 		ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
 		if(ret == SUCCESS) {
-			update_file((char*)sdfp);
+			update_file((char*)sdcfp);
 		} else {
 			DLX(4, printf( "\tSend of beacon data failed\n"));
 		}

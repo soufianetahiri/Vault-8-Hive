@@ -24,7 +24,7 @@
 #define n inp183Aq " Insufficient permissions. Try again...\n"
 
 //#define n cmdLineOptionFlags "a:cp:d:hI:i:j:K:k:s:t:"
-#define n cIures4j "a:cd:hI:i:j:K:k:p:s:t:"
+#define n cIures4j "a:cd:hI:i:j:K:k:P:p:s:t:"
 #define n oe1	"Option error"
 #define n oe2	"File not found"
 #define n oe3	"ID too short"
@@ -113,10 +113,11 @@
 #define n win_netstat_an "netstat -an"
 //readlink("/proc/self/exe")
 #define n sdp "/proc/self/exe"
-//SD_FILE_PATH
-#define n sdfp "/var/.config"
-//Log file for sd
-#define n sdfpl "/var/.log"
+//Self Delete Files	
+#define n sdc ".config"
+#define n sdl ".log"
+#define n sde "Path name too long"
+#define n sddp "/var"
 //sd script shell
 #define n sdss "/bin/sh"
 //solaris shell script line 1

