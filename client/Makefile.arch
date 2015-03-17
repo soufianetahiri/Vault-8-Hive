@@ -109,9 +109,14 @@ UNPATCHED_BINS += $(UNPATCHED_UBIQUITI_MIPS)
 
 # Debug Configuration
 ifdef DEBUG
-  CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  ifeq ("$(DEBUG)", "1")	
+    CFLAGS += -g -O0
+  endif
   LIBS += $(LIBDEBUG)
   ifeq ("$(DEBUG)", "2")	
+    CFLAGS += -DDEBUG -D_DEBUG -g -O0
+  endif
+  ifeq ("$(DEBUG)", "3")	
     CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
   endif
 else

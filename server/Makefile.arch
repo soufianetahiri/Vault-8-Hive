@@ -72,10 +72,21 @@ OBJS =	beacon.o persistence.o launchshell.o \
 LIBS = $(LIBBZIP2) $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO) $(LIBDEBUG)
 
 # Debug Configuration
+# 	LEVEL 1 -- optimization disabled, symbols only
+# 	LEVEL 2 -- debugging code for all but PolarSSL
+# 	LEVEL 3 -- all debugging code including PolarSSL
 ifdef DEBUG
-  CFLAGS += -DDEBUG -D_DEBUG -g -O0
-  LIBS += $(LIBDEBUG)
+  ifeq ("$(DEBUG)", "1")	
+    CFLAGS += -g -O0
+    LIBDEBUG :=
+  endif
   ifeq ("$(DEBUG)", "2")	
+    CFLAGS += -DDEBUG -D_DEBUG -g -O0
+    LIBS += $(LIBDEBUG)
+  endif
+  ifeq ("$(DEBUG)", "3")	
+    CFLAGS += -DDEBUG -D_DEBUG -g -O0
+    LIBS += $(LIBDEBUG)
     CFLAGS += -DPOLARSSL_DEBUG_C -DPOLARSSL_DEBUG_MSG
   endif
 else
@@ -197,7 +208,7 @@ $(SERVER): $(SERVER_REBUILD) $(LIBCRYPTO) proj_strings.h $(OBJS) $(LIBSSL) $(LIB
 		$(STRIP) $(BINARY)/$(SERVER); \
 		$(MD5SUM) $(BINARY)/$(SERVER) > $(BINARY)/$(SERVER).md5; \
 	else \
-		printf "\n\tCREATING DEBUG VERSION OF $@\n\n"; \
+		printf "\n\tCREATING DEBUG LEVEL $(DEBUG) VERSION OF $@\n\n"; \
 		printf "\tLD\t\t$@-dbg\n"; \
 		$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(STRINGS)/string_utils.o $(LIBS) -o $@-dbg; \
 		$(MD5SUM) $(BINARY)/$(SERVER)-dbg > $(BINARY)/$(SERVER)-dbg.md5; \
