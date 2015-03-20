@@ -35,8 +35,8 @@ else ifeq ("$(TARGET)", "linux-x86_64")
   include $(COMMON)/Makefile-include.linux-x86_64
 else ifeq ("$(TARGET)", "mikrotik-mips")
   include $(COMMON)/Makefile-include.mikrotik-mips
-else ifeq ("$(TARGET)", "mikrotik-mipsel")
-  include $(COMMON)/Makefile-include.mikrotik-mipsel
+#else ifeq ("$(TARGET)", "mikrotik-mipsel")
+#  include $(COMMON)/Makefile-include.mikrotik-mipsel
 else ifeq ("$(TARGET)", "mikrotik-x86")
   include $(COMMON)/Makefile-include.mikrotik-x86
 else ifeq ("$(TARGET)", "mikrotik-ppc")
@@ -45,10 +45,8 @@ else ifeq ("$(TARGET)", "ubiquiti-mips")
   include $(COMMON)/Makefile-include.ubiquiti-mips
 else ifeq ("$(TARGET)", "arm")
   include $(COMMON)/Makefile-include.arm
-else ifeq ("$(TARGET)", "solaris-sparc")
-  include $(COMMON)/Makefile-include.solaris-sparc
-else ifeq ("$(TARGET)", "solaris-x86")
-  include $(COMMON)/Makefile-include.solaris-x86
+#else ifeq ("$(TARGET)", "solaris-x86")
+#  include $(COMMON)/Makefile-include.solaris-x86
 endif
 
 BINARY = .

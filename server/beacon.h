@@ -17,10 +17,10 @@
 #define	BH_WINDOWS			10	// No longer supported
 #define BH_LINUX_X86		20
 #define BH_LINUX_X86_64		21
-#define BH_SOLARIS_SPARC	30
+#define BH_SOLARIS_SPARC	30	// No longer supported
 #define BH_SOLARIS_X86		31
 #define BH_MIKROTIK_MIPS	40	// MIPS (Big Endian)
-#define BH_MIKROTIK_MIPSEL	41	// MIPS (Little Endian)
+#define BH_MIKROTIK_MIPSEL	41	// MIPS (Little Endian) - No longer supported
 #define BH_MIKROTIK_X86		42
 #define BH_MIKROTIK_PPC		43
 #define BH_UBIQUITI_MIPS	50	// MIPS (Big Endian)

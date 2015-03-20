@@ -131,8 +131,7 @@ void* start_triggered_connect( void *param )
 
 	DLX(4, printf("Preparing to exec...\n"));
 
-	// TODO: Fix this for Solaris
-#if 0
+#if 0	// TODO: Fix this for Solaris
 	/* Solaris SPARC has memory alignment issues, so the bytes of interest need, first,
 		to be copied into a variable that is properly aligned */
 	memcpy( &tb_id, &( recvd_payload->package[4] ), sizeof( uint16_t ) );

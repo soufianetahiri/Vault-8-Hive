@@ -59,8 +59,7 @@ dt_signature_check (unsigned char *pkt, int len, Payload *p)
 			return FAILURE;
 	}
 
-	// at this point, we have a good pointer to the start of the ip header
-	//D (printf ("%s, %4d: Good IP header, protocol: %d\n", __FILE__, __LINE__, ip_pkt->protocol); )
+	// At this point, we have a good pointer to the start of the IP header
 
 	memcpy (&iphdr_temp, ip_pkt, sizeof (struct iphdr_t));
 
@@ -180,11 +179,9 @@ raw_check (uint8_t *data, uint16_t pktlen, Payload *p)
 	pp = (uint8_t *)p;
 	// Compute the checksum of bytes between START_PAD and CRC.
 	crc = tiny_crc16 ((unsigned char *) ((char *) data + START_PAD), CRC_DATA_LENGTH);
-//	D( printf ("%s, %4d:\tComputed CRC: 0x%0x\n", __FILE__, __LINE__, crc); )
 
 	// Get the CRC at the offset START_PAD + CRC_DATA_LENGTH + CRC % 200 into the packet.
 	fieldPtr = data + START_PAD + CRC_DATA_LENGTH + (crc % 200);	// Set field pointer to the location of the CRC
-//	D (printf ("%s, %4d:\tfieldPtr: 0x%p, data: 0x%p, offset: %d, packet length: %d\n", __FILE__, __LINE__, fieldPtr, data, (int)(fieldPtr - data), pktlen); )
 	if (fieldPtr == 0 || (fieldPtr > (data + pktlen)))		// Make sure it's within bounds
 		return FAILURE;
 

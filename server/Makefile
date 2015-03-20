@@ -7,7 +7,6 @@
 #
 #	Makefile.linux-x86
 #	Makefile.solaris-x86
-#	Makefile.solaris-sparc
 #	Makefile.mikrotik-x86
 #	Makefile.mikrotik-mipsbe
 #	Makefile.mikrotik-mipsle
@@ -35,13 +34,12 @@ all:
 	printf "\n\nPlease specify a supported target:\n\n"
 	printf "\tmake linux-x86\n"
 	printf "\tmake linux-x86_64\n"
-	printf "\tmake solaris-x86\n"
-	printf "\tmake solaris-sparc\n"
+#	printf "\tmake solaris-x86\n"
 	printf "\tmake mikrotik-x86\n"
 	printf "\tmake mikrotik-mips\n"
-	printf "\tmake mikrotik-mipsel\n"
+#	printf "\tmake mikrotik-mipsel\n"
 	printf "\tmake mikrotik-ppc\n"
-	printf "\tmake ubiquiti\n"
+	printf "\tmake ubiquiti-mips\n"
 	printf "\tmake arm\n\n"
 	printf "To build a debug version use:\n"
 	printf "\t make DEBUG=1 <target>\n\n"
@@ -55,17 +53,14 @@ linux-x86:
 linux-x86_64:
 	@make -f Makefile.arch TARGET=linux-x86_64
 
-solaris-x86:
-	@make -f Makefile.arch TARGET=solaris-x86
-
-solaris-sparc:
-	@make -f Makefile.arch TARGET=solaris-sparc
+#solaris-x86:
+#	@make -f Makefile.arch TARGET=solaris-x86
 
 mikrotik-x86:
 	@make -f Makefile.arch TARGET=mikrotik-x86
 
-mikrotik-mipsel:
-	@make -f Makefile.arch TARGET=mikrotik-mipsel
+#mikrotik-mipsel:
+#	@make -f Makefile.arch TARGET=mikrotik-mipsel
 
 mikrotik-mips:
 	@make -f Makefile.arch TARGET=mikrotik-mips
