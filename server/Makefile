@@ -40,9 +40,11 @@ all:
 #	printf "\tmake mikrotik-mipsel\n"
 	printf "\tmake mikrotik-ppc\n"
 	printf "\tmake ubiquiti-mips\n"
-	printf "\tmake arm\n\n"
+	printf "\tmake avtech-arm\n\n"
 	printf "To build a debug version use:\n"
-	printf "\t make DEBUG=1 <target>\n\n"
+	printf "\t make DEBUG=1 <target>\t\tFor symbols only\n"
+	printf "\t make DEBUG=2 <target>\t\tHive debug code\n"
+	printf "\t make DEBUG=3 <target>\t\tHive and  PolarSSL debug code\n\n"
 	printf "Administrative tasks, ...\n"
 	printf "\tmake clean\n"
 	printf "\tmake tarball    ( on Linux machines only)\n\n"
@@ -71,8 +73,8 @@ mikrotik-ppc:
 ubiquiti-mips:
 	@make -f Makefile.arch TARGET=ubiquiti-mips
 
-arm:
-	@make -f Makefile.arch TARGET=arm
+avtech-arm:
+	@make -f Makefile.arch TARGET=avtech-arm
 
 CLEAN_LIST := *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
 CLEAN_LIST += crypto_proj_strings.h crypto_strings_main.h string_utils.h.gch

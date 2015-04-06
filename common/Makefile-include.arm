@@ -1,17 +1,1 @@
-#------------------------------------------------
-# Makefile include for ARM
-#------------------------------------------------
-ARCH=arm
-TOOLCHAIN=/opt/arm-devel/usr
-BIN=$(TOOLCHAIN)/bin
-HEADERS=$(TOOLCHAIN)/include
-LIBS=$(TOOLCHAIN)/lib
-CC=$(BIN)/gcc
-AR=${BIN}/ar
-RANLIB=${BIN}/ranlib
-
-CFLAGS += -I$(HEADERS)
-CFLAGS += -DLINUX -DARM -static
-CFLAGS += UCLIBC
-
-LDFLAGS += -L$(LIBX) -lpthread -lutil
+Makefile-include.arm,old

