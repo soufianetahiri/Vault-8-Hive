@@ -25,6 +25,8 @@ else ifeq ("$(TARGET)", "mikrotik-ppc")
   include ../Makefile-include.mikrotik-ppc
 else ifeq ("$(TARGET)", "ubiquiti-mips")
   include ../Makefile-include.ubiquiti-mips
+else ifeq ("$(TARGET)", "avtech-arm")
+  include ../Makefile-include.avtech-arm
 else ifeq ("$(TARGET)", "arm")
   include ../Makefile-include.arm
 else ifeq ("$(TARGET)", "solaris-sparc")
@@ -56,7 +58,15 @@ STRIPFLAGS += --strip-all --remove-section=.comment --remove-section=.note
 
 # Debug Options
 ifdef DEBUG
-  CFLAGS += -g -DDEBUG -O0
+  ifeq ("$(DEBUG)", "1")
+    CFLAGS += -g -O0
+  endif
+  ifeq ("$(DEBUG)", "2")
+    CFLAGS += -g -DDEBUG -O0
+  endif
+  ifeq ("$(DEBUG)", "3")
+    CFLAGS += -g -DDEBUG -O0
+  endif
 else
   CFLAGS += -O2
 endif

