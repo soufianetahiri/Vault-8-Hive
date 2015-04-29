@@ -71,6 +71,6 @@ typedef struct {
 	u_int16_t qclass;
 } DNS_query;
 
-uint32_t dns_resolv(char *ip, char *serverIP);
+char *dns_resolv(char *ip, char *serverIP);
 void timeout_handler(int signal);
 #endif

