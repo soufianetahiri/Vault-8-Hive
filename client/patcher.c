@@ -328,7 +328,7 @@ int main(int argc, char **argv)
 				if (OPTMATCH(optarg, "mt-x86"))		{mikrotik_x86 = 1;		break;}
 				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
 				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
-				if (OPTMATCH(optarg, "avt-mips"))	{avtech_arm = 1;		break;}
+				if (OPTMATCH(optarg, "avt-arm"))	{avtech_arm = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
 				if (OPTMATCH(optarg, "all"))		{linux_x86 = 1,
