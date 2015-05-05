@@ -668,7 +668,7 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 		//embed the data size so the server knows how much data to read
 		sz_to_send = (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE ? MAX_SSL_PACKET_SIZE : encrypt_size - bytes_sent;
-		DLX(4, printf("\tSending: %d bytes\n", sz_to_send));
+		DLX(6, printf("\tSending: %d bytes\n", sz_to_send));
 
 		retval = crypt_write(beacon_io, enc_buf + bytes_sent, sz_to_send);
 		if( retval < 0) {
@@ -688,12 +688,12 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 			retval = FAILURE;
 			goto EXIT;
 		}
-		DLX(4, printf( "\tReceived %d bytes\n", retval));
+		DLX(6, printf( "\tReceived %d bytes\n", retval));
 
 		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
-		DLX(4, printf("\tACKed bytes: %d\n", recv_sz));
+		DLX(6, printf("\tACKed bytes: %d\n", recv_sz));
 		bytes_sent += recv_sz;
-		DLX(4, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
+		DLX(6, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
 	} while (bytes_sent < encrypt_size);
 
 	retval = SUCCESS;

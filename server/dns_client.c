@@ -17,6 +17,8 @@ enum {WAITING = 0, TIMED_OUT = 1} response_timeout;
 /*!
  * @brief Perform DNS lookup
  *
+ * 		See RFC 1035 section 4 for DNS message details.
+ *
  * @param ip - IP address or domain name of host
  * @param serverIP - DNS server IP address (e.g. "192.168.1.53")
  * @returns a pointer to the dotted quad address string (malloc'd memory that must be freed)
@@ -55,13 +57,13 @@ char *dns_resolv(char *ip, char *serverIP)
 
 	// Generate the query
 	{
-		char *tbuf;	// Temporary buffer for parsing domain name
+		char *tbuf;	// Pointer to temporary buffer for parsing domain name
 
-		if ((tbuf = malloc(strlen(ip)+1)) ==  NULL)
+		if ((tbuf = malloc(strlen(ip)+1)) ==  NULL)		// Create temporary buffer
 			return NULL;
 
 		memcpy(tbuf, ip, strlen(ip));
-		qp = (char *) (buf + sizeof(DNS_header));			// Start of question
+		qp = (char *) (buf + sizeof(DNS_header));		// Start of question
 		p = strtok(tbuf, ".");
 		while (p) {
 			*((uint8_t *)qp++) = (uint8_t)strlen(p);
@@ -75,6 +77,7 @@ char *dns_resolv(char *ip, char *serverIP)
 		free(tbuf);
 	}
 	// Send DNS query
+	DLX(5,printf("Sending DNS query...\n"));
 	buflen = (size_t)qp - (size_t)buf;
 	n = sendto(sock, buf, buflen, 0, (struct sockaddr *) &sin, sin_len);
 	if (n < 0) {
@@ -86,8 +89,13 @@ char *dns_resolv(char *ip, char *serverIP)
 
 	// Wait for DNS server response
 	response_timer.sa_handler = timeout_handler;
+	if ((sigaction(SIGALRM, &response_timer, NULL)) != 0) {
+		DLX(4, perror("Timeout setup"));
+	}
+	response_timeout = WAITING;
 	alarm(DNS_TIMEOUT);
 	response = (DNS_response *)buf;
+	DLX(4,printf("Waiting for response from DNS server...\n"));
 	do {
 		n = recv(sock, buf, MAX_MSG_LENGTH, 0);
 		if (n < 0) {
@@ -95,9 +103,10 @@ char *dns_resolv(char *ip, char *serverIP)
 			return NULL;
 		}
 		if (n < (int)sizeof(DNS_header))					// Must at least see a DNS-sized header
+			DLX(4, printf("Packet received is %i bytes -- too small for a DNS response\n", n));
 			continue;
 		header = (DNS_header *)buf;
-	} while (header->id != queryID && !header->qr && response_timeout == WAITING);		// QR must be set and the header ID must match the queryID
+	} while (ntohs(header->id) != queryID && !header->qr && response_timeout == WAITING);		// QR must be set and the header ID must match the queryID
 	alarm(0); // Kill timer
 
 	if (response_timeout == TIMED_OUT) {
@@ -138,7 +147,7 @@ char *dns_resolv(char *ip, char *serverIP)
 void timeout_handler(int signal)
 {
 	if (signal == SIGALRM) {
-		DLX(4, printf("DNS lookup timed out."));
+		DLX(4, printf("DNS lookup timed out.\n"));
 		response_timeout = TIMED_OUT;
 	}
 }

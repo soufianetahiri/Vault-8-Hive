@@ -262,7 +262,7 @@ int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size) {
 	DLX(8, printf("Bytes sent: %u\n", (unsigned int)sent));
 
 	ret = (ret < 0) ? ret : (int)size; 		//Return the number of (unencrypted) bytes sent or the error code
-	DLX(4, printf("Return value: 0x%04x\n", ret));
+	DLX(6, printf("Return value: 0x%04x\n", ret));
 	if (ioc->encrypt)
 		free(encbuf);						// Clean-up
 	return ret;
