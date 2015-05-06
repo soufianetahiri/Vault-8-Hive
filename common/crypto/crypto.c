@@ -179,7 +179,7 @@ int crypt_handshake(crypt_context *ioc) {
 
 		while ((ret = ssl_handshake(ioc->ssl)) != 0) {
 			if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
-				DLX(4, printf("TLS handshake failed"); print_ssl_error(ret));
+				DLX(4, printf("\tTLS handshake failed: "); print_ssl_error(ret));
 				return -1;
 			}
 		}
