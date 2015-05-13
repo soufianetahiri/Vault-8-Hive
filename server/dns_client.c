@@ -58,20 +58,23 @@ char *dns_resolv(char *ip, char *serverIP)
 	// Generate the query
 	{
 		char *tbuf;	// Pointer to temporary buffer for parsing domain name
+		D(char *x;)
 
-		if ((tbuf = malloc(strlen(ip)+1)) ==  NULL)		// Create temporary buffer
+		if ((tbuf = calloc(strlen(ip)+1, 1)) ==  NULL)	// Create temporary buffer
 			return NULL;
 
 		memcpy(tbuf, ip, strlen(ip));
-		qp = (char *) (buf + sizeof(DNS_header));		// Start of question
-		p = strtok(tbuf, ".");
+		qp = (char *) (buf + sizeof(DNS_header));		// Skip over header and build DNS formatted name
+		D(x = qp;)
+		p = strtok(tbuf, ".");							// p points to first part of name
 		while (p) {
-			*((uint8_t *)qp++) = (uint8_t)strlen(p);
-			memcpy((char *)qp, p, strlen(p));
-			qp += strlen(p);
-			p = strtok(NULL, ".");
+			*((uint8_t *)qp++) = (uint8_t)strlen(p);	// Add length encoding
+			memcpy((char *)qp, p, strlen(p));			// Copy portion of name
+			qp += strlen(p);							// Reposition pointer to next part of name
+			p = strtok(NULL, ".");						// Repeat until entire domain name encoded
 		}
 		*(char *)qp++ = '\0';							// Null byte terminates Qname field
+		DLX(5, printf("Query Buffer: %s\n", x));
 		*(uint16_t *)qp = htons(1), qp += 2;			//  Qtype = 1 (A record)
 		*(uint16_t *)qp++ = htons(1), qp += 2;			// Qclass = 1 (IN ==> INTERNET)
 		free(tbuf);

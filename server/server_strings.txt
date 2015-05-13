@@ -118,6 +118,7 @@
 #define n sdc ".config"
 #define n sdl ".log"
 #define n sde "Path name too long"
+#define n sdf "DNS server address missing"
 #define n sddp "/var"
 //sd script shell
 #define n sdss "/bin/sh"

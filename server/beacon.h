@@ -52,13 +52,14 @@
  */
 
 typedef struct __attribute__ ((packed)) _BEACON_INFO {
-	char *ip;
+	char *host;										// Domain name of beacon server
+	char *ip;										// IP address of beacon server
 	int port;
-	char *dnsIP;
+	char dns[2][16];								// Array of up to two DNS server addresses
 	unsigned char macAddr[MAC_ADDR_LEN];
-	unsigned long initDelay;
-	int interval;
-	float percentVariance;
+	unsigned long initDelay;						// Initial beacon delay (seconds)
+	int interval;									// Beacon interval (seconds)
+	float percentVariance;							// Variance in beacon interval in percent (0-100);
 } BEACONINFO;
 
 typedef struct __attribute__ ((packed)) beacon_header {
