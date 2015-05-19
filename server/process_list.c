@@ -113,7 +113,7 @@ unsigned char* get_process_list( int* size )
 				if (!lineout)
 				{
                 	lineout = (char *) malloc( defaultIncrementSize );
-                	D( printf(" defaultIncrementSize = %d, sizeof(lineout)=%d\n", defaultIncrementSize, defaultIncrementSize); );
+                	DLX(8, printf(" defaultIncrementSize = %d, sizeof(lineout)=%d\n", defaultIncrementSize, defaultIncrementSize));
                 	memset( lineout, '\0', defaultIncrementSize );
 					//strncat( lineout, blockData, sizeIncrementCount*defaultIncrementSize -1);
 					//printf("\n-----------------------------------------------------\n start\n\n %s\n\nend\n-----------------------------------------------\n", lineout);

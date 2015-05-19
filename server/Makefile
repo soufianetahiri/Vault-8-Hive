@@ -76,6 +76,10 @@ ubiquiti-mips:
 avtech-arm:
 	@make -f Makefile.arch TARGET=avtech-arm
 
+strings:
+	rm -f proj_strings.h
+	@make -f Makefile.arch proj_strings.h
+
 CLEAN_LIST := *.o *PATCHED init_strings.* proj_strings* init_crypto_strings.*
 CLEAN_LIST += crypto_proj_strings.h crypto_strings_main.h string_utils.h.gch
 CLEAN_LIST += mod_hexify.pyc ../hive-server.tar

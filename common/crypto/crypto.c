@@ -178,8 +178,11 @@ int crypt_handshake(crypt_context *ioc) {
 		DLX(4, printf("\tPerforming the TLS handshake... \n"));
 
 		while ((ret = ssl_handshake(ioc->ssl)) != 0) {
-			if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
-				DLX(4, printf("TLS handshake failed"); print_ssl_error(ret));
+			if (ret == POLARSSL_ERR_SSL_CONN_EOF)
+				DLX(4, printf("\tNormal reset by Blot Proxy: "); print_ssl_error(ret));
+				return -1;
+			if (ret != POLARSSL_ERR_NET_WANT_WRITE && ret != POLARSSL_ERR_SSL_CONN_EOF) {
+				DLX(4, printf("\tTLS handshake failed: "); print_ssl_error(ret));
 				return -1;
 			}
 		}
@@ -262,7 +265,7 @@ int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size) {
 	DLX(8, printf("Bytes sent: %u\n", (unsigned int)sent));
 
 	ret = (ret < 0) ? ret : (int)size; 		//Return the number of (unencrypted) bytes sent or the error code
-	DLX(4, printf("Return value: 0x%04x\n", ret));
+	DLX(6, printf("Return value: 0x%04x\n", ret));
 	if (ioc->encrypt)
 		free(encbuf);						// Clean-up
 	return ret;

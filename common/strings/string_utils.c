@@ -13,7 +13,6 @@
 
 #include "string_utils.h"
 
-
 void 
 cl_string(unsigned char *str, int len) 
 {
@@ -23,5 +22,3 @@ cl_string(unsigned char *str, int len)
     }
 
 }
-
-

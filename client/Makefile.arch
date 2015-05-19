@@ -229,7 +229,7 @@ patcher: bin-links $(UNPATCHED_BINS)
 	printf "The following binaries were found:\n\n"
 	@ls -l ../server/hived-* | grep -v dbg | grep -v md5
 	printf "\n"
-
+	printf "Generating header files...\n"
 	xxd -i $(UNPATCHED_LINUX_X86) _unpatched_linux_x86.h
 	xxd -i $(UNPATCHED_MIKROTIK_X86) _unpatched_mikrotik_x86.h
 	xxd -i $(UNPATCHED_MIKROTIK_MIPS) _unpatched_mikrotik_mips.h
@@ -239,6 +239,7 @@ patcher: bin-links $(UNPATCHED_BINS)
 	xxd -i $(UNPATCHED_UBIQUITI_MIPS) _unpatched_ubiquiti_mips.h
 	xxd -i $(UNPATCHED_AVTECH_ARM) _unpatched_avtech_arm.h
 
+	printf "Compiling patcher...\n"
 	$(CC) $(CFLAGS) -I. $(STRINGS)/string_utils.c patcher.c -o hive-patcher $(LIBSSL)
 	strip hive-patcher
 	md5sum hive-patcher > hive-patcher.md5

