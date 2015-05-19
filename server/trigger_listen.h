@@ -23,8 +23,7 @@
 
 #define MAX_PKT 1750
 
-//int TriggerListen( char *szInterface, char *clientIP, int clientPort );
-int TriggerListen( char *szInterface, int trigger_delay, unsigned long delete_delay );
+int TriggerListen(int trigger_delay, unsigned long delete_delay);
 
 // TODO: delete this prototype
 int trigger_main( int argc, char ** argv);

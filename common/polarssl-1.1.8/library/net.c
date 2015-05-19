@@ -105,19 +105,7 @@ int net_connect( int *fd, const char *host, int port )
     struct sockaddr_in server_addr;
     struct hostent *server_host;
 
-#if defined(_WIN32) || defined(_WIN32_WCE)
-    WSADATA wsaData;
-
-    if( wsa_init_done == 0 )
-    {
-        if( WSAStartup( MAKEWORD(2,0), &wsaData ) == SOCKET_ERROR )
-            return( POLARSSL_ERR_NET_SOCKET_FAILED );
-
-        wsa_init_done = 1;
-    }
-#else
     signal( SIGPIPE, SIG_IGN );
-#endif
 
     if( ( server_host = gethostbyname( host ) ) == NULL )
         return( POLARSSL_ERR_NET_UNKNOWN_HOST );
@@ -150,19 +138,7 @@ int net_bind( int *fd, const char *bind_ip, int port )
     int n, c[4];
     struct sockaddr_in server_addr;
 
-#if defined(_WIN32) || defined(_WIN32_WCE)
-    WSADATA wsaData;
-
-    if( wsa_init_done == 0 )
-    {
-        if( WSAStartup( MAKEWORD(2,0), &wsaData ) == SOCKET_ERROR )
-            return( POLARSSL_ERR_NET_SOCKET_FAILED );
-
-        wsa_init_done = 1;
-    }
-#else
     signal( SIGPIPE, SIG_IGN );
-#endif
 
     if( ( *fd = socket( AF_INET, SOCK_STREAM, IPPROTO_IP ) ) < 0 )
         return( POLARSSL_ERR_NET_SOCKET_FAILED );
@@ -213,9 +189,6 @@ int net_bind( int *fd, const char *bind_ip, int port )
  */
 static int net_is_blocking( void )
 {
-#if defined(_WIN32) || defined(_WIN32_WCE)
-    return( WSAGetLastError() == WSAEWOULDBLOCK );
-#else
     switch( errno )
     {
 #if defined EAGAIN
@@ -227,7 +200,6 @@ static int net_is_blocking( void )
             return( 1 );
     }
     return( 0 );
-#endif
 }
 
 /*
@@ -267,22 +239,12 @@ int net_accept( int bind_fd, int *client_fd, void *client_ip )
  */
 int net_set_block( int fd )
 {
-#if defined(_WIN32) || defined(_WIN32_WCE)
-    u_long n = 0;
-    return( ioctlsocket( fd, FIONBIO, &n ) );
-#else
     return( fcntl( fd, F_SETFL, fcntl( fd, F_GETFL ) & ~O_NONBLOCK ) );
-#endif
 }
 
 int net_set_nonblock( int fd )
 {
-#if defined(_WIN32) || defined(_WIN32_WCE)
-    u_long n = 1;
-    return( ioctlsocket( fd, FIONBIO, &n ) );
-#else
     return( fcntl( fd, F_SETFL, fcntl( fd, F_GETFL ) | O_NONBLOCK ) );
-#endif
 }
 
 /*
@@ -308,16 +270,11 @@ int net_recv( void *ctx, unsigned char *buf, size_t len )
         if( net_is_blocking() != 0 )
             return( POLARSSL_ERR_NET_WANT_READ );
 
-#if defined(_WIN32) || defined(_WIN32_WCE)
-        if( WSAGetLastError() == WSAECONNRESET )
-            return( POLARSSL_ERR_NET_CONN_RESET );
-#else
         if( errno == EPIPE || errno == ECONNRESET )
             return( POLARSSL_ERR_NET_CONN_RESET );
 
         if( errno == EINTR )
             return( POLARSSL_ERR_NET_WANT_READ );
-#endif
 
         return( POLARSSL_ERR_NET_RECV_FAILED );
     }
@@ -337,16 +294,11 @@ int net_send( void *ctx, const unsigned char *buf, size_t len )
         if( net_is_blocking() != 0 )
             return( POLARSSL_ERR_NET_WANT_WRITE );
 
-#if defined(_WIN32) || defined(_WIN32_WCE)
-        if( WSAGetLastError() == WSAECONNRESET )
-            return( POLARSSL_ERR_NET_CONN_RESET );
-#else
         if( errno == EPIPE || errno == ECONNRESET )
             return( POLARSSL_ERR_NET_CONN_RESET );
 
         if( errno == EINTR )
             return( POLARSSL_ERR_NET_WANT_WRITE );
-#endif
 
         return( POLARSSL_ERR_NET_SEND_FAILED );
     }

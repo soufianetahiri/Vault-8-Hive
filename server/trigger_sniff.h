@@ -3,11 +3,11 @@
 
 #include "function_strings.h"
 
-int dt_get_socket_fd( char *iface );
+int dt_get_socket_fd();
 
 int dt_find_interface_and_bind(int fd, int proto);
 
-int dt_create_raw_socket( char *iface );
+int dt_create_raw_socket();
 
 int dt_bind_raw_socket( char* device, int raw_fd, int proto);
 

@@ -24,7 +24,7 @@
 #define n inp183Aq " Insufficient permissions. Try again...\n"
 
 //#define n cmdLineOptionFlags "a:cp:d:hI:i:j:K:k:s:t:"
-#define n cIures4j "a:cD:d:hI:i:j:K:k:P:p:S:s:t:"
+#define n cIures4j "a:cD:d:hi:j:K:k:P:p:S:s:t:"
 #define n oe1	"Option error"
 #define n oe2	"File not found"
 #define n oe3	"ID too short"

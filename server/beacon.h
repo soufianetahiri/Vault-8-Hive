@@ -4,6 +4,8 @@
 #include "function_strings.h"
 #include "compat.h"
 
+#define BEACON_HEADER_VERSION	29
+
 #define MAC_ADDR_LEN			6
 #define MAC_ADDR_LEN_FORMATTED	18
 #define MAX_SSL_PACKET_SIZE		4052
@@ -14,6 +16,7 @@
 
 //Flag defines
 // OS
+#define BH_UNDEFINED		0
 #define	BH_WINDOWS			10	// No longer supported
 #define BH_LINUX_X86		20
 #define BH_LINUX_X86_64		21
@@ -52,8 +55,8 @@
  */
 
 typedef struct __attribute__ ((packed)) _BEACON_INFO {
-	char *host;										// Domain name of beacon server
-	char *ip;										// IP address of beacon server
+	char *host;										// Domain name  or IP address of beacon server
+	char *ip;										// Resolved IP address of beacon server
 	int port;
 	char dns[2][16];								// Array of up to two DNS server addresses
 	unsigned char macAddr[MAC_ADDR_LEN];

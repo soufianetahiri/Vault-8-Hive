@@ -178,7 +178,10 @@ int crypt_handshake(crypt_context *ioc) {
 		DLX(4, printf("\tPerforming the TLS handshake... \n"));
 
 		while ((ret = ssl_handshake(ioc->ssl)) != 0) {
-			if (ret != POLARSSL_ERR_NET_WANT_WRITE) {
+			if (ret == POLARSSL_ERR_SSL_CONN_EOF)
+				DLX(4, printf("\tNormal reset by Blot Proxy: "); print_ssl_error(ret));
+				return -1;
+			if (ret != POLARSSL_ERR_NET_WANT_WRITE && ret != POLARSSL_ERR_SSL_CONN_EOF) {
 				DLX(4, printf("\tTLS handshake failed: "); print_ssl_error(ret));
 				return -1;
 			}

