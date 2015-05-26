@@ -60,8 +60,10 @@ char *dns_resolv(char *ip, char *serverIP)
 		char *tbuf;	// Pointer to temporary buffer for parsing domain name
 		D(char *x;)
 
-		if ((tbuf = calloc(strlen(ip)+1, 1)) ==  NULL)	// Create temporary buffer
+		if ((tbuf = calloc(strlen(ip)+1, 1)) ==  NULL) {	// Create temporary buffer
+			close(sock);
 			return NULL;
+		}
 
 		memcpy(tbuf, ip, strlen(ip));
 		qp = (char *) (buf + sizeof(DNS_header));		// Skip over header and build DNS formatted name
@@ -84,6 +86,7 @@ char *dns_resolv(char *ip, char *serverIP)
 	buflen = (size_t)qp - (size_t)buf;
 	n = sendto(sock, buf, buflen, 0, (struct sockaddr *) &sin, sin_len);
 	if (n < 0) {
+		close(sock);
 		DLX(4, perror("Could not send DNS query"));
 		return NULL;
 	}
@@ -103,6 +106,7 @@ char *dns_resolv(char *ip, char *serverIP)
 		n = recv(sock, buf, MAX_MSG_LENGTH, 0);
 		if (n < 0) {
 			DLX(4, perror("Error receiving DNS response"));
+			close(sock);
 			return NULL;
 		}
 		if (n < (int)sizeof(DNS_header))					// Must at least see a DNS-sized header
@@ -110,6 +114,7 @@ char *dns_resolv(char *ip, char *serverIP)
 			continue;
 		header = (DNS_header *)buf;
 	} while (ntohs(header->id) != queryID && !header->qr && response_timeout == WAITING);		// QR must be set and the header ID must match the queryID
+	close(sock);
 	alarm(0); // Kill timer
 
 	if (response_timeout == TIMED_OUT) {
@@ -121,28 +126,6 @@ char *dns_resolv(char *ip, char *serverIP)
 		DLX(4, printf("%s did not resolve\n", ip));
 		return NULL;
 	}
-
-#if 0
-	response = (DNS_response *)(buf + sizeof(DNS_header));
-	DPB(6, "DNS response: ", response, n - sizeof(DNS_header));
-	DLX(4, printf("RR Type: %d\n", ntohs(response->type)));
-	if (ntohs(response->type) != A_RECORD) {
-		DLX(4, printf("Response was not an A record.\n"));
-		return NULL;
-	}
-
-	if ((resolved_ip = (char *)malloc(16)) == NULL) {
-		DLX(4, printf("Failed to malloc resolved IP buffer.\n"));
-		return NULL;
-	}
-	// Convert decimal IP address back to a character string
-	if ((inet_ntop(AF_INET, response->rdata, resolved_ip, 16)) == NULL) {
-		DLX(4, printf("inet_ntop() failed to convert IP to string.\n"));
-		return NULL;
-	}
-
-	return resolved_ip;								// Return IP address
-#endif
 
 	return (decode_dns(response));
 }
