@@ -12,7 +12,8 @@
 #define TOOL_ID					0x65ae82c7
 #define TOOL_ID_XOR_KEY			3
 #define XOR_KEY					5
-#define DEFAULT_BEACON_PORT		443	// HTTPS
+#define DEFAULT_BEACON_PORT		443				// HTTPS
+#define DEFAULT_BEACON_VARIANCE	3 * 0.01f		// 3%
 
 //Flag defines
 // OS

