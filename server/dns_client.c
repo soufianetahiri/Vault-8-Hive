@@ -50,10 +50,13 @@ char *dns_resolv(char *ip, char *serverIP)
 	sin.sin_port = htons(53);							// DNS UDP port number
 	inet_aton(serverIP, &sin.sin_addr);					// DNS server address
 
+	// DNS Header Initialization
+
 	header = (DNS_header *)buf;
 	queryID = htons((uint16_t)rand());
-	header->id = htons(queryID);
-	header->qdcount = htons(1);
+	header->id = htons(queryID);						// Randomly generated query ID
+	header->qdcount = htons(1);							// One query
+	header->rd = 1;										// Set recursion flag
 
 	// Generate the query
 	{
