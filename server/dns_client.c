@@ -57,6 +57,7 @@ char *dns_resolv(char *ip, char *serverIP)
 	header->id = htons(queryID);						// Randomly generated query ID
 	header->qdcount = htons(1);							// One query
 	header->rd = 1;										// Set recursion flag
+	header->flags = htons(header->flags);				// Convert flags to network byte order
 
 	// Generate the query
 	{
@@ -87,6 +88,7 @@ char *dns_resolv(char *ip, char *serverIP)
 	// Send DNS query
 	DLX(5,printf("Sending DNS query...\n"));
 	buflen = (size_t)qp - (size_t)buf;
+	DPB(6, "DNS Query: ", buf, buflen);
 	n = sendto(sock, buf, buflen, 0, (struct sockaddr *) &sin, sin_len);
 	if (n < 0) {
 		close(sock);

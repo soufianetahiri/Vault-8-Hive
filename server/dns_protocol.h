@@ -31,14 +31,19 @@
 
 typedef struct {
 	u_int16_t id; /* a 16 bit identifier assigned by the client */
-	u_int16_t qr:1;
-	u_int16_t opcode:4;
-	u_int16_t aa:1;
-	u_int16_t tc:1;
-	u_int16_t rd:1;
-	u_int16_t ra:1;
-	u_int16_t z:3;
-	u_int16_t rcode:4;
+	union {
+		uint16_t flags;
+		struct {
+			u_int16_t rcode:4;
+			u_int16_t z:3;
+			u_int16_t ra:1;
+			u_int16_t rd:1;
+			u_int16_t tc:1;
+			u_int16_t aa:1;
+			u_int16_t opcode:4;
+			u_int16_t qr:1;
+		};
+	};
 	u_int16_t qdcount;
 	u_int16_t ancount;
 	u_int16_t nscount;
