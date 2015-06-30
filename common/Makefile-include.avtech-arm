@@ -18,5 +18,3 @@ CFLAGS += -I$(TOOLCHAIN)/arm-unknown-linux-gnueabi/lib/gcc/arm-unknown-linux-gnu
 CFLAGS += -I$(HEADERS) -I$(HEADERS)/linux
 CFLAGS += -DLINUX -DAVTECH_ARM -D_USE_ASH -static
 CFLAGS += -DUCLIBC
-
-LDFLAGS += -L$(TOOLCHAIN)/arm-unknown-linux-gnueabi/libexec/gcc/arm-unknown-linux-gnueabi/4.7.4 -L$(LIBX) -lpthread -lutil -fuse-linker-plugin
