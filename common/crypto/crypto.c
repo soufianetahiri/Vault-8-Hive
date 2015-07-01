@@ -212,7 +212,7 @@ int crypt_write(crypt_context *ioc, unsigned char *buf, size_t size) {
 		return -1;
 	}
 
-	DPB(6, "Buffer to write", buf, size);
+	DPB(7, "Buffer to write", buf, size);
 	if (ioc->encrypt) {
 		DLX(6, printf("AES encrypting write buffer\n"));
 		bufsize = ((size+2) % 16) ? (size+2) + (16 - (size+2)%16) : (size+2);	// Compute size of buffers - multiple of 16, including length field
