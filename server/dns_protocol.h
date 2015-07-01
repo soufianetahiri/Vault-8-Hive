@@ -34,6 +34,7 @@ typedef struct {
 	union {
 		uint16_t flags;
 		struct {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 			u_int16_t rcode:4;
 			u_int16_t z:3;
 			u_int16_t ra:1;
@@ -42,7 +43,19 @@ typedef struct {
 			u_int16_t aa:1;
 			u_int16_t opcode:4;
 			u_int16_t qr:1;
-		};
+#elif __BYTE_ORDER ==__BIG_ENDIAN
+			u_int16_t qr:1;
+			u_int16_t opcode:4;
+			u_int16_t aa:1;
+			u_int16_t tc:1;
+			u_int16_t rd:1;
+			u_int16_t ra:1;
+			u_int16_t z:3;
+			u_int16_t rcode:4;
+#else
+#error Endian undefined
+#endif
+		} __attribute__((packed));
 	};
 	u_int16_t qdcount;
 	u_int16_t ancount;
