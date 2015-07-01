@@ -56,8 +56,9 @@ char *dns_resolv(char *ip, char *serverIP)
 	queryID = htons((uint16_t)rand());
 	header->id = htons(queryID);						// Randomly generated query ID
 	header->qdcount = htons(1);							// One query
+	DLX(5,printf("DNS Header Flags: 0x%04x\n", header->flags));
 	header->rd = 1;										// Set recursion flag
-	header->flags = htons(header->flags);				// Convert flags to network byte order
+	DLX(5,printf("DNS Header Flags: 0x%04x\n", header->flags));
 
 	// Generate the query
 	{
