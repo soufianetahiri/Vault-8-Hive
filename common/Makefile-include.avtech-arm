@@ -12,7 +12,7 @@ RANLIB=${BIN}/ranlib
 STRIP=${BIN}/strip
 
 CFLAGS += -I$(HEADERS)
-CFLAGS += -DLINUX -DAVTECH_ARM -D_USE_ASH -static
+CFLAGS += -DLINUX -DAVTECH_ARM -static
 CFLAGS += -DUCLIBC
 
-LDFLAGS += -lutil
+LDFLAGS += -L$(LIBX) -lpthread -lutil

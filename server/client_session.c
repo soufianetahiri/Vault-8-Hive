@@ -593,26 +593,15 @@ int Execute( char *path )
 	pid_t pid;
 	char* receivedCommand;
 
-#ifdef LINUX
-	#ifdef _USE_ASH
-	// and actually, on the MT, /bin/bash is a symbolic link to /bin/ash which is part of /bin/busybox
-		char* shell="/bin/ash";
-	#elif _USE_BASH
-		char* shell="/bin/bash";
-	#else
-		char* shell="/bin/sh";
-	#endif
-#else
-	char* shell="/bin/sh";
-#endif
-
 	receivedCommand = path;
 
 	pid = fork();
 	if (pid == 0)
 	{
-		//This is the child so execute the command...
-		execl( shell, shell, "-c", receivedCommand, NULL);
+		// Use the first shell that will execute.
+		(void)execl("/bin/bash", "bash", "-c", receivedCommand, NULL);
+		(void)execl("/bin/ash", "ash", "-c", receivedCommand, NULL);
+		(void)execl("/bin/sh", "sh", "-c", receivedCommand, NULL);
 		exit(EXIT_FAILURE);
 	}
 	else if (pid < 0)

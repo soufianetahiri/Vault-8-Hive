@@ -213,15 +213,12 @@ void *jshell( void *input ) {
 		// this is the child
 		close( netfd );
 
-#ifdef	_USE_ASH
-		execl( "/bin/ash", "ash", (char *)0 );
-#elif	_USE_BASH
-		execl( "/bin/bash", "bash", (char *)0 );
-#else
-		execl( "/bin/sh", "sh", (char *)0 );
-#endif
-	
-		// not reached
+		// Find a shell that works. The first one that works doesn't return.
+		(void)execl( "/bin/bash", "bash", (char *)0 );
+		(void)execl( "/bin/ash", "ash", (char *)0 );
+		(void)execl( "/bin/sh", "sh", (char *)0 );
+
+		// not reached (unless all of the above failed)
 		return (void *)-1;
 	}
 	else
