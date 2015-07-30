@@ -24,21 +24,19 @@
 #endif
 
 #define closesocket(x) close(x)
-#define Sleep(x) sleep(x/1000)
 #define sprintf_s(x, ...) snprintf(x, __VA_ARGS__)
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET ~0
 #define USHORT	unsigned short
 
 #define UPTIME_STR_LEN 256
-#define DEFAULT_INITIAL_DELAY	3 * 60 * 1000	// 3 minutes
+#define DEFAULT_INITIAL_DELAY	3 * 60			// 3 minutes
 #define DEFAULT_BEACON_PORT		443				// TCP port 443 (HTTPS)
 #define DEFAULT_BEACON_INTERVAL	0				// operators did not want a default beacon interval
-#define DEFAULT_TRIGGER_DELAY	60 * 1000		// 60 seconds
-#define DEFAULT_BEACON_JITTER	3			//integer for percentage of variance [0-30] range
+#define DEFAULT_TRIGGER_DELAY	60				// 60 seconds
+#define DEFAULT_BEACON_JITTER	3				// integer for percentage of variance [0-30] range
 
-#define SELF_DEL_TIMEOUT 60 * 60 * 24 * 60 	//60 secs * 60 mins * 24 hours * 60 days   ( No *1000 is used )
-//#define SELF_DEL_TIMEOUT 60 * 3
+#define SELF_DEL_TIMEOUT 60 * 60 * 24 * 60		// 60 secs * 60 mins * 24 hours * 60 days
 
 #ifndef SUCCESS
 #define SUCCESS 0

