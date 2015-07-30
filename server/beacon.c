@@ -137,12 +137,12 @@ void *beacon(void *param)
 	DLX(4, printf("\t%32s: %-f\n\n", "Beacon Variance", beaconInfo->percentVariance));
 
 	{	// Determine the initial beacon delay
-		int initial_beacon_delay;
+		unsigned long initial_beacon_delay;
 
 		initial_beacon_delay = beaconInfo->percentVariance > 0 ?
 					beaconInfo->initDelay + calc_jitter(beaconInfo->initDelay, beaconInfo->percentVariance) : beaconInfo->initDelay;
 
-		DLX(4, printf("\nStarting beacon thread with initial beacon delay of %ld seconds\n", beacon_delay));
+		DLX(4, printf("\nStarting beacon thread with initial beacon delay of %ld seconds\n", initial_beacon_delay));
 		sleep(initial_beacon_delay);
 	}
 
