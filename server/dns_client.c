@@ -1,18 +1,17 @@
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
+#include <errno.h>
 #include <signal.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include "dns_protocol.h"
 #include "decode_dns.h"
 #include "debug.h"
-
-enum {WAITING = 0, TIMED_OUT = 1} response_timeout;
 
 /*!
  * @brief Perform DNS lookup
@@ -29,21 +28,27 @@ char *dns_resolv(char *ip, char *serverIP)
 	DNS_header *header;
 	DNS_response *response;
 
+	int sock;
 	struct sockaddr_in sin;
 	int sin_len = sizeof(sin);
-	int sock;
 
-	struct sigaction response_timer;
+	struct timeval timer;
 	void *qp;
 	size_t buflen = 0;
 	char *p;
 	int n;
 	uint16_t queryID = 0;
 
+	timer.tv_sec = DNS_TIMEOUT;
+	timer.tv_usec = 0;
+
 	DLX(5,printf("Attempting to resolve %s\n", ip));
 	if ((sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
 		DLX(4, perror("Could not create socket"));
 		return NULL;
+	}
+	if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timer, sizeof(struct timeval)) < 0) {
+		DLX(4, printf("Failed to set timeout on socket: %s\n", strerror(errno)));
 	}
 	memset((char *) &sin, 0, sizeof(sin));
 	sin.sin_family = AF_INET;
@@ -86,7 +91,7 @@ char *dns_resolv(char *ip, char *serverIP)
 		free(tbuf);
 	}
 	// Send DNS query
-	DLX(5,printf("Sending DNS query...\n"));
+	DLX(5,printf("Sending DNS query using socket: %d ...\n", sock));
 	buflen = (size_t)qp - (size_t)buf;
 	DPB(6, "DNS Query: ", buf, buflen);
 	n = sendto(sock, buf, buflen, 0, (struct sockaddr *) &sin, sin_len);
@@ -99,18 +104,14 @@ char *dns_resolv(char *ip, char *serverIP)
 //*************************************************************************************************
 
 	// Wait for DNS server response
-	response_timer.sa_handler = timeout_handler;
-	if ((sigaction(SIGALRM, &response_timer, NULL)) != 0) {
-		DLX(4, perror("Timeout setup"));
-	}
-	response_timeout = WAITING;
-	alarm(DNS_TIMEOUT);
+
 	response = (DNS_response *)buf;
 	DLX(4,printf("Waiting for response from DNS server...\n"));
 	do {
 		n = recv(sock, buf, MAX_MSG_LENGTH, 0);
 		if (n < 0) {
-			DLX(4, perror("Error receiving DNS response"));
+			if (errno == EAGAIN)
+				continue;
 			close(sock);
 			return NULL;
 		}
@@ -118,14 +119,9 @@ char *dns_resolv(char *ip, char *serverIP)
 			DLX(4, printf("Packet received is %i bytes -- too small for a DNS response\n", n));
 			continue;
 		header = (DNS_header *)buf;
-	} while (ntohs(header->id) != queryID && !header->qr && response_timeout == WAITING);		// QR must be set and the header ID must match the queryID
+		DL(5);
+	} while (ntohs(header->id) != queryID && !header->qr);		// QR must be set and the header ID must match the queryID
 	close(sock);
-	alarm(0); // Kill timer
-
-	if (response_timeout == TIMED_OUT) {
-		DLX(4, printf("No response from DNS server\n"));
-		return NULL;
-	}
 
 	if (header->ancount == 0) {
 		DLX(4, printf("%s did not resolve\n", ip));
@@ -133,12 +129,4 @@ char *dns_resolv(char *ip, char *serverIP)
 	}
 
 	return (decode_dns(response));
-}
-
-void timeout_handler(int signal)
-{
-	if (signal == SIGALRM) {
-		DLX(4, printf("DNS lookup timed out.\n"));
-		response_timeout = TIMED_OUT;
-	}
 }
