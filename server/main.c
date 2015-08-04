@@ -318,7 +318,7 @@ int main(int argc, char** argv)
 							fprintf(stderr, "%s\n", oe4);
 							return 6;
 						}
-						memcpy(beaconInfo.dns[0], dns, strlen(dns));
+						strcpy(beaconInfo.dns[0], dns);
 					} else {
 						beaconInfo.dns[0][0] = '\0';
 						fprintf(stderr, "%s\n", sdf);	// Parameter missing
@@ -331,7 +331,7 @@ int main(int argc, char** argv)
 							fprintf(stderr, "%s\n", oe4);
 							return 6;
 						}
-						memcpy(beaconInfo.dns[1], dns, strlen(dns));
+						strcpy(beaconInfo.dns[1], dns);
 					} else
 						beaconInfo.dns[1][0] = '\0';
 				}
