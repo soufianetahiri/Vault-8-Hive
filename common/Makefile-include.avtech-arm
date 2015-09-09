@@ -2,7 +2,7 @@
 # Makefile include for AVTECH ARM
 #------------------------------------------------
 ARCH=arm
-TOOLCHAIN=/opt/armv5
+TOOLCHAIN=/opt/arm-devel/usr
 BIN=$(TOOLCHAIN)/bin
 HEADERS=$(TOOLCHAIN)/include
 LIBS=$(TOOLCHAIN)/lib
@@ -10,11 +10,9 @@ CC=$(BIN)/gcc
 AR=${BIN}/ar
 RANLIB=${BIN}/ranlib
 STRIP=${BIN}/strip
-PATH=$(TOOLCHAIN)/arm-unknown-linux-gnueabi/arm-unknown-linux-gnueabi/bin:$(TOOLCHAIN)/arm-unknown-linux-gnueabi/libexec/gcc/arm-unknown-linux-gnueabi/4.7.4:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin
 
-CFLAGS += -I$(TOOLCHAIN)/arm-unknown-linux-gnueabi/arm-unknown-linux-gnueabi/sysroot/usr/include
-CFLAGS += -I$(TOOLCHAIN)/arm-unknown-linux-gnueabi/lib/gcc/arm-unknown-linux-gnueabi/4.7.4/install-tools/include
-CFLAGS += -I$(TOOLCHAIN)/arm-unknown-linux-gnueabi/lib/gcc/arm-unknown-linux-gnueabi/4.7.4/include
-CFLAGS += -I$(HEADERS) -I$(HEADERS)/linux
+CFLAGS += -I$(HEADERS)
 CFLAGS += -DLINUX -DAVTECH_ARM -D_USE_ASH -static
 CFLAGS += -DUCLIBC
+
+LDFLAGS += -lutil
