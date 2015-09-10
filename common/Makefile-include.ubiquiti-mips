@@ -1,5 +1,5 @@
 #------------------------------------------------
-# Makefile include for mikrotik-mips (big-endian)
+# Makefile include for ubiquiti-mips (big-endian)
 #------------------------------------------------
 BUILDROOT=/opt/buildroot/buildroot-2010.11-mipsbe/output/staging/usr
 ARCH=mips
